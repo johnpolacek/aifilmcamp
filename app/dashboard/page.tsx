@@ -8,7 +8,7 @@ import { getProjectsByUsername } from "@/lib/projects";
 
 export const metadata: Metadata = {
   title: "Dashboard - AI Film Camp",
-  description: "Manage and showcase your AI film projects",
+  description: "Manage concept-to-prompt AI film development packages",
 };
 
 export default async function DashboardPage() {

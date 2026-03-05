@@ -1,7 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { EditSceneView } from "@/components/views/edit-scene-view";
+import { EditScenePromptsView } from "@/components/views/edit-scene-prompts-view";
 import { getProject } from "@/lib/projects";
 import { getScene } from "@/lib/scenes";
 
@@ -57,14 +57,12 @@ export default async function EditScenePage({
   }
 
   return (
-    <EditSceneView
+    <EditScenePromptsView
       scene={scene}
       projectId={projectId}
       projectTitle={projectData.title}
       characters={projectData.characters || []}
       locations={projectData.setting?.locations || []}
-      username={projectData.username || ""}
     />
   );
 }
-

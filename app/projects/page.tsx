@@ -4,7 +4,7 @@ import { ProjectsView } from "@/components/views/projects-view";
 export const metadata: Metadata = {
   title: "Community Projects - AI Film Camp",
   description:
-    "Explore groundbreaking AI films from creators around the world. Get inspired, learn, and collaborate.",
+    "Explore public AI film development packages, prompts, scripts, and reference assets from creators around the world.",
 };
 
 export default function ProjectsPage() {

@@ -62,8 +62,8 @@ export function ProjectsView() {
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-balance">Community Projects</h1>
             <p className="text-lg lg:text-xl text-muted-foreground text-balance">
-              Explore groundbreaking AI films from creators around the world. Get inspired, learn,
-              and collaborate.
+              Explore concept-to-prompt AI film development packages from creators around the world.
+              Get inspired, learn, and collaborate.
             </p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export function ProjectsView() {
             </div>
             <h3 className="text-2xl font-bold mb-2">Coming Soon</h3>
             <p className="text-muted-foreground max-w-md mx-auto text-balance">
-              This is just a preview. Join the community and share your own AI film projects!
+              Join the community and share your own AI film development package.
             </p>
           </div>
         </div>

@@ -152,6 +152,22 @@ export interface AudioTrack {
   updatedAt: string;
 }
 
+/**
+ * Prompt-first shot planning interface used in the default workflow.
+ */
+export interface PromptShot {
+  id: string;
+  shotNumber: number;
+  title: string;
+  framing: string;
+  cameraMovement: string;
+  action: string;
+  continuityNotes?: string;
+  durationEstimateSeconds?: number;
+  referenceAssetIds?: string[];
+  prompt: string;
+}
+
 // ============================================================================
 // SCENE INTERFACE
 // ============================================================================
@@ -208,13 +224,18 @@ export interface Scene {
   sceneNumber: number;
   title: string;
   screenplay: string; // Scene-specific screenplay text
+  summary?: string;
+  dramaticPurpose?: string;
+  emotionalBeat?: string;
+  visualIntent?: string;
   characters: string[]; // Character IDs present in this scene
   locationId?: string; // Reference to a project location by name
+  promptShots?: PromptShot[];
 
   // Timeline content (new shot-based architecture)
-  shots: Shot[]; // Ordered video timeline
-  audioTracks: AudioTrack[]; // Multiple audio layers
-  removedShots?: Shot[]; // Shots removed from timeline but kept in Media Library
+  shots: Shot[]; // Legacy video timeline
+  audioTracks: AudioTrack[]; // Legacy audio layers
+  removedShots?: Shot[]; // Legacy media library
 
   // Audio settings
   masterVolume?: number; // Master volume control (0.0 to 2.0, default: 1.0)
@@ -276,6 +297,21 @@ export function createNewShot(order: number): Shot {
     generationMode: "text-only",
     createdAt: now,
     updatedAt: now,
+  };
+}
+
+export function createNewPromptShot(shotNumber: number): PromptShot {
+  return {
+    id: `prompt-shot-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    shotNumber,
+    title: `Shot ${shotNumber}`,
+    framing: "",
+    cameraMovement: "",
+    action: "",
+    continuityNotes: "",
+    durationEstimateSeconds: 4,
+    referenceAssetIds: [],
+    prompt: "",
   };
 }
 

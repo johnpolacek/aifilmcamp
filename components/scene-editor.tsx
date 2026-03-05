@@ -107,7 +107,12 @@ export function SceneList({
       sceneNumber: newSceneNumber,
       title: "New Scene",
       screenplay: "",
+      summary: "",
+      dramaticPurpose: "",
+      emotionalBeat: "",
+      visualIntent: "",
       characters: [],
+      promptShots: [],
       shots: [],
       audioTracks: [],
       transitionOut: getDefaultTransition(),
@@ -168,11 +173,11 @@ export function SceneList({
                     </div>
                   )}
                   <div className="flex items-center gap-4 text-sm text-muted-foreground shrink-0">
-                    {scene.generatedImages && scene.generatedImages.length > 0 && (
-                      <span>{scene.generatedImages.length} images</span>
+                    {(scene.promptShots?.length || 0) > 0 && (
+                      <span>{scene.promptShots?.length} prompts</span>
                     )}
-                    {scene.generatedVideos && scene.generatedVideos.length > 0 && (
-                      <span>{scene.generatedVideos.length} videos</span>
+                    {scene.generatedImages && scene.generatedImages.length > 0 && (
+                      <span>{scene.generatedImages.length} assets</span>
                     )}
                   </div>
                 </CardContent>
@@ -183,7 +188,7 @@ export function SceneList({
       ) : (
         <div className="text-center py-8 text-muted-foreground">
           <Film className="h-12 w-12 mx-auto mb-4 opacity-50" />
-          <p>No scenes yet. Add your first scene to get started.</p>
+          <p>No scenes yet. Add your first scene or sync from the script breakdown.</p>
         </div>
       )}
 

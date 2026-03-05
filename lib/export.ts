@@ -36,16 +36,39 @@ export function generateProjectReadme(project: ProjectFormData): string {
 
 ${project.logline ? `> ${project.logline}` : ""}
 
-## Project Details
+## Development Package
 
 - **Genre**: ${project.genre || "Not specified"}
-- **Duration**: ${project.duration || "Not specified"}
+- **Film Length**: ${project.filmLength || project.duration || "Not specified"}
 ${project.publishedAt ? `- **Published**: ${new Date(project.publishedAt).toLocaleDateString()}` : ""}
+
+${project.development?.conceptStatement ? `## Concept
+
+${project.development.conceptStatement}
+` : ""}
+
+${project.development?.outline && project.development.outline.length > 0 ? `## Plot Outline
+
+${project.development.outline
+  .map((beat) => `### Beat ${beat.order}: ${beat.title}
+${beat.summary}`)
+  .join("\n\n")}
+` : ""}
+
+${project.development?.scriptBreakdown && project.development.scriptBreakdown.length > 0 ? `## Script Breakdown
+
+${project.development.scriptBreakdown
+  .map((scene) => `### Scene ${scene.order}: ${scene.title}
+${scene.summary}
+Location: ${scene.locationName || "Not specified"}
+Purpose: ${scene.dramaticPurpose}`)
+  .join("\n\n")}
+` : ""}
 
 ${project.characters && project.characters.length > 0 ? `## Characters
 
 ${project.characters.map((c) => `### ${c.name}
-${c.appearance || ""}
+${c.role ? `Role: ${c.role}\n` : ""}${c.appearance || ""}
 `).join("\n")}` : ""}
 
 ${project.scenes && project.scenes.length > 0 ? `## Scenes
@@ -54,12 +77,10 @@ ${project.scenes
   .sort((a, b) => a.sceneNumber - b.sceneNumber)
   .map((s) => `### Scene ${s.sceneNumber}: ${s.title}
 
-${s.screenplay ? `\`\`\`
-${s.screenplay.substring(0, 500)}${s.screenplay.length > 500 ? "..." : ""}
-\`\`\`` : "No screenplay content"}
+${s.summary || "No summary"}
 
 ${s.generatedImages && s.generatedImages.length > 0 ? `- ${s.generatedImages.length} generated image(s)` : ""}
-${s.generatedVideos && s.generatedVideos.length > 0 ? `- ${s.generatedVideos.length} generated video(s)` : ""}
+${s.promptShots && s.promptShots.length > 0 ? `- ${s.promptShots.length} prompt shot(s)` : ""}
 `).join("\n")}` : ""}
 
 ## Tools Used
@@ -156,4 +177,3 @@ export function getExportAssets(project: ProjectFormData): Array<{
 
   return assets;
 }
-

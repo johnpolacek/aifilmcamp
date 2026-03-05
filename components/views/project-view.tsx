@@ -1,58 +1,18 @@
-import {
-  Calendar,
-  Clapperboard,
-  Clock,
-  ExternalLink,
-  FileDown,
-  FileText,
-  Play,
-  Rss,
-} from "lucide-react";
+import { Calendar, Clock, Eye, FileText, Layers3, Sparkles, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { FilmPlayer } from "@/components/film-player";
+import type React from "react";
 import { PostsList } from "@/components/posts-list";
 import type { ProjectFormData } from "@/components/project-form";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImagePlaceholder } from "@/components/ui/image-placeholder";
 import { OptimizedImage } from "@/components/ui/optimized-image";
 import { ProjectNavigation } from "@/components/views/project-navigation";
+import { getPromptShotCount, getPublishedPhases } from "@/lib/development";
 import type { Post } from "@/lib/posts";
 import type { UserProfile } from "@/lib/profiles";
-import { getProjectFileUrl, getThumbnailUrl } from "@/lib/utils";
-
-// Helper functions to detect and parse video URLs
-function getVideoEmbedInfo(
-  url: string
-): { type: "youtube" | "vimeo" | null; embedUrl: string } | null {
-  try {
-    // YouTube URL patterns
-    const youtubeRegex =
-      /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/;
-    const youtubeMatch = url.match(youtubeRegex);
-    if (youtubeMatch?.[1]) {
-      return {
-        type: "youtube",
-        embedUrl: `https://www.youtube.com/embed/${youtubeMatch[1]}?rel=0&modestbranding=1&iv_load_policy=3`,
-      };
-    }
-
-    // Vimeo URL patterns
-    const vimeoRegex = /(?:vimeo\.com\/)(?:.*\/)?(\d+)/;
-    const vimeoMatch = url.match(vimeoRegex);
-    if (vimeoMatch?.[1]) {
-      return {
-        type: "vimeo",
-        embedUrl: `https://player.vimeo.com/video/${vimeoMatch[1]}`,
-      };
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
+import { getThumbnailUrl } from "@/lib/utils";
 
 interface ProjectViewProps {
   projectId: string;
@@ -63,6 +23,23 @@ interface ProjectViewProps {
   posts: Post[];
 }
 
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="border-border bg-card/70">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  );
+}
+
 export function ProjectView({
   projectId,
   project,
@@ -71,462 +48,311 @@ export function ProjectView({
   creatorProfile,
   posts,
 }: ProjectViewProps) {
-  // Transform thumbnail URL
+  const publishedPhases = new Set(getPublishedPhases(project));
   const thumbnailUrl = project.thumbnail ? getThumbnailUrl(project.thumbnail, username) : "";
-
-  // Format last updated (we'll use a placeholder since ProjectFormData doesn't have updatedAt)
-  const lastUpdated = "recently";
-
-  // Transform project data to match page expectations
-  const projectDisplay = {
-    id: projectId,
-    title: project.title,
-    logline: project.logline,
-    slug: projectSlug,
-    thumbnail: thumbnailUrl,
-    duration: project.duration,
-    genre: project.genre,
-    lastUpdated,
-    creator: {
-      name: creatorProfile?.name || username,
-      username: username,
-      avatar: creatorProfile?.avatar,
-      bio: creatorProfile?.about || "",
-    },
-    links: project.links || { links: [] },
-    tools: project.tools || [],
-    updates: [] as Array<{ date: string; content: string }>,
-  };
+  const promptShotCount = getPromptShotCount(project.scenes);
+  const assetCount =
+    (project.characters?.filter((character) => character.mainImage || character.images?.length)
+      .length || 0) +
+    (project.setting?.locations?.filter((location) => location.image || location.images?.length)
+      .length || 0);
 
   return (
     <div className="min-h-screen bg-background pb-16">
-      {/* Hero Image - Full Width */}
-      <div className="relative h-[400px] xl:h-[720px] w-full mb-8">
+      <div className="relative h-[360px] w-full overflow-hidden xl:h-[520px]">
         <ProjectNavigation projectId={projectId} ownerUsername={username} />
-        {projectDisplay.thumbnail ? (
-          <Image
-            src={projectDisplay.thumbnail}
-            alt={projectDisplay.title}
-            fill
-            className="object-cover"
-            sizes="100vw"
-            priority
-          />
+        {thumbnailUrl ? (
+          <Image src={thumbnailUrl} alt={project.title} fill className="object-cover" priority />
         ) : (
           <ImagePlaceholder className="h-full w-full" />
         )}
-        <div className="absolute inset-0 bg-linear-to-t from-background via-background/50 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="container mx-auto px-4 lg:px-8 max-w-8xl">
-            <div className="flex items-center gap-3 mb-4">
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0">
+          <div className="container mx-auto max-w-6xl px-4 pb-10 lg:px-8">
+            <div className="mb-4 flex flex-wrap items-center gap-2">
               {project.isPublished && (
-                <span className="px-3 py-1 bg-green-500/20 text-green-500 rounded-full text-sm font-medium">
-                  Published
+                <span className="rounded-full bg-green-500/15 px-3 py-1 text-sm font-medium text-green-500">
+                  Published Project
                 </span>
               )}
-              {projectDisplay.genre && (
-                <span className="px-3 py-1 bg-muted/50 backdrop-blur-sm rounded-full text-sm">
-                  {projectDisplay.genre}
+              {project.genre && (
+                <span className="rounded-full bg-background/70 px-3 py-1 text-sm">
+                  {project.genre}
+                </span>
+              )}
+              {(project.filmLength || project.duration) && (
+                <span className="rounded-full bg-background/70 px-3 py-1 text-sm">
+                  {project.filmLength || project.duration}
                 </span>
               )}
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold mb-2 text-balance">
-              {projectDisplay.title}
+            <h1 className="max-w-4xl text-4xl font-bold text-balance md:text-5xl">
+              {project.title}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            {project.logline && (
+              <p className="mt-4 max-w-3xl text-lg text-foreground/85">{project.logline}</p>
+            )}
+            <div className="mt-5 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                {projectDisplay.duration}
+                <User className="h-4 w-4" />
+                <span>{creatorProfile?.name || username}</span>
               </div>
-              <div className="flex items-center gap-1">
-                <Calendar className="h-4 w-4" />
-                Updated {projectDisplay.lastUpdated}
-              </div>
-            </div>
-            <div className="mt-5">
-              <Link
-                href={`/${projectDisplay.creator.username}`}
-                className="inline-flex items-center gap-2 group"
-              >
-                {projectDisplay.creator.avatar ? (
-                  <Image
-                    src={projectDisplay.creator.avatar}
-                    alt={projectDisplay.creator.name}
-                    width={24}
-                    height={24}
-                    className="h-6 w-6 rounded-full object-cover"
-                  />
-                ) : (
-                  <ImagePlaceholder variant="avatar" className="h-6 w-6" />
-                )}
-                <span className="text-sm font-medium group-hover:text-primary transition-colors">
-                  {projectDisplay.creator.name}
-                </span>
-              </Link>
+              {project.publishedAt && (
+                <div className="flex items-center gap-1">
+                  <Calendar className="h-4 w-4" />
+                  <span>{new Date(project.publishedAt).toLocaleDateString()}</span>
+                </div>
+              )}
+              {(project.filmLength || project.duration) && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{project.filmLength || project.duration}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 lg:px-8 max-w-8xl">
-        <div className="space-y-8">
-          <div className="pb-5">
-            {/* Film */}
-            {project.filmLink &&
-              (() => {
-                const videoInfo = getVideoEmbedInfo(project.filmLink);
+      <div className="container mx-auto mt-8 max-w-6xl space-y-8 px-4 lg:px-8">
+        <Card className="border-border bg-muted/30">
+          <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm text-muted-foreground">
+            <span>{project.characters?.length || 0} characters</span>
+            <span>{project.development?.scriptBreakdown?.length || project.scenes?.length || 0} scenes</span>
+            <span>{assetCount} asset groups</span>
+            <span>{promptShotCount} prompt shots</span>
+            <span>{publishedPhases.size} published phases</span>
+          </CardContent>
+        </Card>
 
-                if (videoInfo) {
-                  // Embedded video for YouTube/Vimeo
-                  return (
-                    <div className="mb-5 pb-5 border-b border-border">
-                      <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted/30">
-                        <iframe
-                          src={videoInfo.embedUrl}
-                          title={`${projectDisplay.title} - Film`}
-                          className="absolute inset-0 w-full h-full"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    </div>
-                  );
-                }
+        {publishedPhases.has("concept") && (
+          <Section title="Concept">
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {project.development?.conceptStatement || project.development?.conceptSeed || "No concept published yet."}
+            </p>
+          </Section>
+        )}
 
-                // Fallback button for other video platforms
-                return (
-                  <div className="mb-5 pb-5 border-b border-border">
-                    <a
-                      href={project.filmLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-                    >
-                      <Play className="h-4 w-4" />
-                      <span className="font-medium">Watch Film</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                );
-              })()}
-
-            {/* Logline */}
-            {projectDisplay.logline && (
-              <div className="pb-5 mb-5 border-b border-border">
-                <p className="text-lg italic text-foreground/90 leading-relaxed">
-                  "{projectDisplay.logline}"
-                </p>
-              </div>
-            )}
-
-            {/* About This Project */}
-            {projectDisplay.logline && (
-              <div className="pb-5">
-                <h2 className="text-xl font-bold mb-3">About This Project</h2>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {projectDisplay.logline}
-                </p>
-              </div>
-            )}
-
-            {/* Characters */}
-            {project.characters && project.characters.length > 0 && (
-              <div className="mb-5 pb-5 border-b border-border">
-                <h2 className="text-xl font-bold mb-4">Characters</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {project.characters.map((character, index) => (
-                    <Card
-                      key={`character-${character.name}-${index}`}
-                      className="bg-foreground/10"
-                    >
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* Character Main Image - Full Width */}
-                          {character.mainImage && (
-                            <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted/30">
-                              <OptimizedImage
-                                type="character"
-                                filename={character.mainImage}
-                                username={username}
-                                alt={character.name || "Character"}
-                                fill
-                                objectFit="cover"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              />
-                            </div>
-                          )}
-
-                          {/* Additional Character Images */}
-                          {character.images && character.images.length > 0 && (
-                            <div className="grid grid-cols-2 gap-2">
-                              {character.images.map((image, imageIndex) => (
-                                <div
-                                  key={`${index}-${imageIndex}`}
-                                  className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted/30"
-                                >
-                                  <OptimizedImage
-                                    type="character"
-                                    filename={image}
-                                    username={username}
-                                    alt={`${character.name || "Character"} - Image ${imageIndex + 1}`}
-                                    fill
-                                    objectFit="cover"
-                                    sizes="(max-width: 768px) 50vw, 25vw"
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Character Info */}
-                          <div>
-                            <h3 className="font-semibold text-sm mb-1">
-                              {character.name || "Unnamed Character"}
-                            </h3>
-                            {character.appearance && (
-                              <p className="text-muted-foreground text-sm leading-relaxed">
-                                {character.appearance}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Setting - Locations */}
-            {project.setting?.locations && project.setting.locations.length > 0 && (
-              <div className="mb-5 pb-5 border-b border-border">
-                <h2 className="text-xl font-bold mb-4">Setting</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {project.setting.locations.map((location, index) => (
-                    <Card
-                      key={`location-${location.name}-${index}`}
-                      className="bg-muted/30 border-border"
-                    >
-                      <CardContent className="p-4">
-                        <div className="space-y-3">
-                          {/* Location Image - Full Width (if exists) */}
-                          {location.image && (
-                            <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted/30">
-                              <OptimizedImage
-                                type="location"
-                                filename={location.image}
-                                username={username}
-                                alt={location.name || "Location"}
-                                fill
-                                objectFit="cover"
-                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                              />
-                            </div>
-                          )}
-
-                          {/* Location Info */}
-                          <div>
-                            <h3 className="font-semibold mb-1 text-sm">
-                              {location.name || "Unnamed Location"}
-                            </h3>
-                            {location.description && (
-                              <p className="text-muted-foreground text-sm leading-relaxed">
-                                {location.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Screenplay / Script */}
-            {(project.screenplayElements?.length ||
-              project.screenplayText ||
-              project.screenplay) && (
-              <div className="pb-5 flex items-center gap-2">
-                {/* View screenplay page link */}
-                {(project.screenplayElements?.length || project.screenplayText) && (
-                  <Link href={`/${username}/${project.slug}/screenplay`}>
-                    <Button size="sm" variant="outline" className="bg-transparent text-xs">
-                      <FileText className="h-3 w-3 mr-1" />
-                      Read Screenplay
-                    </Button>
-                  </Link>
-                )}
-                {/* Download PDF if available */}
-                {project.screenplay && (
-                  <a
-                    href={getProjectFileUrl(project.screenplay.filename, username)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    download
-                  >
-                    <Button size="sm" variant="outline" className="bg-transparent text-xs">
-                      <FileDown className="h-3 w-3 mr-1" />
-                      Download PDF
-                    </Button>
-                  </a>
-                )}
-              </div>
-            )}
-
-            {/* Scenes & Film Player */}
-            {project.scenes && project.scenes.length > 0 && (
-              <div className="mb-5 pb-5 border-b border-border">
-                <div className="flex items-center gap-2 mb-4">
-                  <Clapperboard className="h-5 w-5 text-primary" />
-                  <h2 className="text-xl font-bold">Scenes</h2>
-                </div>
-
-                {/* Film Player - if there are completed videos */}
-                {project.scenes.some((s) =>
-                  s.generatedVideos?.some((v) => v.status === "completed" && v.videoUrl)
-                ) && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-muted-foreground mb-3">
-                      Watch the Film
-                    </h3>
-                    <FilmPlayer scenes={project.scenes} title={project.title} />
-                  </div>
-                )}
-
-                {/* Scene List */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-semibold text-muted-foreground">
-                    All Scenes ({project.scenes.length})
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {project.scenes
-                      .sort((a, b) => a.sceneNumber - b.sceneNumber)
-                      .map((scene) => (
-                        <Card
-                          key={scene.id}
-                          className="bg-muted/30 border-border hover:bg-muted/50 transition-colors"
-                        >
-                          <CardContent className="p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm shrink-0">
-                                {scene.sceneNumber}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-medium text-sm truncate">{scene.title}</h4>
-                                {scene.screenplay && (
-                                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
-                                    {scene.screenplay.substring(0, 80)}...
-                                  </p>
-                                )}
-                                <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                                  {scene.generatedImages && scene.generatedImages.length > 0 && (
-                                    <span>{scene.generatedImages.length} images</span>
-                                  )}
-                                  {scene.generatedVideos && scene.generatedVideos.length > 0 && (
-                                    <span>{scene.generatedVideos.length} videos</span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Tools */}
-            {projectDisplay.tools.length > 0 && (
-              <div>
-                <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-                  Tools
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {projectDisplay.tools.map((tool, index) => (
-                    <span
-                      key={`tool-${tool.name}-${tool.category}-${index}`}
-                      className="px-2.5 py-1 bg-primary/10 text-primary rounded-full text-xs font-medium"
-                    >
-                      {tool.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Project Posts */}
-          {posts.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Project Posts</h2>
-                <a
-                  href={`/api/rss/${username}/${projectSlug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <Rss className="h-4 w-4" />
-                  RSS Feed
-                </a>
-              </div>
-              <PostsList
-                projectId={projectId}
-                initialPosts={posts}
-                canEdit={false}
-                projectTitle={project.title}
-                authorName={creatorProfile?.name || username}
-                username={username}
-                projectSlug={projectSlug}
-              />
+        {publishedPhases.has("title-logline") && (
+          <Section title="Title and Logline">
+            <div className="space-y-2">
+              <p className="text-lg font-semibold">{project.title}</p>
+              {project.logline && <p className="text-sm text-muted-foreground">{project.logline}</p>}
             </div>
+          </Section>
+        )}
+
+        {publishedPhases.has("film-length") && (
+          <Section title="Target Runtime">
+            <p className="text-sm text-muted-foreground">{project.filmLength || project.duration}</p>
+          </Section>
+        )}
+
+        {publishedPhases.has("characters") && (project.characters?.length || 0) > 0 && (
+          <Section title="Characters">
+            <div className="grid gap-4 md:grid-cols-2">
+              {project.characters?.map((character, index) => (
+                <div key={`${character.name}-${index}`} className="rounded-lg border border-border bg-background p-4">
+                  {character.mainImage && project.username && (
+                    <div className="relative mb-4 aspect-video overflow-hidden rounded-lg border border-border">
+                      <OptimizedImage
+                        type="character"
+                        filename={character.mainImage}
+                        username={project.username}
+                        alt={character.name}
+                        fill
+                        objectFit="cover"
+                      />
+                    </div>
+                  )}
+                  <p className="font-semibold">{character.name}</p>
+                  {character.role && <p className="text-sm text-primary">{character.role}</p>}
+                  {character.appearance && (
+                    <p className="mt-2 text-sm text-muted-foreground">{character.appearance}</p>
+                  )}
+                  {character.motivation && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Motivation:</span> {character.motivation}
+                    </p>
+                  )}
+                  {character.arc && (
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      <span className="font-medium text-foreground">Arc:</span> {character.arc}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {publishedPhases.has("outline") && (project.development?.outline?.length || 0) > 0 && (
+          <Section title="Plot Outline">
+            <div className="space-y-3">
+              {project.development?.outline?.map((beat) => (
+                <div key={beat.id} className="rounded-lg border border-border bg-background p-4">
+                  <p className="font-medium">
+                    Beat {beat.order}: {beat.title}
+                  </p>
+                  <p className="mt-2 text-sm text-muted-foreground">{beat.summary}</p>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {publishedPhases.has("script-breakdown") &&
+          (project.development?.scriptBreakdown?.length || 0) > 0 && (
+            <Section title="Script Breakdown">
+              <div className="space-y-3">
+                {project.development?.scriptBreakdown?.map((scene) => (
+                  <div key={scene.id} className="rounded-lg border border-border bg-background p-4">
+                    <p className="font-medium">
+                      Scene {scene.order}: {scene.title}
+                    </p>
+                    <p className="mt-2 text-sm text-muted-foreground">{scene.summary}</p>
+                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                      {scene.locationName && <span>{scene.locationName}</span>}
+                      {scene.characters.length > 0 && <span>{scene.characters.join(", ")}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Section>
           )}
 
-          {/* Project Updates */}
-          {projectDisplay.updates.length > 0 && (
-            <Card className="bg-card border-border">
-              <CardContent className="p-6">
-                <h2 className="text-2xl font-bold mb-6">Project Updates</h2>
-                <div className="space-y-6">
-                  {projectDisplay.updates.map((update, index) => (
-                    <div key={`update-${update.date}-${index}`} className="flex gap-4">
-                      <div className="shrink-0 w-2 bg-primary/20 rounded-full" />
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-2">{update.date}</p>
-                        <p className="leading-relaxed">{update.content}</p>
-                      </div>
+        {publishedPhases.has("screenplay") && project.screenplayText && (
+          <Section title="Screenplay">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <FileText className="h-4 w-4" />
+                {project.screenplayText.trim().split(/\s+/).length} words
+              </div>
+              <pre className="max-h-[500px] overflow-auto whitespace-pre-wrap rounded-lg border border-border bg-background p-4 text-sm leading-relaxed">
+                {project.screenplayText}
+              </pre>
+              <div>
+                <Link href={`/${username}/${projectSlug}/screenplay`}>
+                  <Button variant="outline">Open Dedicated Screenplay View</Button>
+                </Link>
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {publishedPhases.has("assets") && (
+          <Section title="Reference Assets">
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  <p className="font-medium">Character Assets</p>
+                </div>
+                {(project.characters || [])
+                  .filter((character) => character.mainImage)
+                  .map((character) => (
+                    <div key={character.name} className="rounded-lg border border-border bg-background p-3">
+                      <p className="mb-2 text-sm font-medium">{character.name}</p>
+                      {project.username && character.mainImage && (
+                        <div className="relative aspect-video overflow-hidden rounded-lg">
+                          <OptimizedImage
+                            type="character"
+                            filename={character.mainImage}
+                            username={project.username}
+                            alt={character.name}
+                            fill
+                            objectFit="cover"
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
+              </div>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Layers3 className="h-4 w-4 text-primary" />
+                  <p className="font-medium">Location Assets</p>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Links */}
-          {projectDisplay.links.links.length > 0 && (
-            <Card className="bg-card border-border">
-              <CardContent className="p-6">
-                <h3 className="text-lg font-bold mb-4">Links</h3>
-                <div className="space-y-2">
-                  {projectDisplay.links.links.map((link, index) => (
-                    <a
-                      key={`${link.label}-${link.url}-${index}`}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between p-3 bg-muted/30 rounded-md hover:bg-muted/50 transition-colors group"
-                    >
-                      <span className="text-sm font-medium">{link.label}</span>
-                      <ExternalLink className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </a>
+                {(project.setting?.locations || [])
+                  .filter((location) => location.image)
+                  .map((location) => (
+                    <div key={location.name} className="rounded-lg border border-border bg-background p-3">
+                      <p className="mb-2 text-sm font-medium">{location.name}</p>
+                      {project.username && location.image && (
+                        <div className="relative aspect-video overflow-hidden rounded-lg">
+                          <OptimizedImage
+                            type="location"
+                            filename={location.image}
+                            username={project.username}
+                            alt={location.name}
+                            fill
+                            objectFit="cover"
+                          />
+                        </div>
+                      )}
+                    </div>
                   ))}
+              </div>
+            </div>
+          </Section>
+        )}
+
+        {publishedPhases.has("shot-prompts") && (project.scenes?.length || 0) > 0 && (
+          <Section title="Shot Prompts">
+            <div className="space-y-4">
+              {project.scenes?.map((scene) => (
+                <div key={scene.id} className="rounded-lg border border-border bg-background p-4">
+                  <p className="font-semibold">
+                    Scene {scene.sceneNumber}: {scene.title}
+                  </p>
+                  {scene.summary && (
+                    <p className="mt-2 text-sm text-muted-foreground">{scene.summary}</p>
+                  )}
+                  <div className="mt-4 space-y-3">
+                    {(scene.promptShots || []).map((shot) => (
+                      <div key={shot.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                        <p className="font-medium">
+                          Shot {shot.shotNumber}: {shot.title}
+                        </p>
+                        <div className="mt-2 grid gap-2 text-xs text-muted-foreground md:grid-cols-3">
+                          <span>Framing: {shot.framing || "Not set"}</span>
+                          <span>Camera: {shot.cameraMovement || "Not set"}</span>
+                          <span>Duration: {shot.durationEstimateSeconds || 0}s</span>
+                        </div>
+                        {shot.action && <p className="mt-2 text-sm text-muted-foreground">{shot.action}</p>}
+                        <pre className="mt-3 whitespace-pre-wrap rounded-md border border-border bg-background p-3 text-xs leading-relaxed">
+                          {shot.prompt}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {publishedPhases.size === 0 && (
+          <Section title="Development Package">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Eye className="h-4 w-4" />
+              This project has not published any public phases yet.
+            </div>
+          </Section>
+        )}
+
+        {posts.length > 0 && (
+          <Section title="Project Posts">
+            <PostsList
+              projectId={projectId}
+              initialPosts={posts}
+              canEdit={false}
+              username={username}
+              projectSlug={projectSlug}
+              showAddButton={false}
+            />
+          </Section>
+        )}
       </div>
     </div>
   );

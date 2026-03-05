@@ -10,6 +10,7 @@ export type {
   GeneratedImage,
   GeneratedVideo,
   GenerationMode,
+  PromptShot,
   Scene,
   Shot,
   ShotVideo,
@@ -22,6 +23,7 @@ export type {
 export {
   calculateTimelinePositions,
   createNewAudioTrack,
+  createNewPromptShot,
   createNewShot,
   getDefaultTransition,
   getSceneDuration,
@@ -54,6 +56,7 @@ function getSceneKey(projectId: string, sceneId: string): string {
 function ensureSceneFields(scene: Scene): Scene {
   return {
     ...scene,
+    promptShots: scene.promptShots || [],
     shots: scene.shots || [],
     audioTracks: scene.audioTracks || [],
     transitionOut: scene.transitionOut || { type: "none", durationMs: 0 },
@@ -223,7 +226,12 @@ export function createNewScene(projectId: string, sceneNumber: number): Scene {
     sceneNumber,
     title: `Scene ${sceneNumber}`,
     screenplay: "",
+    summary: "",
+    dramaticPurpose: "",
+    emotionalBeat: "",
+    visualIntent: "",
     characters: [],
+    promptShots: [],
     shots: [],
     audioTracks: [],
     transitionOut: { type: "none", durationMs: 0 },

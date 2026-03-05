@@ -1,8 +1,9 @@
-import { Calendar, Film, Play, User } from "lucide-react";
+import { Calendar, Film, Layers3, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImagePlaceholder } from "@/components/ui/image-placeholder";
+import { getPromptShotCount } from "@/lib/development";
 import { getAllProjects } from "@/lib/projects";
 import { getThumbnailUrl } from "@/lib/utils";
 
@@ -11,7 +12,6 @@ export const revalidate = 300; // Revalidate every 5 minutes
 export default async function FilmsPage() {
   const allProjects = await getAllProjects();
   
-  // Filter to only published films
   const publishedFilms = Object.entries(allProjects)
     .filter(([_, project]) => project.isPublished)
     .map(([id, project]) => ({ id, ...project }))
@@ -29,10 +29,10 @@ export default async function FilmsPage() {
         <div className="mb-12 text-center">
           <div className="flex items-center justify-center gap-3 mb-4">
             <Film className="h-10 w-10 text-primary" />
-            <h1 className="text-4xl md:text-5xl font-bold">Open Source Films</h1>
+            <h1 className="text-4xl md:text-5xl font-bold">Published Development Packages</h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Explore AI-generated films created by our community. View the source, learn from the process, and get inspired.
+            Explore publicly shared AI film projects, from story concept through prompt-ready scene plans.
           </p>
         </div>
 
@@ -44,9 +44,7 @@ export default async function FilmsPage() {
                 ? getThumbnailUrl(film.thumbnail, film.username)
                 : null;
               
-              const hasCompletedVideos = film.scenes?.some((s) =>
-                s.generatedVideos?.some((v) => v.status === "completed" && v.videoUrl)
-              );
+              const promptShotCount = getPromptShotCount(film.scenes);
 
               return (
                 <Link
@@ -68,16 +66,6 @@ export default async function FilmsPage() {
                       ) : (
                         <ImagePlaceholder className="h-full w-full" />
                       )}
-                      
-                      {/* Play overlay */}
-                      {hasCompletedVideos && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center">
-                            <Play className="h-7 w-7 text-black ml-0.5" />
-                          </div>
-                        </div>
-                      )}
-
                       {/* Genre badge */}
                       {film.genre && (
                         <div className="absolute top-3 left-3">
@@ -119,12 +107,12 @@ export default async function FilmsPage() {
                           <span>{film.scenes.length} scenes</span>
                           {film.scenes.reduce((sum, s) => sum + (s.generatedImages?.length || 0), 0) > 0 && (
                             <span>
-                              {film.scenes.reduce((sum, s) => sum + (s.generatedImages?.length || 0), 0)} images
+                              {film.scenes.reduce((sum, s) => sum + (s.generatedImages?.length || 0), 0)} assets
                             </span>
                           )}
-                          {film.scenes.reduce((sum, s) => sum + (s.generatedVideos?.length || 0), 0) > 0 && (
+                          {promptShotCount > 0 && (
                             <span>
-                              {film.scenes.reduce((sum, s) => sum + (s.generatedVideos?.length || 0), 0)} videos
+                              {promptShotCount} prompts
                             </span>
                           )}
                         </div>
@@ -138,16 +126,16 @@ export default async function FilmsPage() {
         ) : (
           <div className="text-center py-16">
             <Film className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-            <h2 className="text-2xl font-semibold mb-2">No Films Yet</h2>
+            <h2 className="text-2xl font-semibold mb-2">No Published Packages Yet</h2>
             <p className="text-muted-foreground mb-6">
-              Be the first to publish an open source AI film!
+              Be the first to publish an open AI film development package.
             </p>
             <Link
               href="/dashboard/projects/new"
               className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg font-medium hover:bg-primary/90 transition-colors"
             >
-              <Film className="h-5 w-5" />
-              Create a Film
+              <Layers3 className="h-5 w-5" />
+              Start a Project
             </Link>
           </div>
         )}
@@ -155,5 +143,4 @@ export default async function FilmsPage() {
     </div>
   );
 }
-
 

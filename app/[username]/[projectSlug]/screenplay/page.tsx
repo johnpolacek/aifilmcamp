@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ScreenplayViewer } from "@/components/screenplay-viewer";
+import { ensureProjectPhaseVisibility } from "@/lib/development";
 import { getProjectByUsernameAndSlug } from "@/lib/projects";
 import { parseScreenplayToElements } from "@/lib/screenplay-parser";
 
@@ -66,6 +67,10 @@ export default async function PublicScreenplayPage({
     isOwner = currentUsername === username;
   }
 
+  if (!isOwner && ensureProjectPhaseVisibility(project).screenplay !== "published") {
+    notFound();
+  }
+
   return (
     <ScreenplayViewer
       projectId={id}
@@ -78,4 +83,3 @@ export default async function PublicScreenplayPage({
     />
   );
 }
-

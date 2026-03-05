@@ -99,7 +99,9 @@ export function DashboardPageView({
                       <Film className="h-5 w-5 text-primary" />
                       My Projects
                     </CardTitle>
-                    <CardDescription>Manage and showcase your AI film projects</CardDescription>
+                    <CardDescription>
+                      Manage concept-to-prompt development packages and publish finished phases when ready
+                    </CardDescription>
                   </div>
                   <Link href="/dashboard/projects/new">
                     <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
@@ -117,7 +119,7 @@ export function DashboardPageView({
                     <Link href="/dashboard/projects/new">
                       <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
                         <Plus className="h-4 w-4 mr-2" />
-                        Create Your First Project
+                        Start Your First Development Package
                       </Button>
                     </Link>
                   </div>

@@ -13,7 +13,7 @@ export function Hero() {
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6">
             <Flame className="h-4 w-4" />
-            <span>Where AI meets cinema</span>
+            <span>Build AI film projects before you render them</span>
           </div>
 
           <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-balance leading-tight">
@@ -21,8 +21,8 @@ export function Hero() {
           </h1>
 
           <p className="text-xl lg:text-2xl opacity-80 text-shadow-black mb-10 text-pretty max-w-4xl mx-auto leading-relaxed">
-            A tool-agnostic, curated online community and platform for AI film creators. Share your
-            creations and discover groundbreaking projects.
+            Develop ideas, scripts, reference assets, and prompt-ready scenes in one place. Share
+            your process and publish development packages as they take shape.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

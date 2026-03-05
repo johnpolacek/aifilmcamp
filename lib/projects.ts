@@ -1,7 +1,25 @@
 import type { ProjectFormData } from "@/components/project-form";
+import { createDefaultPhaseStatus, createDefaultPhaseVisibility } from "@/lib/types/development";
 import { getObjectFromS3, listObjectsInS3, putObjectToS3 } from "./s3";
 
 const PROJECTS_PREFIX = "projects/";
+
+function ensureProjectFields(project: ProjectFormData): ProjectFormData {
+  return {
+    ...project,
+    duration: project.duration || project.filmLength || "",
+    filmLength: project.filmLength || (project.duration as ProjectFormData["filmLength"]),
+    development: project.development || {},
+    phaseVisibility: {
+      ...createDefaultPhaseVisibility(),
+      ...project.phaseVisibility,
+    },
+    phaseStatus: {
+      ...createDefaultPhaseStatus(),
+      ...project.phaseStatus,
+    },
+  };
+}
 
 /**
  * Get a project by ID
@@ -15,7 +33,7 @@ export async function getProject(projectId: string): Promise<ProjectFormData | n
       return null;
     }
 
-    return JSON.parse(data) as ProjectFormData;
+    return ensureProjectFields(JSON.parse(data) as ProjectFormData);
   } catch (error) {
     console.error("Error getting project:", error);
     return null;
@@ -28,7 +46,7 @@ export async function getProject(projectId: string): Promise<ProjectFormData | n
 export async function saveProject(projectId: string, projectData: ProjectFormData): Promise<void> {
   try {
     const key = `${PROJECTS_PREFIX}${projectId}.json`;
-    const body = JSON.stringify(projectData, null, 2);
+    const body = JSON.stringify(ensureProjectFields(projectData), null, 2);
 
     await putObjectToS3(key, body);
   } catch (error) {

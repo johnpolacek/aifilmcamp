@@ -1,7 +1,4 @@
-import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
-import { ArrowRight, Flame, Heart, Lightbulb, Rocket, Users } from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Flame } from "lucide-react";
 
 export function AboutView() {
   return (
@@ -14,7 +11,7 @@ export function AboutView() {
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6">
               <Flame className="h-4 w-4" />
-              <span>A Platform for AI Film Creators</span>
+              <span>A Pre-Production Platform for AI Film Creators</span>
             </div>
 
             <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-balance leading-tight">
@@ -22,8 +19,8 @@ export function AboutView() {
             </h1>
 
             <p className="text-xl lg:text-2xl text-muted-foreground mb-10 text-balance max-w-2xl mx-auto leading-relaxed">
-              A community-driven platform creators to create, collaborate, and share their
-              work-in-progress AI Film projects.
+              AI Film Camp helps creators move from clean-slate concept to screenplay, reference
+              assets, and prompt-ready scene plans, then share that development package publicly.
             </p>
           </div>
         </div>

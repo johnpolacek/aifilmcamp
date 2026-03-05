@@ -24,6 +24,7 @@ import type React from "react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ExtractConfirmDialog } from "@/components/extract-confirm-dialog";
+import { ProjectDevelopmentPhases } from "@/components/project-development-phases";
 import { SceneList } from "@/components/scene-editor";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,7 +42,19 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { getImageUrl } from "@/lib/image-utils";
 import type { Scene } from "@/lib/scenes-client";
+import { derivePhaseStatus, ensureProjectPhaseVisibility } from "@/lib/development";
 import { extractAllCharacters, extractAllLocations } from "@/lib/screenplay-parser";
+import type {
+  FilmLengthOption,
+  PhaseStatusMap,
+  PhaseVisibilityMap,
+  ProjectDevelopmentData,
+} from "@/lib/types/development";
+import {
+  createDefaultPhaseStatus,
+  createDefaultPhaseVisibility,
+  FILM_LENGTH_OPTIONS,
+} from "@/lib/types/development";
 
 // Types
 export interface ProjectLinks {
@@ -58,6 +71,10 @@ export interface CategorizedTool {
 export interface Character {
   name: string;
   appearance: string;
+  role?: string;
+  motivation?: string;
+  arc?: string;
+  visualPrompt?: string;
   mainImage?: string; // Main character image filename
   images?: string[]; // Additional images for different angles/attire
 }
@@ -65,6 +82,8 @@ export interface Character {
 export interface Location {
   name: string;
   description: string;
+  storyPurpose?: string;
+  visualPrompt?: string;
   image?: string; // Main location image filename
   images?: string[]; // Additional images for different angles/variations
 }
@@ -83,11 +102,15 @@ export interface ProjectFormData {
   title: string;
   logline: string; // One-line description of the film
   duration: string;
+  filmLength?: FilmLengthOption;
   genre: string;
   characters?: Character[];
   setting?: {
     locations?: Location[];
   };
+  development?: ProjectDevelopmentData;
+  phaseVisibility?: PhaseVisibilityMap;
+  phaseStatus?: PhaseStatusMap;
   scenes?: Scene[]; // Film scenes with generated content
   screenplayText?: string; // Full screenplay text content (legacy/export)
   screenplayElements?: ScreenplayElement[]; // Structured screenplay elements (JSON format)
@@ -196,9 +219,19 @@ export default function ProjectForm({
     title: initialData?.title || "",
     logline: initialData?.logline || "",
     duration: initialData?.duration || "",
+    filmLength: initialData?.filmLength || (initialData?.duration as FilmLengthOption | undefined),
     genre: initialData?.genre || "",
     characters: initialData?.characters || [],
     setting: initialData?.setting || { locations: [] },
+    development: initialData?.development || {},
+    phaseVisibility: {
+      ...createDefaultPhaseVisibility(),
+      ...initialData?.phaseVisibility,
+    },
+    phaseStatus: {
+      ...createDefaultPhaseStatus(),
+      ...initialData?.phaseStatus,
+    },
     scenes: initialData?.scenes || [],
     screenplayText: initialData?.screenplayText || "",
     thumbnail: initialData?.thumbnail,
@@ -284,6 +317,17 @@ export default function ProjectForm({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>(JSON.stringify(formData));
 
+  const buildPersistedFormData = useCallback(
+    (currentData: ProjectFormData): ProjectFormData => ({
+      ...currentData,
+      duration: currentData.filmLength || currentData.duration,
+      filmLength: currentData.filmLength || (currentData.duration as FilmLengthOption | undefined),
+      phaseStatus: derivePhaseStatus(currentData),
+      phaseVisibility: ensureProjectPhaseVisibility(currentData),
+    }),
+    []
+  );
+
   // Auto-save function (only for editing existing projects)
   const autoSave = useCallback(async () => {
     if (!isEditing || !projectId) return;
@@ -295,13 +339,14 @@ export default function ProjectForm({
 
     try {
       const { submitProjectForm } = await import("@/lib/actions/projects");
-      const result = await submitProjectForm(formData, projectId, undefined, true); // true = skipRedirect
+      const persistedData = buildPersistedFormData(formData);
+      const result = await submitProjectForm(persistedData, projectId, undefined, true); // true = skipRedirect
 
       if (result && !result.success) {
         throw new Error(result.error || "Failed to auto-save");
       }
 
-      lastSavedDataRef.current = JSON.stringify(formData);
+      lastSavedDataRef.current = JSON.stringify(persistedData);
       setAutoSaveStatus("saved");
 
       // Reset to idle after 3 seconds
@@ -327,7 +372,15 @@ export default function ProjectForm({
         setAutoSaveStatus("idle");
       }, 5000);
     }
-  }, [formData, isEditing, projectId, isSubmitting, isUploadingImage, uploadingCharacterIndex]);
+  }, [
+    buildPersistedFormData,
+    formData,
+    isEditing,
+    projectId,
+    isSubmitting,
+    isUploadingImage,
+    uploadingCharacterIndex,
+  ]);
 
   // Auto-save effect with debounce
   useEffect(() => {
@@ -365,12 +418,6 @@ export default function ProjectForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate that at least one video tool is added
-    if (!hasVideoTool) {
-      toast.error("Please add at least one Video Generation tool");
-      return;
-    }
-
     setIsSubmitting(true);
 
     // Show loading toast
@@ -378,19 +425,22 @@ export default function ProjectForm({
 
     try {
       // Generate slug for new projects
-      if (!isEditing && formData.title) {
-        const slug = formData.title
+      const persistedData = buildPersistedFormData({
+        ...formData,
+        slug:
+          !isEditing && formData.title
+            ? formData.title
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "");
-        formData.slug = slug;
-      }
+          .replace(/(^-|-$)/g, "")
+            : formData.slug,
+      });
 
       // Import and call the Server Action
       const { submitProjectForm } = await import("@/lib/actions/projects");
 
       // This will handle both create and update, plus authentication
-      const result = await submitProjectForm(formData, projectId, redirectPath);
+      const result = await submitProjectForm(persistedData, projectId, redirectPath);
 
       // If there's an error result (not a redirect), show it
       if (result && !result.success) {
@@ -428,6 +478,52 @@ export default function ProjectForm({
       setIsSubmitting(false);
     }
   };
+
+  const handleSyncScenesFromBreakdown = useCallback(() => {
+    const scriptBreakdown = formData.development?.scriptBreakdown || [];
+
+    if (scriptBreakdown.length === 0) {
+      toast.error("No script breakdown available to sync.");
+      return;
+    }
+
+    const existingScenes = new Map(
+      (formData.scenes || []).map((scene) => [scene.title.trim().toLowerCase(), scene])
+    );
+    const now = new Date().toISOString();
+    const nextScenes = scriptBreakdown.map((item, index) => {
+      const existingScene = existingScenes.get(item.title.trim().toLowerCase());
+
+      return {
+        id:
+          existingScene?.id || `scene-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        projectId: existingScene?.projectId || projectId || "new-project",
+        sceneNumber: index + 1,
+        title: item.title,
+        screenplay: existingScene?.screenplay || `${item.title}\n\n${item.summary}`,
+        summary: item.summary,
+        dramaticPurpose: item.dramaticPurpose,
+        emotionalBeat: item.emotionalBeat,
+        visualIntent: item.visualIntent,
+        characters: item.characters,
+        locationId: item.locationName || existingScene?.locationId,
+        promptShots: existingScene?.promptShots || [],
+        shots: existingScene?.shots || [],
+        audioTracks: existingScene?.audioTracks || [],
+        transitionOut: existingScene?.transitionOut || { type: "none", durationMs: 0 },
+        generatedImages: existingScene?.generatedImages || [],
+        generatedVideos: existingScene?.generatedVideos || [],
+        createdAt: existingScene?.createdAt || now,
+        updatedAt: now,
+      };
+    });
+
+    setFormData((prev) => ({
+      ...prev,
+      scenes: nextScenes,
+    }));
+    toast.success("Scenes synced from the script breakdown");
+  }, [formData.development?.scriptBreakdown, formData.scenes, projectId]);
 
   const handleCancel = () => {
     router.push(redirectPath);
@@ -512,7 +608,10 @@ export default function ProjectForm({
   };
 
   const addCharacter = () => {
-    const newCharacters = [...(formData.characters || []), { name: "", appearance: "" }];
+    const newCharacters = [
+      ...(formData.characters || []),
+      { name: "", appearance: "", role: "", motivation: "", arc: "", visualPrompt: "" },
+    ];
     setFormData({
       ...formData,
       characters: newCharacters,
@@ -581,6 +680,10 @@ export default function ProjectForm({
       const newCharacters: Character[] = characterNames.map((name) => ({
         name,
         appearance: "",
+        role: "",
+        motivation: "",
+        arc: "",
+        visualPrompt: "",
       }));
 
       setFormData({
@@ -640,6 +743,8 @@ export default function ProjectForm({
       const newLocations: Location[] = locationNames.map((name) => ({
         name,
         description: "",
+        storyPurpose: "",
+        visualPrompt: "",
       }));
 
       setFormData({
@@ -1117,7 +1222,12 @@ export default function ProjectForm({
     // Add new locations while preserving existing ones with images
     const newLocations: Location[] = [
       ...existingLocations,
-      ...newLocationNames.map((name) => ({ name, description: "" })),
+      ...newLocationNames.map((name) => ({
+        name,
+        description: "",
+        storyPurpose: "",
+        visualPrompt: "",
+      })),
     ];
 
     setFormData((prev) => ({
@@ -1128,7 +1238,10 @@ export default function ProjectForm({
   }, [formData.screenplayText, formData.setting?.locations, extractLocationsFromScreenplay]);
 
   const addLocation = () => {
-    const newLocations = [...(formData.setting?.locations || []), { name: "", description: "" }];
+    const newLocations = [
+      ...(formData.setting?.locations || []),
+      { name: "", description: "", storyPurpose: "", visualPrompt: "" },
+    ];
     setFormData({
       ...formData,
       setting: { ...formData.setting, locations: newLocations },
@@ -1807,6 +1920,12 @@ export default function ProjectForm({
             )}
           </div>
         </div>
+        <ProjectDevelopmentPhases
+          data={formData}
+          projectId={projectId}
+          onChange={setFormData}
+          onSyncScenesFromBreakdown={handleSyncScenesFromBreakdown}
+        />
         <div className={useGridLayout ? "grid grid-cols-3 gap-6" : "space-y-6"}>
           {/* Left Column - Project Info, Screenplay, Links, Tools */}
           {useGridLayout && (
@@ -1863,9 +1982,9 @@ export default function ProjectForm({
                           {formData.genre}
                         </span>
                       )}
-                      {formData.duration && (
+                      {(formData.filmLength || formData.duration) && (
                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
-                          {formData.duration}
+                          {formData.filmLength || formData.duration}
                         </span>
                       )}
                     </div>
@@ -1950,20 +2069,22 @@ export default function ProjectForm({
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="duration">Duration</Label>
+                        <Label htmlFor="duration">Film Length</Label>
                         <Select
-                          value={formData.duration}
-                          onValueChange={(value) => setFormData({ ...formData, duration: value })}
+                          value={formData.filmLength || formData.duration}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, filmLength: value as FilmLengthOption, duration: value })
+                          }
                         >
                           <SelectTrigger id={durationSelectId} className="w-full bg-background">
-                            <SelectValue placeholder="Select duration..." />
+                            <SelectValue placeholder="Select film length..." />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Short (< 5 min)">Short (&lt; 5 min)</SelectItem>
-                            <SelectItem value="Medium (5-20 min)">Medium (5-20 min)</SelectItem>
-                            <SelectItem value="Long (20-50 min)">Long (20-60 min)</SelectItem>
-                            <SelectItem value="Feature (60+ min)">Feature (60+ min)</SelectItem>
-                            <SelectItem value="Series/Episode">Series / Episodic</SelectItem>
+                            {FILM_LENGTH_OPTIONS.map((option) => (
+                              <SelectItem key={option} value={option}>
+                                {option}
+                              </SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -2231,9 +2352,6 @@ export default function ProjectForm({
                       <div key={category} className="space-y-2">
                         <Label htmlFor={`tool-${category}`}>
                           {getCategoryLabel(category)}
-                          {category === "video" && !hasVideoTool && (
-                            <span className="text-destructive ml-1">*</span>
-                          )}
                         </Label>
                         {/* Display added tools for this category */}
                         {toolsInCategory.length > 0 && (
@@ -2317,8 +2435,8 @@ export default function ProjectForm({
                           )}
                         </div>
                         {category === "video" && !hasVideoTool && (
-                          <p className="text-xs text-destructive pb-2">
-                            * At least one Video Generation tool is required
+                          <p className="text-xs text-muted-foreground pb-2">
+                            Optional. Add legacy video tools only if they are part of your broader workflow.
                           </p>
                         )}
                       </div>
@@ -3518,8 +3636,8 @@ export default function ProjectForm({
                   <h3 className="text-lg font-semibold">Scenes</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Add scenes to your film. Each scene can have its own screenplay text, characters,
-                  and generated images/videos.
+                  Add scenes to your project. Each scene can carry screenplay context, characters,
+                  reference assets, and prompt-ready shot breakdowns.
                 </p>
 
                 <SceneList
@@ -3589,9 +3707,9 @@ export default function ProjectForm({
                           {formData.genre}
                         </span>
                       )}
-                      {formData.duration && (
+                      {(formData.filmLength || formData.duration) && (
                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
-                          {formData.duration}
+                          {formData.filmLength || formData.duration}
                         </span>
                       )}
                     </div>
@@ -3677,20 +3795,26 @@ export default function ProjectForm({
                         </div>
 
                         <div className="space-y-2">
-                          <Label htmlFor="duration">Duration</Label>
+                          <Label htmlFor="duration">Film Length</Label>
                           <Select
-                            value={formData.duration}
-                            onValueChange={(value) => setFormData({ ...formData, duration: value })}
+                            value={formData.filmLength || formData.duration}
+                            onValueChange={(value) =>
+                              setFormData({
+                                ...formData,
+                                filmLength: value as FilmLengthOption,
+                                duration: value,
+                              })
+                            }
                           >
                             <SelectTrigger id={durationSelectId} className="w-full bg-background">
-                              <SelectValue placeholder="Select duration..." />
+                              <SelectValue placeholder="Select film length..." />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="Short (< 5 min)">Short (&lt; 5 min)</SelectItem>
-                              <SelectItem value="Medium (5-20 min)">Medium (5-20 min)</SelectItem>
-                              <SelectItem value="Long (20-50 min)">Long (20-60 min)</SelectItem>
-                              <SelectItem value="Feature (60+ min)">Feature (60+ min)</SelectItem>
-                              <SelectItem value="Series/Episode">Series / Episodic</SelectItem>
+                              {FILM_LENGTH_OPTIONS.map((option) => (
+                                <SelectItem key={option} value={option}>
+                                  {option}
+                                </SelectItem>
+                              ))}
                             </SelectContent>
                           </Select>
                         </div>
@@ -4348,6 +4472,73 @@ export default function ProjectForm({
                             />
                           </div>
 
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <div className="space-y-2">
+                              <Label htmlFor={`character-role-${editingCharacterIndex}`}>Role</Label>
+                              <Input
+                                id={`character-role-${editingCharacterIndex}`}
+                                placeholder="Protagonist, antagonist, mentor..."
+                                value={formData.characters[editingCharacterIndex].role || ""}
+                                onChange={(e) =>
+                                  updateCharacter(editingCharacterIndex, "role", e.target.value)
+                                }
+                                className="bg-background"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label htmlFor={`character-motivation-${editingCharacterIndex}`}>
+                                Motivation
+                              </Label>
+                              <Input
+                                id={`character-motivation-${editingCharacterIndex}`}
+                                placeholder="What does this character want?"
+                                value={formData.characters[editingCharacterIndex].motivation || ""}
+                                onChange={(e) =>
+                                  updateCharacter(
+                                    editingCharacterIndex,
+                                    "motivation",
+                                    e.target.value
+                                  )
+                                }
+                                className="bg-background"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`character-arc-${editingCharacterIndex}`}>Arc</Label>
+                            <Textarea
+                              id={`character-arc-${editingCharacterIndex}`}
+                              placeholder="How they change over the story..."
+                              value={formData.characters[editingCharacterIndex].arc || ""}
+                              onChange={(e) =>
+                                updateCharacter(editingCharacterIndex, "arc", e.target.value)
+                              }
+                              rows={2}
+                              className="bg-background resize-none"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`character-visual-prompt-${editingCharacterIndex}`}>
+                              Visual Prompt Notes
+                            </Label>
+                            <Textarea
+                              id={`character-visual-prompt-${editingCharacterIndex}`}
+                              placeholder="Prompt notes for consistent image generation..."
+                              value={formData.characters[editingCharacterIndex].visualPrompt || ""}
+                              onChange={(e) =>
+                                updateCharacter(
+                                  editingCharacterIndex,
+                                  "visualPrompt",
+                                  e.target.value
+                                )
+                              }
+                              rows={3}
+                              className="bg-background resize-none"
+                            />
+                          </div>
+
                           {/* Delete Character Button */}
                           <div className="pt-4 border-t border-border flex justify-end">
                             {confirmingCharacterDelete === editingCharacterIndex ? (
@@ -4927,6 +5118,49 @@ export default function ProjectForm({
                             />
                           </div>
 
+                          <div className="space-y-2">
+                            <Label htmlFor={`location-story-purpose-${editingLocationIndex}`}>
+                              Story Purpose
+                            </Label>
+                            <Input
+                              id={`location-story-purpose-${editingLocationIndex}`}
+                              placeholder="How this location functions in the story..."
+                              value={
+                                formData.setting.locations[editingLocationIndex].storyPurpose || ""
+                              }
+                              onChange={(e) =>
+                                updateLocation(
+                                  editingLocationIndex,
+                                  "storyPurpose",
+                                  e.target.value
+                                )
+                              }
+                              className="bg-background"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`location-visual-prompt-${editingLocationIndex}`}>
+                              Visual Prompt Notes
+                            </Label>
+                            <Textarea
+                              id={`location-visual-prompt-${editingLocationIndex}`}
+                              placeholder="Prompt notes for consistent location imagery..."
+                              value={
+                                formData.setting.locations[editingLocationIndex].visualPrompt || ""
+                              }
+                              onChange={(e) =>
+                                updateLocation(
+                                  editingLocationIndex,
+                                  "visualPrompt",
+                                  e.target.value
+                                )
+                              }
+                              rows={3}
+                              className="bg-background resize-none"
+                            />
+                          </div>
+
                           {/* Delete Location Button */}
                           <div className="pt-4 flex justify-end">
                             {confirmingLocationDelete === editingLocationIndex ? (
@@ -5050,8 +5284,8 @@ export default function ProjectForm({
                   <h3 className="text-lg font-semibold">Scenes</h3>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Add scenes to your film. Each scene can have its own screenplay text, characters,
-                  and generated images/videos.
+                  Add scenes to your project. Each scene can carry screenplay context, characters,
+                  reference assets, and prompt-ready shot breakdowns.
                 </p>
 
                 <SceneList

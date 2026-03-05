@@ -5,17 +5,17 @@ const features = [
   {
     icon: Users,
     title: "Collaborative Community",
-    description: "Share your work-in-progress, get feedback from fellow AI filmmakers, and collaborate on projects together",
+    description: "Share outlines, screenplay drafts, assets, and prompt packs while your project is still in progress.",
   },
   {
     icon: Trophy,
-    title: "Showcase Your Work",
-    description: "Feature your completed projects and films in our community gallery. Share tips, tricks, and techniques",
+    title: "Publish Development Packages",
+    description: "Make selected phases public so other creators can study your process, references, and prompt strategy.",
   },
   {
     icon: MessageSquare,
     title: "Learn & Grow",
-    description: "Access a library of resources, tutorials, and community discussions to improve your AI filmmaking skills",
+    description: "Learn how other filmmakers go from concept to shot prompts and build stronger AI-native workflows.",
   },
 ];
 
@@ -28,7 +28,7 @@ export function CommunityFeatures() {
             Join the AI Film Camp Community
           </h2>
           <p className="text-lg text-muted-foreground text-pretty max-w-2xl mx-auto">
-            Connect with fellow AI filmmakers, share your work, learn new techniques, and grow together as creators
+            Connect with fellow AI filmmakers, share your development process, learn new techniques, and grow together as creators.
           </p>
         </div>
 

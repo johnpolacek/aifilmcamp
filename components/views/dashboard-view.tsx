@@ -17,6 +17,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { OptimizedImage } from "@/components/ui/optimized-image";
+import { getPromptShotCount } from "@/lib/development";
 import type { Post } from "@/lib/posts";
 
 type DashboardView = ProjectFormData & {
@@ -102,6 +103,8 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
         const visibleCount = visiblePostsCount[project.id] || 1;
         const visiblePosts = posts.slice(0, visibleCount);
         const hasMorePosts = visibleCount < posts.length;
+        const promptShotCount = getPromptShotCount(project.scenes);
+        const sceneCount = project.development?.scriptBreakdown?.length || project.scenes?.length || 0;
 
         return (
           <Card key={project.id} className="bg-muted/30 border-border overflow-hidden">
@@ -132,10 +135,10 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
                     </p>
                   )}
                   <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                    {project.duration && (
+                    {(project.filmLength || project.duration) && (
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {project.duration}
+                        {project.filmLength || project.duration}
                       </div>
                     )}
                     {project.lastUpdated && (
@@ -150,6 +153,12 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
                         {posts.length} {posts.length === 1 ? "post" : "posts"}
                       </div>
                     )}
+                    <div className="flex items-center gap-1">
+                      <span>{sceneCount} scenes</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span>{promptShotCount} prompts</span>
+                    </div>
                   </div>
                 </div>
                 <div className="flex justify-between gap-2 mt-4">
@@ -194,7 +203,7 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
                   <div className="text-center py-8">
                     <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
                     <p className="text-sm text-muted-foreground">
-                      No posts yet. Create your first post to get started!
+                      No posts yet. Publish progress updates as you develop the project.
                     </p>
                   </div>
                 ) : (
