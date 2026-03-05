@@ -3237,6 +3237,7 @@ export function EditSceneView({
           </div>
         </DialogContent>
       </Dialog>
+      )}
 
       {/* Screenplay Edit Dialog */}
       <Dialog
@@ -3504,7 +3505,6 @@ export function EditSceneView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      )}
     </div>
   );
 }
