@@ -5,7 +5,6 @@ import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
   Bot,
-  CheckCircle2,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -66,8 +65,8 @@ const stepMeta: Record<
   }
 > = {
   concept: {
-    label: "Clean Slate",
-    description: "Start with a spark, then choose the concept direction you want to develop.",
+    label: "New Project",
+    description: "Start a new project by shaping the core concept you want to develop.",
     icon: Lightbulb,
   },
   "title-logline": {
@@ -125,7 +124,7 @@ function WizardProgressRail({
 
   return (
     <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-5">
-      {getStepOrder().map((step, index) => {
+      {getStepOrder().map((step) => {
         const Icon = stepMeta[step].icon;
         const enabled = canEnterStep(data, step);
 
@@ -148,7 +147,6 @@ function WizardProgressRail({
                 <Icon className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs font-medium uppercase tracking-wide">Step {index + 1}</p>
                 <p className="truncate text-sm font-semibold">{stepMeta[step].label}</p>
               </div>
             </div>
