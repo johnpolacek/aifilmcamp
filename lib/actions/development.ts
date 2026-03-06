@@ -1,13 +1,25 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { google } from "@ai-sdk/google";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { ProjectFormData } from "@/components/project-form";
 import type { Scene } from "@/lib/scenes-client";
 
-const textModel = google("gemini-2.5-flash");
+function getTextModel() {
+  const apiKey =
+    process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "Google Gemini API key is missing. Set GOOGLE_GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY."
+    );
+  }
+
+  const google = createGoogleGenerativeAI({ apiKey });
+  return google("gemini-2.5-flash");
+}
 
 async function requireAuth() {
   const { userId } = await auth();
@@ -52,7 +64,7 @@ export async function generateConceptDirections(project: Partial<ProjectFormData
   await requireAuth();
 
   const { output } = await generateText({
-    model: textModel,
+    model: getTextModel(),
     output: Output.object({
       schema: z.object({
         directions: z.array(
@@ -87,7 +99,7 @@ export async function generateRandomConceptSeed(input: {
   await requireAuth();
 
   const { output } = await generateText({
-    model: textModel,
+    model: getTextModel(),
     output: Output.object({
       schema: z.object({
         concept: z.string(),
@@ -116,7 +128,7 @@ export async function generateTitleAndLogline(project: Partial<ProjectFormData>)
   await requireAuth();
 
   const { output } = await generateText({
-    model: textModel,
+    model: getTextModel(),
     output: Output.object({
       schema: z.object({
         title: z.string(),
@@ -137,7 +149,7 @@ export async function generateOutline(project: Partial<ProjectFormData>) {
   await requireAuth();
 
   const { output } = await generateText({
-    model: textModel,
+    model: getTextModel(),
     output: Output.object({
       schema: z.object({
         outline: z.array(
@@ -166,7 +178,7 @@ export async function generateScriptBreakdown(project: Partial<ProjectFormData>)
   await requireAuth();
 
   const { output } = await generateText({
-    model: textModel,
+    model: getTextModel(),
     output: Output.object({
       schema: z.object({
         scenes: z.array(
@@ -200,7 +212,7 @@ export async function generateScreenplayDraft(project: Partial<ProjectFormData>)
   await requireAuth();
 
   const { output } = await generateText({
-    model: textModel,
+    model: getTextModel(),
     output: Output.object({
       schema: z.object({
         screenplay: z.string(),
@@ -220,7 +232,7 @@ export async function generateShotPrompts(project: Partial<ProjectFormData>, sce
   await requireAuth();
 
   const { output } = await generateText({
-    model: textModel,
+    model: getTextModel(),
     output: Output.object({
       schema: z.object({
         shots: z.array(
