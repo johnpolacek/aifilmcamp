@@ -529,6 +529,42 @@ export default function ProjectForm({
     router.push(redirectPath);
   };
 
+  const createProjectFromWizard = async (data: ProjectFormData) => {
+    const loadingToast = toast.loading("Creating project...");
+    setIsSubmitting(true);
+
+    try {
+      const persistedData = buildPersistedFormData({
+        ...data,
+        slug: data.title
+          ? data.title
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "-")
+              .replace(/(^-|-$)/g, "")
+          : data.slug,
+      });
+
+      const { submitProjectForm } = await import("@/lib/actions/projects");
+      const result = await submitProjectForm(persistedData, undefined, redirectPath, true);
+
+      if (!result?.success || !result.projectId) {
+        throw new Error(result?.error || "Failed to create project");
+      }
+
+      toast.success("Project created successfully!", { id: loadingToast });
+      router.push(`/dashboard/projects/${result.projectId}/edit`);
+      return result.projectId;
+    } catch (error) {
+      console.error("Error creating project from wizard:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to create project", {
+        id: loadingToast,
+      });
+      throw error;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const addLink = () => {
     if (newLinkUrl.trim()) {
       const label = inferLabelFromUrl(newLinkUrl);
@@ -2671,6 +2707,7 @@ export default function ProjectForm({
             projectId={projectId}
             onChange={setFormData}
             onSyncScenesFromBreakdown={handleSyncScenesFromBreakdown}
+            onCreateProject={!isEditing ? createProjectFromWizard : undefined}
             stepContent={{
               characters: characterWizardContent,
               assets: assetWizardContent,

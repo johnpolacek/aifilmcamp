@@ -736,17 +736,20 @@ export async function submitProjectForm(
   }
 
   try {
+    let resolvedProjectId = projectId;
+
     if (projectId) {
       // Update existing project
       await updateProject(projectId, data);
     } else {
       // Create new project
-      await createProject(data);
+      const result = await createProject(data);
+      resolvedProjectId = result.projectId;
     }
 
     // Skip redirect for auto-save
     if (skipRedirect) {
-      return { success: true };
+      return { success: true, projectId: resolvedProjectId };
     }
 
     // Redirect to success page

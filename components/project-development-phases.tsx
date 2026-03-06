@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type React from "react";
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -53,6 +53,7 @@ interface ProjectDevelopmentWizardProps {
   projectId?: string;
   onChange: (nextData: ProjectFormData) => void;
   onSyncScenesFromBreakdown: () => void;
+  onCreateProject?: (data: ProjectFormData) => Promise<string>;
   stepContent?: Partial<Record<WizardStep, React.ReactNode>>;
 }
 
@@ -348,6 +349,7 @@ function WizardStepFrame({
   onVisibilityChange,
   onPrevious,
   onNext,
+  nextLabel,
   nextDisabled,
   isLastStep,
   children,
@@ -357,6 +359,7 @@ function WizardStepFrame({
   onVisibilityChange: (step: WizardStep, value: PhaseVisibility) => void;
   onPrevious?: () => void;
   onNext: () => void;
+  nextLabel?: string;
   nextDisabled: boolean;
   isLastStep: boolean;
   children: React.ReactNode;
@@ -398,8 +401,8 @@ function WizardStepFrame({
           Previous
         </Button>
         <Button type="button" onClick={onNext} disabled={nextDisabled}>
-          {isLastStep ? "Finish" : "Next"}
-          {!isLastStep && <ChevronRight className="ml-2 h-4 w-4" />}
+          {nextLabel || (isLastStep ? "Finish" : "Next")}
+          {(nextLabel || !isLastStep) && <ChevronRight className="ml-2 h-4 w-4" />}
         </Button>
       </CardFooter>
     </Card>
@@ -411,11 +414,10 @@ export function ProjectDevelopmentWizard({
   projectId,
   onChange,
   onSyncScenesFromBreakdown,
+  onCreateProject,
   stepContent,
 }: ProjectDevelopmentWizardProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [loadingStep, setLoadingStep] = useState<WizardStep | null>(null);
   const [customGenre, setCustomGenre] = useState("");
   const [customInfluence, setCustomInfluence] = useState("");
@@ -424,31 +426,20 @@ export function ProjectDevelopmentWizard({
     INFLUENCE_OPTIONS.slice(0, RANDOMIZED_INFLUENCE_COUNT)
   );
   const stepOrder = useMemo(() => getStepOrder(), []);
-  const requestedStep = searchParams.get("step") as WizardStep | null;
-  const activeStep =
-    requestedStep && canEnterStep(data, requestedStep)
-      ? requestedStep
-      : getFirstIncompleteStep(data);
+  const [activeStep, setActiveStep] = useState<WizardStep>(() => getFirstIncompleteStep(data));
   const activeStepIndex = stepOrder.indexOf(activeStep);
   const currentStatus = derivePhaseStatus(data)[activeStep].status;
-
-  const setStep = (step: WizardStep) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("step", step);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-  };
-
-  useEffect(() => {
-    if (requestedStep !== activeStep) {
-      const params = new URLSearchParams(searchParams.toString());
-      params.set("step", activeStep);
-      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
-    }
-  }, [activeStep, pathname, requestedStep, router, searchParams]);
+  const setStep = (step: WizardStep) => setActiveStep(step);
 
   useEffect(() => {
     setRandomizedInfluenceOptions(getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT));
   }, []);
+
+  useEffect(() => {
+    if (!canEnterStep(data, activeStep)) {
+      setActiveStep(getFirstIncompleteStep(data));
+    }
+  }, [activeStep, data]);
 
   const updateData = (nextData: ProjectFormData) => {
     onChange({
@@ -478,8 +469,20 @@ export function ProjectDevelopmentWizard({
 
   const nextStep = getNextStep(activeStep);
   const previousStep = getPreviousStep(activeStep);
+  const isCreateProjectStep = !projectId && activeStep === "title-logline" && !!onCreateProject;
+  const canCreateProject = data.title.trim().length > 0 && data.logline.trim().length > 0;
 
-  const handleNext = () => {
+  const handleNext = async () => {
+    if (isCreateProjectStep && onCreateProject) {
+      setLoadingStep(activeStep);
+      try {
+        await onCreateProject(data);
+      } finally {
+        setLoadingStep(null);
+      }
+      return;
+    }
+
     if (!nextStep) {
       toast.success("Wizard complete. Continue refining or publish phases when ready.");
       return;
@@ -1271,8 +1274,12 @@ export function ProjectDevelopmentWizard({
         step={activeStep}
         onVisibilityChange={updateVisibility}
         onPrevious={previousStep ? handlePrevious : undefined}
-        onNext={handleNext}
-        nextDisabled={!nextStep ? false : currentStatus !== "complete"}
+        onNext={() => void handleNext()}
+        nextLabel={isCreateProjectStep ? "Create Project" : undefined}
+        nextDisabled={
+          loadingStep === activeStep ||
+          (isCreateProjectStep ? !canCreateProject : !nextStep ? false : currentStatus !== "complete")
+        }
         isLastStep={activeStepIndex === stepOrder.length - 1}
       >
         {renderStepBody()}
