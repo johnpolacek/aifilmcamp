@@ -627,18 +627,45 @@ export function ProjectDevelopmentWizard({
 
   const generateConcept = async () =>
     withLoading("concept", async () => {
-      const { generateConceptDirections } = await import("@/lib/actions/development");
+      const { generateConceptDirections, generateTitleAndLogline } = await import(
+        "@/lib/actions/development"
+      );
       const directions = await generateConceptDirections(data);
-      updateData({
+      const selectedDirection = directions[0];
+      const conceptSeed = conceptValue.trim() || selectedDirection?.premise || "";
+      const conceptStatement = selectedDirection?.premise || data.development?.conceptStatement || "";
+
+      if (!conceptStatement) {
+        toast.error("Could not generate a concept from the current inputs.");
+        return;
+      }
+
+      const titlePackage = await generateTitleAndLogline({
         ...data,
         development: {
           ...data.development,
-          conceptDirections: directions,
-          selectedConceptId: directions[0]?.id,
-          conceptStatement: directions[0]?.premise || data.development?.conceptStatement,
+          conceptSeed,
+          conceptStatement,
         },
       });
-      toast.success("Generated concept directions");
+
+      const nextData = {
+        ...data,
+        title: titlePackage.title,
+        logline: titlePackage.logline,
+        development: {
+          ...data.development,
+          conceptDirections: directions,
+          selectedConceptId: selectedDirection?.id,
+          conceptSeed,
+          conceptStatement: titlePackage.conceptStatement,
+          vibe: titlePackage.vibe || selectedDirection?.tone || "",
+        },
+      };
+
+      updateData(nextData);
+      setStep("title-logline");
+      toast.success("Generated concept package");
     });
 
   const generateTitle = async () =>
@@ -652,6 +679,7 @@ export function ProjectDevelopmentWizard({
         development: {
           ...data.development,
           conceptStatement: next.conceptStatement,
+          vibe: next.vibe,
         },
       });
       toast.success("Generated title and logline");
@@ -880,31 +908,100 @@ export function ProjectDevelopmentWizard({
 
       case "title-logline":
         return (
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label htmlFor="phase-title">Title</Label>
-                <Input
-                  id="phase-title"
-                  value={data.title}
-                  onChange={(event) => updateData({ ...data, title: event.target.value })}
-                  className="bg-background"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="phase-logline">Logline</Label>
-                <Textarea
-                  id="phase-logline"
-                  value={data.logline}
-                  onChange={(event) => updateData({ ...data, logline: event.target.value })}
-                  className="bg-background"
-                  rows={2}
-                />
+          <div className="space-y-6">
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                Concept Context
+              </p>
+              <p className="mt-3 text-sm leading-relaxed text-foreground/85">
+                {conceptValue || "No concept yet."}
+              </p>
+              <div className="mt-4 space-y-3">
+                {selectedGenres.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Genres
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedGenres.map((genre) => (
+                        <span
+                          key={`readonly-genre-${genre}`}
+                          className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground"
+                        >
+                          {genre}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {selectedInfluences.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Influences
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedInfluences.map((influence) => (
+                        <span
+                          key={`readonly-influence-${influence}`}
+                          className="rounded-full border border-border bg-background px-3 py-1 text-xs text-muted-foreground"
+                        >
+                          {influence}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-            <Button type="button" onClick={() => void generateTitle()} disabled={loadingStep === "title-logline"}>
+            <div className="space-y-2">
+              <Label htmlFor="phase-title">Title</Label>
+              <Input
+                id="phase-title"
+                value={data.title}
+                onChange={(event) => updateData({ ...data, title: event.target.value })}
+                className="bg-background"
+                placeholder="Name the project"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phase-logline">Logline</Label>
+              <Textarea
+                id="phase-logline"
+                value={data.logline}
+                onChange={(event) => updateData({ ...data, logline: event.target.value })}
+                className="bg-background"
+                rows={3}
+                placeholder="Describe the core dramatic hook in one sentence"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="phase-vibe">Vibe</Label>
+              <Textarea
+                id="phase-vibe"
+                value={data.development?.vibe || ""}
+                onChange={(event) =>
+                  updateData({
+                    ...data,
+                    development: {
+                      ...data.development,
+                      vibe: event.target.value,
+                    },
+                  })
+                }
+                className="bg-background"
+                rows={2}
+                placeholder="Capture the tonal feel, visual energy, and emotional temperature"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => void generateTitle()}
+              disabled={loadingStep === "title-logline"}
+            >
               <Bot className="mr-2 h-4 w-4" />
-              {loadingStep === "title-logline" ? "Generating..." : "Generate Title + Logline"}
+              {loadingStep === "title-logline"
+                ? "Generating..."
+                : "Regenerate Title, Logline + Vibe"}
             </Button>
           </div>
         );

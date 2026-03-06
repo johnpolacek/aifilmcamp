@@ -38,6 +38,7 @@ function buildProjectContext(project: Partial<ProjectFormData>): string {
       filmLength: project.filmLength || project.duration || "",
       conceptSeed: project.development?.conceptSeed || "",
       conceptStatement: project.development?.conceptStatement || "",
+      vibe: project.development?.vibe || "",
       influences: project.development?.influences || [],
       characters: (project.characters || []).map((character) => ({
         name: character.name,
@@ -134,9 +135,10 @@ export async function generateTitleAndLogline(project: Partial<ProjectFormData>)
         title: z.string(),
         logline: z.string(),
         conceptStatement: z.string(),
+        vibe: z.string(),
       }),
     }),
-    prompt: `Create one strong title, one logline, and one concise concept statement for this film project.
+    prompt: `Create one strong title, one logline, one concise concept statement, and one short vibe line for this film project.
 
 Project context:
 ${buildProjectContext(project)}`,
