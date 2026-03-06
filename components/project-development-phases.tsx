@@ -421,7 +421,7 @@ export function ProjectDevelopmentWizard({
   const [customInfluence, setCustomInfluence] = useState("");
   const [isRandomizingConcept, setIsRandomizingConcept] = useState(false);
   const [randomizedInfluenceOptions, setRandomizedInfluenceOptions] = useState(() =>
-    getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
+    INFLUENCE_OPTIONS.slice(0, RANDOMIZED_INFLUENCE_COUNT)
   );
   const stepOrder = useMemo(() => getStepOrder(), []);
   const requestedStep = searchParams.get("step") as WizardStep | null;
@@ -445,6 +445,10 @@ export function ProjectDevelopmentWizard({
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }
   }, [activeStep, pathname, requestedStep, router, searchParams]);
+
+  useEffect(() => {
+    setRandomizedInfluenceOptions(getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT));
+  }, []);
 
   const updateData = (nextData: ProjectFormData) => {
     onChange({
