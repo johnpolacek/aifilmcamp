@@ -27,8 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { Toggle } from "@/components/ui/toggle";
 import {
   canEnterStep,
   derivePhaseStatus,
@@ -169,18 +169,19 @@ function WizardStepFrame({
               <Icon className="h-5 w-5" />
             </div>
             <CardTitle className="text-2xl">{meta.label}</CardTitle>
-            <Toggle
-              pressed={visibility === "private"}
-              onPressedChange={(pressed) =>
-                onVisibilityChange(step, pressed ? "private" : "published")
-              }
-              variant="outline"
-              size="lg"
-              className="ml-auto bg-background"
-              aria-label="Toggle private visibility"
-            >
-              Private
-            </Toggle>
+            <div className="ml-auto flex items-center gap-3">
+              <Label htmlFor={`${step}-public-switch`} className="text-sm font-medium text-foreground">
+                Public
+              </Label>
+              <Switch
+                id={`${step}-public-switch`}
+                checked={visibility === "published"}
+                onCheckedChange={(checked) =>
+                  onVisibilityChange(step, checked ? "published" : "private")
+                }
+                aria-label="Toggle public visibility"
+              />
+            </div>
           </div>
           <p className="w-full text-sm text-muted-foreground">{meta.description}</p>
         </div>
