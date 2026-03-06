@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import type { ProjectFormData } from "@/components/project-form";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Toggle } from "@/components/ui/toggle";
 import {
   canEnterStep,
   derivePhaseStatus,
@@ -133,39 +133,30 @@ function WizardStepFrame({
   const meta = stepMeta[step];
   const Icon = meta.icon;
   const visibility = ensureProjectPhaseVisibility(data)[step];
-  const status = derivePhaseStatus(data)[step].status;
 
   return (
     <Card className="border-border bg-card/70">
       <CardHeader className="space-y-4">
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          <div className="flex items-start gap-3">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary">
               <Icon className="h-5 w-5" />
             </div>
-            <div>
-              <CardTitle className="text-2xl">{meta.label}</CardTitle>
-              <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{meta.description}</p>
-              <div className="mt-3 flex items-center gap-2">
-                <Badge variant={status === "complete" ? "default" : "secondary"}>{status}</Badge>
-                <Badge variant="outline">{visibility}</Badge>
-              </div>
-            </div>
-          </div>
-          <div className="w-full md:w-[180px]">
-            <Select
-              value={visibility}
-              onValueChange={(value) => onVisibilityChange(step, value as PhaseVisibility)}
+            <CardTitle className="text-2xl">{meta.label}</CardTitle>
+            <Toggle
+              pressed={visibility === "private"}
+              onPressedChange={(pressed) =>
+                onVisibilityChange(step, pressed ? "private" : "published")
+              }
+              variant="outline"
+              size="lg"
+              className="ml-auto bg-background"
+              aria-label="Toggle private visibility"
             >
-              <SelectTrigger className="bg-background">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="private">Private</SelectItem>
-                <SelectItem value="published">Published</SelectItem>
-              </SelectContent>
-            </Select>
+              Private
+            </Toggle>
           </div>
+          <p className="w-full text-sm text-muted-foreground">{meta.description}</p>
         </div>
       </CardHeader>
       <CardContent>{children}</CardContent>

@@ -74,15 +74,15 @@ export interface ProjectDevelopmentData {
 
 export function createDefaultPhaseVisibility(): Record<WorkflowPhase, PhaseVisibility> {
   return {
-    concept: "private",
-    "title-logline": "private",
-    "film-length": "private",
-    characters: "private",
-    outline: "private",
-    "script-breakdown": "private",
-    screenplay: "private",
-    assets: "private",
-    "shot-prompts": "private",
+    concept: "published",
+    "title-logline": "published",
+    "film-length": "published",
+    characters: "published",
+    outline: "published",
+    "script-breakdown": "published",
+    screenplay: "published",
+    assets: "published",
+    "shot-prompts": "published",
   };
 }
 
