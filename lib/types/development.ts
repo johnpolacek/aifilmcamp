@@ -68,6 +68,7 @@ export interface ProjectDevelopmentData {
   conceptDirections?: DevelopmentConceptDirection[];
   selectedConceptId?: string;
   conceptStatement?: string;
+  genres?: string[];
   influences?: string[];
   outline?: StoryOutlineBeat[];
   scriptBreakdown?: ScenePlanItem[];

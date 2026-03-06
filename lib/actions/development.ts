@@ -22,6 +22,7 @@ function buildProjectContext(project: Partial<ProjectFormData>): string {
       title: project.title || "",
       logline: project.logline || "",
       genre: project.genre || "",
+      genres: project.development?.genres || [],
       filmLength: project.filmLength || project.duration || "",
       conceptSeed: project.development?.conceptSeed || "",
       conceptStatement: project.development?.conceptStatement || "",

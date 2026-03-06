@@ -58,28 +58,55 @@ type WizardStep = WorkflowPhase;
 
 const GENRE_OPTIONS = [
   "Action",
+  "Adventure",
+  "Animation",
+  "Biopic",
+  "Coming-of-Age",
   "Comedy",
+  "Crime",
   "Documentary",
   "Drama",
+  "Dystopian",
   "Experimental",
+  "Family",
   "Fantasy",
+  "Historical",
   "Horror",
+  "Mystery",
+  "Noir",
   "Romance",
   "Sci-Fi",
+  "Sports",
+  "Supernatural",
+  "Surreal",
   "Thriller",
+  "Western",
 ] as const;
 
 const INFLUENCE_OPTIONS = [
   "A24",
+  "Alfonso Cuaron",
   "Andrei Tarkovsky",
+  "Bong Joon-ho",
   "Black Mirror",
+  "Coen Brothers",
   "Christopher Nolan",
+  "David Fincher",
   "Denis Villeneuve",
   "David Lynch",
+  "Greta Gerwig",
   "Hayao Miyazaki",
   "Jordan Peele",
+  "Park Chan-wook",
+  "Quentin Tarantino",
+  "Ridley Scott",
+  "Sofia Coppola",
+  "Spike Jonze",
   "Studio Ghibli",
+  "Terrence Malick",
   "Wes Anderson",
+  "Wong Kar-wai",
+  "Yorgos Lanthimos",
 ] as const;
 
 const stepMeta: Record<
@@ -212,6 +239,7 @@ export function ProjectDevelopmentWizard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [loadingStep, setLoadingStep] = useState<WizardStep | null>(null);
+  const [customGenre, setCustomGenre] = useState("");
   const [customInfluence, setCustomInfluence] = useState("");
   const stepOrder = useMemo(() => getStepOrder(), []);
   const requestedStep = searchParams.get("step") as WizardStep | null;
@@ -280,7 +308,19 @@ export function ProjectDevelopmentWizard({
   };
 
   const conceptValue = data.development?.conceptStatement || data.development?.conceptSeed || "";
+  const selectedGenres =
+    data.development?.genres ||
+    data.genre
+      .split(",")
+      .map((genre) => genre.trim())
+      .filter(Boolean);
   const selectedInfluences = data.development?.influences || [];
+  const genreOptions = [
+    ...GENRE_OPTIONS,
+    ...selectedGenres.filter(
+      (genre) => !GENRE_OPTIONS.includes(genre as (typeof GENRE_OPTIONS)[number])
+    ),
+  ];
   const influenceOptions = [
     ...INFLUENCE_OPTIONS,
     ...selectedInfluences.filter((influence) => !INFLUENCE_OPTIONS.includes(influence as (typeof INFLUENCE_OPTIONS)[number])),
@@ -295,6 +335,36 @@ export function ProjectDevelopmentWizard({
         conceptStatement: value,
       },
     });
+  };
+
+  const updateGenres = (nextGenres: string[]) => {
+    updateData({
+      ...data,
+      genre: nextGenres.join(", "),
+      development: {
+        ...data.development,
+        genres: nextGenres,
+      },
+    });
+  };
+
+  const toggleGenre = (value: string) => {
+    const nextGenres = selectedGenres.includes(value)
+      ? selectedGenres.filter((genre) => genre !== value)
+      : [...selectedGenres, value];
+
+    updateGenres(nextGenres);
+  };
+
+  const addCustomGenre = () => {
+    const value = customGenre.trim();
+    if (!value || selectedGenres.includes(value)) {
+      setCustomGenre("");
+      return;
+    }
+
+    updateGenres([...selectedGenres, value]);
+    setCustomGenre("");
   };
 
   const toggleInfluence = (value: string) => {
@@ -424,27 +494,39 @@ export function ProjectDevelopmentWizard({
             <div className="space-y-3">
               <Label>Genre</Label>
               <div className="flex flex-wrap gap-2">
-                {GENRE_OPTIONS.map((genre) => (
+                {genreOptions.map((genre) => (
                   <Button
                     key={genre}
                     type="button"
                     variant="outline"
-                    onClick={() => updateData({ ...data, genre })}
+                    onClick={() => toggleGenre(genre)}
                     className={cn(
                       "bg-transparent",
-                      data.genre === genre && "border-primary bg-primary/10 text-primary hover:bg-primary/10"
+                      selectedGenres.includes(genre) &&
+                        "border-primary bg-primary/10 text-primary hover:bg-primary/10"
                     )}
                   >
                     {genre}
                   </Button>
                 ))}
               </div>
-              <Input
-                value={data.genre || ""}
-                onChange={(event) => updateData({ ...data, genre: event.target.value })}
-                placeholder="Enter your own genre"
-                className="bg-background"
-              />
+              <div className="flex gap-2">
+                <Input
+                  value={customGenre}
+                  onChange={(event) => setCustomGenre(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addCustomGenre();
+                    }
+                  }}
+                  placeholder="Add your own genre"
+                  className="bg-background"
+                />
+                <Button type="button" variant="outline" onClick={addCustomGenre} className="bg-transparent">
+                  Add
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-3">
