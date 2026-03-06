@@ -419,6 +419,7 @@ export function ProjectDevelopmentWizard({
   const [loadingStep, setLoadingStep] = useState<WizardStep | null>(null);
   const [customGenre, setCustomGenre] = useState("");
   const [customInfluence, setCustomInfluence] = useState("");
+  const [isRandomizingConcept, setIsRandomizingConcept] = useState(false);
   const [randomizedInfluenceOptions, setRandomizedInfluenceOptions] = useState(() =>
     getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
   );
@@ -586,10 +587,38 @@ export function ProjectDevelopmentWizard({
     setCustomInfluence("");
   };
 
-  const reshuffleInfluences = () => {
-    setRandomizedInfluenceOptions(
-      getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
-    );
+  const getRandomItem = <T,>(items: readonly T[]): T =>
+    items[Math.floor(Math.random() * items.length)];
+
+  const randomizeConcept = async () => {
+    const randomGenre = getRandomItem(GENRE_OPTIONS);
+    const randomInfluence = getRandomItem(INFLUENCE_OPTIONS);
+
+    setIsRandomizingConcept(true);
+    try {
+      const { generateRandomConceptSeed } = await import("@/lib/actions/development");
+      const concept = await generateRandomConceptSeed({
+        genre: randomGenre,
+        influence: randomInfluence,
+        project: data,
+      });
+
+      updateData({
+        ...data,
+        genre: randomGenre,
+        development: {
+          ...data.development,
+          conceptSeed: concept,
+          conceptStatement: concept,
+          genres: [randomGenre],
+          influences: [randomInfluence],
+        },
+      });
+      setRandomizedInfluenceOptions(getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT));
+      toast.success("Generated a random concept seed");
+    } finally {
+      setIsRandomizingConcept(false);
+    }
   };
 
   const generateConcept = async () =>
@@ -739,19 +768,7 @@ export function ProjectDevelopmentWizard({
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Label>Influences</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={reshuffleInfluences}
-                  className="h-8 w-8 p-0 bg-transparent"
-                  aria-label="Shuffle influence suggestions"
-                >
-                  <Shuffle className="h-4 w-4" />
-                </Button>
-              </div>
+              <Label>Influences</Label>
               <div className="flex flex-wrap gap-2">
                 {influenceOptions.map((influence) => (
                   <Button
@@ -788,14 +805,27 @@ export function ProjectDevelopmentWizard({
               </div>
             </div>
 
-            <Button
-              type="button"
-              onClick={() => void generateConcept()}
-              disabled={loadingStep === "concept" || !canGenerateConcepts}
-            >
-              <Bot className="mr-2 h-4 w-4" />
-              {loadingStep === "concept" ? "Generating..." : "Generate Concepts"}
-            </Button>
+            <div className="flex items-center justify-between gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => void randomizeConcept()}
+                disabled={isRandomizingConcept}
+                className="bg-transparent"
+              >
+                <Shuffle className="mr-2 h-4 w-4" />
+                {isRandomizingConcept ? "Randomizing..." : "Random"}
+              </Button>
+
+              <Button
+                type="button"
+                onClick={() => void generateConcept()}
+                disabled={loadingStep === "concept" || isRandomizingConcept || !canGenerateConcepts}
+              >
+                <Bot className="mr-2 h-4 w-4" />
+                {loadingStep === "concept" ? "Generating..." : "Generate Concepts"}
+              </Button>
+            </div>
 
             {(data.development?.conceptDirections || []).length > 0 && (
               <div className="grid gap-3 lg:grid-cols-3">

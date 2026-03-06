@@ -79,6 +79,39 @@ ${buildProjectContext(project)}`,
   }));
 }
 
+export async function generateRandomConceptSeed(input: {
+  genre: string;
+  influence: string;
+  project?: Partial<ProjectFormData>;
+}) {
+  await requireAuth();
+
+  const { output } = await generateText({
+    model: textModel,
+    output: Output.object({
+      schema: z.object({
+        concept: z.string(),
+      }),
+    }),
+    prompt: `Generate one concise film concept seed inspired by this genre and influence pairing.
+
+Genre: ${input.genre}
+Influence: ${input.influence}
+
+Project context:
+${buildProjectContext({
+      ...input.project,
+      genre: input.genre,
+      development: {
+        ...input.project?.development,
+        influences: [input.influence],
+      },
+    })}`,
+  });
+
+  return output.concept;
+}
+
 export async function generateTitleAndLogline(project: Partial<ProjectFormData>) {
   await requireAuth();
 
