@@ -111,53 +111,6 @@ const stepMeta: Record<
   },
 };
 
-function WizardProgressRail({
-  data,
-  activeStep,
-  onStepChange,
-}: {
-  data: ProjectFormData;
-  activeStep: WizardStep;
-  onStepChange: (step: WizardStep) => void;
-}) {
-  const status = derivePhaseStatus(data);
-
-  return (
-    <div className="grid gap-2 md:grid-cols-3 xl:grid-cols-5">
-      {getStepOrder().map((step) => {
-        const Icon = stepMeta[step].icon;
-        const enabled = canEnterStep(data, step);
-
-        return (
-          <button
-            key={step}
-            type="button"
-            disabled={!enabled}
-            onClick={() => onStepChange(step)}
-            className={cn(
-              "rounded-xl border px-4 py-3 text-left transition-colors",
-              activeStep === step
-                ? "border-primary bg-primary text-primary-foreground"
-                : "border-border bg-background",
-              enabled ? "hover:border-primary/40" : "cursor-not-allowed opacity-50"
-            )}
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-black/10 text-inherit">
-                <Icon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{stepMeta[step].label}</p>
-              </div>
-            </div>
-            <p className="mt-2 text-xs opacity-80">{status[step].status}</p>
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function WizardStepFrame({
   data,
   step,
@@ -755,7 +708,6 @@ export function ProjectDevelopmentWizard({
 
   return (
     <div className="space-y-6">
-      <WizardProgressRail data={data} activeStep={activeStep} onStepChange={setStep} />
       <WizardStepFrame
         data={data}
         step={activeStep}
