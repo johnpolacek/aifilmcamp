@@ -13,6 +13,7 @@ import {
   Lightbulb,
   Map,
   Shuffle,
+  X,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -510,6 +511,8 @@ export function ProjectDevelopmentWizard({
         )
     ),
   ];
+  const canGenerateConcepts =
+    conceptValue.trim().length > 0 || selectedGenres.length > 0 || selectedInfluences.length > 0;
 
   const updateConcept = (value: string) => {
     updateData({
@@ -680,6 +683,21 @@ export function ProjectDevelopmentWizard({
                 className="bg-background"
                 rows={3}
               />
+              {selectedInfluences.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {selectedInfluences.map((influence) => (
+                    <button
+                      key={influence}
+                      type="button"
+                      onClick={() => toggleInfluence(influence)}
+                      className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                    >
+                      <span>{influence}</span>
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -773,7 +791,7 @@ export function ProjectDevelopmentWizard({
             <Button
               type="button"
               onClick={() => void generateConcept()}
-              disabled={loadingStep === "concept"}
+              disabled={loadingStep === "concept" || !canGenerateConcepts}
             >
               <Bot className="mr-2 h-4 w-4" />
               {loadingStep === "concept" ? "Generating..." : "Generate Concepts"}
