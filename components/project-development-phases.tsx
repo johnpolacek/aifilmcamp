@@ -630,12 +630,9 @@ export function ProjectDevelopmentWizard({
 
   const generateConcept = async () =>
     withLoading("concept", async () => {
-      const { generateConceptDirections, generateTitleAndLogline } = await import(
-        "@/lib/actions/development"
-      );
+      const { generateConceptDirections } = await import("@/lib/actions/development");
       const directions = await generateConceptDirections(data);
       const selectedDirection = directions[0];
-      const conceptSeed = conceptValue.trim() || selectedDirection?.premise || "";
       const conceptStatement = selectedDirection?.premise || data.development?.conceptStatement || "";
 
       if (!conceptStatement) {
@@ -643,32 +640,17 @@ export function ProjectDevelopmentWizard({
         return;
       }
 
-      const titlePackage = await generateTitleAndLogline({
+      updateData({
         ...data,
-        development: {
-          ...data.development,
-          conceptSeed,
-          conceptStatement,
-        },
-      });
-
-      const nextData = {
-        ...data,
-        title: titlePackage.title,
-        logline: titlePackage.logline,
         development: {
           ...data.development,
           conceptDirections: directions,
           selectedConceptId: selectedDirection?.id,
-          conceptSeed,
-          conceptStatement: titlePackage.conceptStatement,
-          vibe: titlePackage.vibe || selectedDirection?.tone || "",
+          conceptSeed: conceptStatement,
+          conceptStatement,
         },
-      };
-
-      updateData(nextData);
-      setStep("title-logline");
-      toast.success("Generated concept package");
+      });
+      toast.success("Generated concept");
     });
 
   const generateTitle = async () =>
@@ -747,6 +729,27 @@ export function ProjectDevelopmentWizard({
                 className="bg-background"
                 rows={3}
               />
+              <div className="flex items-center justify-between gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void randomizeConcept()}
+                  disabled={isRandomizingConcept}
+                  className="bg-transparent"
+                >
+                  <Shuffle className="mr-2 h-4 w-4" />
+                  {isRandomizingConcept ? "Randomizing..." : "Random"}
+                </Button>
+
+                <Button
+                  type="button"
+                  onClick={() => void generateConcept()}
+                  disabled={loadingStep === "concept" || isRandomizingConcept || !canGenerateConcepts}
+                >
+                  <Bot className="mr-2 h-4 w-4" />
+                  {loadingStep === "concept" ? "Generating..." : "Generate Concept"}
+                </Button>
+              </div>
               {(selectedGenres.length > 0 || selectedInfluences.length > 0) && (
                 <div className="flex flex-wrap gap-2 pt-2">
                   {selectedGenres.map((genre) => (
@@ -849,28 +852,6 @@ export function ProjectDevelopmentWizard({
                   Add
                 </Button>
               </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => void randomizeConcept()}
-                disabled={isRandomizingConcept}
-                className="bg-transparent"
-              >
-                <Shuffle className="mr-2 h-4 w-4" />
-                {isRandomizingConcept ? "Randomizing..." : "Random"}
-              </Button>
-
-              <Button
-                type="button"
-                onClick={() => void generateConcept()}
-                disabled={loadingStep === "concept" || isRandomizingConcept || !canGenerateConcepts}
-              >
-                <Bot className="mr-2 h-4 w-4" />
-                {loadingStep === "concept" ? "Generating..." : "Generate Concepts"}
-              </Button>
             </div>
 
             {(data.development?.conceptDirections || []).length > 0 && (
