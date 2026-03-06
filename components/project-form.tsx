@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ExtractConfirmDialog } from "@/components/extract-confirm-dialog";
 import { ProjectDevelopmentPhases } from "@/components/project-development-phases";
@@ -1887,6 +1887,749 @@ export default function ProjectForm({
     }
   };
 
+  const characterWizardContent = (
+    <div ref={charactersSectionRef} className="space-y-4">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button type="button" variant="outline" onClick={addCharacter} className="bg-transparent">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Character
+        </Button>
+        {formData.screenplayText?.trim() && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleExtractCharacters}
+            disabled={isExtractingCharacters}
+            className="bg-transparent"
+          >
+            {isExtractingCharacters ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Extracting...
+              </>
+            ) : (
+              <>
+                <Film className="mr-2 h-4 w-4" />
+                Extract from Screenplay
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+
+      {(formData.characters || []).length === 0 && (
+        <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
+          Add characters to define roles, motivations, arcs, and reference imagery before moving
+          into prompts.
+        </div>
+      )}
+
+      {(formData.characters || []).map((character, index) => {
+        const isEditingCharacter = editingCharacterIndex === index;
+
+        return (
+          <Card key={`wizard-character-${index}`} className="border-border bg-background">
+            <CardContent className="space-y-4 p-4">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-border bg-muted">
+                    {characterPreviewImages[index] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={characterPreviewImages[index]}
+                        alt={character.name || "Character"}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : character.mainImage && formData.username ? (
+                      <OptimizedImage
+                        type="character"
+                        filename={character.mainImage}
+                        username={formData.username}
+                        alt={character.name || "Character"}
+                        fill
+                        objectFit="cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center">
+                        <User className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{character.name || `Character ${index + 1}`}</p>
+                    <p className="truncate text-sm text-muted-foreground">
+                      {character.role || "No role yet"}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setEditingCharacterIndex((current) => (current === index ? null : index))
+                    }
+                    className="bg-transparent"
+                  >
+                    {isEditingCharacter ? "Done" : "Edit"}
+                  </Button>
+                </div>
+              </div>
+
+              {isEditingCharacter && (
+                <div className="space-y-4 border-t border-border pt-4">
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`wizard-character-name-${index}`}>Name</Label>
+                      <Input
+                        id={`wizard-character-name-${index}`}
+                        value={character.name}
+                        onChange={(e) => updateCharacter(index, "name", e.target.value)}
+                        placeholder="Character name"
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`wizard-character-role-${index}`}>Role</Label>
+                      <Input
+                        id={`wizard-character-role-${index}`}
+                        value={character.role || ""}
+                        onChange={(e) => updateCharacter(index, "role", e.target.value)}
+                        placeholder="Protagonist, antagonist, mentor..."
+                        className="bg-background"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor={`wizard-character-motivation-${index}`}>Motivation</Label>
+                      <Input
+                        id={`wizard-character-motivation-${index}`}
+                        value={character.motivation || ""}
+                        onChange={(e) => updateCharacter(index, "motivation", e.target.value)}
+                        placeholder="What do they want?"
+                        className="bg-background"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor={`wizard-character-arc-${index}`}>Arc</Label>
+                      <Textarea
+                        id={`wizard-character-arc-${index}`}
+                        value={character.arc || ""}
+                        onChange={(e) => updateCharacter(index, "arc", e.target.value)}
+                        placeholder="How do they change?"
+                        rows={2}
+                        className="bg-background"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`wizard-character-appearance-${index}`}>Appearance</Label>
+                    <Textarea
+                      id={`wizard-character-appearance-${index}`}
+                      value={character.appearance}
+                      onChange={(e) => updateCharacter(index, "appearance", e.target.value)}
+                      placeholder="Describe the character's look..."
+                      rows={3}
+                      className="bg-background"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor={`wizard-character-visual-${index}`}>Visual Prompt Notes</Label>
+                    <Textarea
+                      id={`wizard-character-visual-${index}`}
+                      value={character.visualPrompt || ""}
+                      onChange={(e) => updateCharacter(index, "visualPrompt", e.target.value)}
+                      placeholder="Notes for consistent image generation..."
+                      rows={3}
+                      className="bg-background"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Main Image</Label>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => handleCharacterMainImageClick(index)}
+                        disabled={uploadingCharacterIndex === index}
+                        className="bg-transparent"
+                      >
+                        <Upload className="mr-2 h-4 w-4" />
+                        {uploadingCharacterIndex === index
+                          ? "Uploading..."
+                          : character.mainImage
+                            ? "Change Main Image"
+                            : "Upload Main Image"}
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        {character.mainImage ? "Reference image attached" : "No main image yet"}
+                      </span>
+                    </div>
+                    <input
+                      ref={(el) => {
+                        characterFileInputRefs.current[index] = el;
+                      }}
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleCharacterMainImageChange(e, index)}
+                      className="hidden"
+                      disabled={uploadingCharacterIndex === index}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label>Additional Reference Images</Label>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddCharacterAdditionalImageClick(index)}
+                        disabled={uploadingCharacterAdditionalIndex?.characterIndex === index}
+                        className="bg-transparent"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Add Image
+                      </Button>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      {(character.images || []).map((image, imageIndex) => (
+                        <div
+                          key={`wizard-character-image-${index}-${imageIndex}`}
+                          className="space-y-2 rounded-lg border border-border bg-muted/20 p-3"
+                        >
+                          <div className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted">
+                            {characterAdditionalPreviewImages[index]?.[imageIndex] ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={characterAdditionalPreviewImages[index][imageIndex]}
+                                alt={`${character.name || "Character"} ${imageIndex + 1}`}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : image && formData.username ? (
+                              <OptimizedImage
+                                type="character"
+                                filename={image}
+                                username={formData.username}
+                                alt={`${character.name || "Character"} ${imageIndex + 1}`}
+                                fill
+                                objectFit="cover"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center">
+                                <Camera className="h-5 w-5 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleCharacterAdditionalImageClick(index, imageIndex)}
+                              disabled={
+                                uploadingCharacterAdditionalIndex?.characterIndex === index &&
+                                uploadingCharacterAdditionalIndex?.imageIndex === imageIndex
+                              }
+                              className="flex-1 bg-transparent"
+                            >
+                              Replace
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeCharacterAdditionalImage(index, imageIndex)}
+                              className="text-destructive hover:text-destructive"
+                            >
+                              <Trash className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <input
+                            ref={(el) => {
+                              characterAdditionalFileInputRefs.current[`${index}-${imageIndex}`] =
+                                el;
+                            }}
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) =>
+                              handleCharacterAdditionalImageChange(e, index, imageIndex)
+                            }
+                            className="hidden"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <input
+                      ref={(el) => {
+                        characterAddImageInputRefs.current[index] = el;
+                      }}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={(e) => handleAddCharacterAdditionalImageChange(e, index)}
+                      className="hidden"
+                    />
+                  </div>
+
+                  <div className="flex justify-end border-t border-border pt-4">
+                    {confirmingCharacterDelete === index ? (
+                      <div className="space-y-3 text-right">
+                        <p className="text-sm text-muted-foreground">
+                          Delete this character and its references?
+                        </p>
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              removeCharacter(index);
+                              setEditingCharacterIndex(null);
+                              setConfirmingCharacterDelete(null);
+                            }}
+                          >
+                            Delete Character
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setConfirmingCharacterDelete(null)}
+                            className="bg-transparent"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setConfirmingCharacterDelete(index)}
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <Trash className="mr-2 h-4 w-4" />
+                        Delete Character
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      <ExtractConfirmDialog
+        open={showExtractCharactersDialog}
+        onOpenChange={setShowExtractCharactersDialog}
+        title="Replace All Characters?"
+        description={`This will replace all ${formData.characters?.length || 0} existing character${(formData.characters?.length || 0) !== 1 ? "s" : ""} with characters extracted from the screenplay. This action cannot be undone.`}
+        confirmLabel="Replace All Characters"
+        isLoading={isExtractingCharacters}
+        onConfirm={performCharacterExtraction}
+      />
+    </div>
+  );
+
+  const assetWizardContent = (
+    <div className="space-y-6">
+      <div className="space-y-3 rounded-lg border border-border bg-muted/20 p-4">
+        <div className="flex items-center gap-2">
+          <User className="h-5 w-5 text-primary" />
+          <h3 className="text-base font-semibold">Character Reference Assets</h3>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Review the continuity assets attached to each character before building scene prompts.
+        </p>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {(formData.characters || []).map((character, index) => (
+            <div
+              key={`asset-character-${index}`}
+              className="flex items-center gap-3 rounded-lg border border-border bg-background p-3"
+            >
+              <div className="relative h-12 w-12 overflow-hidden rounded-md border border-border bg-muted">
+                {character.mainImage && formData.username ? (
+                  <OptimizedImage
+                    type="character"
+                    filename={character.mainImage}
+                    username={formData.username}
+                    alt={character.name || "Character"}
+                    fill
+                    objectFit="cover"
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <User className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">
+                  {character.name || `Character ${index + 1}`}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {(character.images?.length || 0) + (character.mainImage ? 1 : 0)} references
+                </p>
+              </div>
+            </div>
+          ))}
+          {(formData.characters || []).length === 0 && (
+            <div className="rounded-lg border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
+              Add characters in the previous step to attach reference assets here.
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div ref={locationsSectionRef} className="space-y-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" onClick={addLocation} className="bg-transparent">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Location
+          </Button>
+          {formData.screenplayText?.trim() && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleExtractLocations}
+              disabled={isExtractingLocations}
+              className="bg-transparent"
+            >
+              {isExtractingLocations ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Extracting...
+                </>
+              ) : (
+                <>
+                  <Film className="mr-2 h-4 w-4" />
+                  Extract from Screenplay
+                </>
+              )}
+            </Button>
+          )}
+        </div>
+
+        {(formData.setting?.locations || []).length === 0 && (
+          <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 text-sm text-muted-foreground">
+            Add locations and reference imagery for the spaces that define the film's visual world.
+          </div>
+        )}
+
+        {(formData.setting?.locations || []).map((location, index) => {
+          const isEditingLocation = editingLocationIndex === index;
+
+          return (
+            <Card key={`wizard-location-${index}`} className="border-border bg-background">
+              <CardContent className="space-y-4 p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="relative h-16 w-16 overflow-hidden rounded-lg border border-border bg-muted">
+                      {locationPreviewImages[index] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={locationPreviewImages[index]}
+                          alt={location.name || "Location"}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : location.image && formData.username ? (
+                        <OptimizedImage
+                          type="location"
+                          filename={location.image}
+                          username={formData.username}
+                          alt={location.name || "Location"}
+                          fill
+                          objectFit="cover"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center">
+                          <Camera className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-medium">{location.name || `Location ${index + 1}`}</p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {location.storyPurpose || "No story purpose yet"}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setEditingLocationIndex((current) => (current === index ? null : index))
+                    }
+                    className="bg-transparent"
+                  >
+                    {isEditingLocation ? "Done" : "Edit"}
+                  </Button>
+                </div>
+
+                {isEditingLocation && (
+                  <div className="space-y-4 border-t border-border pt-4">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor={`wizard-location-name-${index}`}>Name</Label>
+                        <Input
+                          id={`wizard-location-name-${index}`}
+                          value={location.name}
+                          onChange={(e) => updateLocation(index, "name", e.target.value)}
+                          placeholder="Location name"
+                          className="bg-background"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={`wizard-location-purpose-${index}`}>Story Purpose</Label>
+                        <Input
+                          id={`wizard-location-purpose-${index}`}
+                          value={location.storyPurpose || ""}
+                          onChange={(e) => updateLocation(index, "storyPurpose", e.target.value)}
+                          placeholder="Why this location matters"
+                          className="bg-background"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`wizard-location-description-${index}`}>Description</Label>
+                      <Textarea
+                        id={`wizard-location-description-${index}`}
+                        value={location.description}
+                        onChange={(e) => updateLocation(index, "description", e.target.value)}
+                        placeholder="Describe the space..."
+                        rows={3}
+                        className="bg-background"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`wizard-location-visual-${index}`}>Visual Prompt Notes</Label>
+                      <Textarea
+                        id={`wizard-location-visual-${index}`}
+                        value={location.visualPrompt || ""}
+                        onChange={(e) => updateLocation(index, "visualPrompt", e.target.value)}
+                        placeholder="Notes for prompt consistency..."
+                        rows={3}
+                        className="bg-background"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Main Image</Label>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleLocationMainImageClick(index)}
+                          disabled={uploadingLocationIndex === index}
+                          className="bg-transparent"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          {uploadingLocationIndex === index
+                            ? "Uploading..."
+                            : location.image
+                              ? "Change Main Image"
+                              : "Upload Main Image"}
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                          {location.image ? "Reference image attached" : "No main image yet"}
+                        </span>
+                      </div>
+                      <input
+                        ref={(el) => {
+                          locationFileInputRefs.current[index] = el;
+                        }}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleLocationMainImageChange(e, index)}
+                        className="hidden"
+                        disabled={uploadingLocationIndex === index}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <Label>Additional Reference Images</Label>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddLocationAdditionalImageClick(index)}
+                          disabled={uploadingLocationAdditionalIndex?.locationIndex === index}
+                          className="bg-transparent"
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          Add Image
+                        </Button>
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {(location.images || []).map((image, imageIndex) => (
+                          <div
+                            key={`wizard-location-image-${index}-${imageIndex}`}
+                            className="space-y-2 rounded-lg border border-border bg-muted/20 p-3"
+                          >
+                            <div className="relative aspect-square overflow-hidden rounded-md border border-border bg-muted">
+                              {locationAdditionalPreviewImages[index]?.[imageIndex] ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={locationAdditionalPreviewImages[index][imageIndex]}
+                                  alt={`${location.name || "Location"} ${imageIndex + 1}`}
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : image && formData.username ? (
+                                <OptimizedImage
+                                  type="location"
+                                  filename={image}
+                                  username={formData.username}
+                                  alt={`${location.name || "Location"} ${imageIndex + 1}`}
+                                  fill
+                                  objectFit="cover"
+                                />
+                              ) : (
+                                <div className="flex h-full w-full items-center justify-center">
+                                  <Camera className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleLocationAdditionalImageClick(index, imageIndex)}
+                                disabled={
+                                  uploadingLocationAdditionalIndex?.locationIndex === index &&
+                                  uploadingLocationAdditionalIndex?.imageIndex === imageIndex
+                                }
+                                className="flex-1 bg-transparent"
+                              >
+                                Replace
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeLocationAdditionalImage(index, imageIndex)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
+                            <input
+                              ref={(el) => {
+                                locationAdditionalFileInputRefs.current[`${index}-${imageIndex}`] =
+                                  el;
+                              }}
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleLocationAdditionalImageChange(e, index, imageIndex)}
+                              className="hidden"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                      <input
+                        ref={(el) => {
+                          locationAddImageInputRefs.current[index] = el;
+                        }}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleAddLocationAdditionalImageChange(e, index)}
+                        className="hidden"
+                      />
+                    </div>
+
+                    <div className="flex justify-end border-t border-border pt-4">
+                      {confirmingLocationDelete === index ? (
+                        <div className="space-y-3 text-right">
+                          <p className="text-sm text-muted-foreground">
+                            Delete this location and its references?
+                          </p>
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                removeLocation(index);
+                                setEditingLocationIndex(null);
+                                setConfirmingLocationDelete(null);
+                              }}
+                            >
+                              Delete Location
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setConfirmingLocationDelete(null)}
+                              className="bg-transparent"
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setConfirmingLocationDelete(index)}
+                          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        >
+                          <Trash className="mr-2 h-4 w-4" />
+                          Delete Location
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+
+        <ExtractConfirmDialog
+          open={showExtractLocationsDialog}
+          onOpenChange={setShowExtractLocationsDialog}
+          title="Replace All Locations?"
+          description={`This will replace all ${formData.setting?.locations?.length || 0} existing location${(formData.setting?.locations?.length || 0) !== 1 ? "s" : ""} with locations extracted from the screenplay. This action cannot be undone.`}
+          confirmLabel="Replace All Locations"
+          isLoading={isExtractingLocations}
+          onConfirm={performLocationExtraction}
+        />
+      </div>
+    </div>
+  );
+
+  const shotPromptWizardContent = (
+    <div className="space-y-4">
+      <p className="text-sm text-muted-foreground">
+        Build the prompt-ready scene package here. Each scene can carry screenplay context,
+        characters, locations, and shot breakdowns.
+      </p>
+      <SceneList
+        projectId={projectId || "new-project"}
+        scenes={formData.scenes || []}
+        characters={formData.characters || []}
+        locations={formData.setting?.locations || []}
+        screenplayText={formData.screenplayText}
+        onScenesChange={(scenes) => setFormData({ ...formData, scenes })}
+      />
+    </div>
+  );
+
   return (
     <form onSubmit={handleSubmit}>
       <div>
@@ -1920,13 +2663,24 @@ export default function ProjectForm({
             )}
           </div>
         </div>
-        <ProjectDevelopmentPhases
-          data={formData}
-          projectId={projectId}
-          onChange={setFormData}
-          onSyncScenesFromBreakdown={handleSyncScenesFromBreakdown}
-        />
-        <div className={useGridLayout ? "grid grid-cols-3 gap-6" : "space-y-6"}>
+        <Suspense fallback={<div className="h-px" />}>
+          <ProjectDevelopmentPhases
+            data={formData}
+            projectId={projectId}
+            onChange={setFormData}
+            onSyncScenesFromBreakdown={handleSyncScenesFromBreakdown}
+            stepContent={{
+              characters: characterWizardContent,
+              assets: assetWizardContent,
+              "shot-prompts": shotPromptWizardContent,
+            }}
+          />
+        </Suspense>
+        <details className="mt-6 rounded-xl border border-border bg-muted/20" open={!isEditing}>
+          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-muted-foreground">
+            Advanced project details
+          </summary>
+          <div className={cn("px-4 pb-4", useGridLayout ? "grid grid-cols-3 gap-6" : "space-y-6")}>
           {/* Left Column - Project Info, Screenplay, Links, Tools */}
           {useGridLayout && (
             <div className="space-y-6 pr-8 border-r border-border">
@@ -5491,7 +6245,8 @@ export default function ProjectForm({
               </Button>
             </div>
           )}
-        </div>
+          </div>
+        </details>
       </div>
     </form>
   );

@@ -2,6 +2,7 @@
 
 import { ArrowLeft, Bot, Copy, Plus, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { Character, Location } from "@/components/project-form";
@@ -44,12 +45,17 @@ export function EditScenePromptsView({
   characters,
   locations,
 }: EditScenePromptsViewProps) {
+  const searchParams = useSearchParams();
   const [draft, setDraft] = useState<Scene>({
     ...scene,
     promptShots: scene.promptShots || [],
   });
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const returnStep = searchParams.get("returnStep");
+  const backHref = returnStep
+    ? `/dashboard/projects/${projectId}/edit?step=${returnStep}`
+    : `/dashboard/projects/${projectId}/edit`;
 
   const updatePromptShot = (index: number, field: keyof PromptShot, value: string | number) => {
     const promptShots = [...(draft.promptShots || [])];
@@ -116,7 +122,7 @@ export function EditScenePromptsView({
       <div className="container mx-auto max-w-5xl px-4 lg:px-8">
         <div className="mb-6 flex items-center justify-between gap-4">
           <Link
-            href={`/dashboard/projects/${projectId}/edit`}
+            href={backHref}
             className="inline-flex items-center gap-2 text-primary transition-opacity hover:opacity-80"
           >
             <ArrowLeft className="h-4 w-4" />

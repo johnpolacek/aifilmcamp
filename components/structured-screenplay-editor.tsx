@@ -2,7 +2,7 @@
 
 import { ArrowLeft, Download, FileText, Loader2, Plus, Save, Upload } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { ScreenplayElementComponent } from "@/components/screenplay-element";
@@ -27,6 +27,11 @@ export function StructuredScreenplayEditor({
   projectTitle,
 }: StructuredScreenplayEditorProps) {
   const _router = useRouter();
+  const searchParams = useSearchParams();
+  const returnStep = searchParams.get("returnStep");
+  const backHref = returnStep
+    ? `/dashboard/projects/${projectId}/edit?step=${returnStep}`
+    : `/dashboard/projects/${projectId}/edit`;
 
   // Parse initial text to elements if no elements provided
   const getInitialElements = useCallback((): ScreenplayElement[] => {
@@ -397,7 +402,7 @@ export function StructuredScreenplayEditor({
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link
-              href={`/dashboard/projects/${projectId}/edit`}
+              href={backHref}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors"
             >
               <ArrowLeft className="h-4 w-4" />

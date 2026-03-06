@@ -80,3 +80,43 @@ export function getPublishedPhases(project: ProjectFormData): WorkflowPhase[] {
   const visibility = ensureProjectPhaseVisibility(project);
   return WORKFLOW_PHASES.filter((phase) => visibility[phase] === "published");
 }
+
+export function getStepOrder(): WorkflowPhase[] {
+  return [...WORKFLOW_PHASES];
+}
+
+export function getNextStep(currentStep: WorkflowPhase): WorkflowPhase | null {
+  const order = getStepOrder();
+  const index = order.indexOf(currentStep);
+  return index >= 0 && index < order.length - 1 ? order[index + 1] : null;
+}
+
+export function getPreviousStep(currentStep: WorkflowPhase): WorkflowPhase | null {
+  const order = getStepOrder();
+  const index = order.indexOf(currentStep);
+  return index > 0 ? order[index - 1] : null;
+}
+
+export function getFirstIncompleteStep(project: ProjectFormData): WorkflowPhase {
+  const status = derivePhaseStatus(project);
+  return getStepOrder().find((step) => status[step].status !== "complete") || "shot-prompts";
+}
+
+export function canEnterStep(project: ProjectFormData, step: WorkflowPhase): boolean {
+  const order = getStepOrder();
+  const targetIndex = order.indexOf(step);
+
+  if (targetIndex <= 0) {
+    return true;
+  }
+
+  const status = derivePhaseStatus(project);
+  const firstIncomplete = getFirstIncompleteStep(project);
+  const firstIncompleteIndex = order.indexOf(firstIncomplete);
+
+  return (
+    status[step].status === "complete" ||
+    targetIndex <= firstIncompleteIndex ||
+    targetIndex === firstIncompleteIndex + 1
+  );
+}
