@@ -12,6 +12,7 @@ import {
   FileText,
   Lightbulb,
   Map,
+  Shuffle,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -136,30 +137,43 @@ const INFLUENCE_OPTIONS = [
   "Michael Haneke",
   "Moonlight",
   "Mandy",
+  "Mulholland Drive",
   "Memories of Murder",
   "Metropolis",
   "Midsommar",
+  "Minority Report",
+  "Mirror",
   "Nausicaa",
   "Neon Genesis Evangelion",
+  "Network",
+  "Nosferatu",
   "Nicholas Winding Refn",
   "No Country for Old Men",
   "Oldboy",
   "Only Lovers Left Alive",
+  "Only God Forgives",
+  "Ozu",
   "Pan's Labyrinth",
+  "Paprika",
+  "Persona",
   "Jordan Peele",
   "Parasite",
   "Park Chan-wook",
   "Paul Thomas Anderson",
   "Perfect Blue",
+  "Picnic at Hanging Rock",
   "Portrait of a Lady on Fire",
   "Possession",
   "Princess Mononoke",
   "Prisoners",
+  "Punch-Drunk Love",
   "Roma",
   "Robert Eggers",
   "Ryuichi Sakamoto",
   "Quentin Tarantino",
   "Ridley Scott",
+  "Requiem for a Dream",
+  "Rashomon",
   "Satoshi Kon",
   "Se7en",
   "Shane Carruth",
@@ -169,30 +183,101 @@ const INFLUENCE_OPTIONS = [
   "Stalker",
   "Spike Jonze",
   "Studio Ghibli",
+  "Stranger Things",
   "Suspiria",
   "Tarkovsky",
+  "Taxi Driver",
+  "The Fall",
+  "The Grand Budapest Hotel",
+  "The Handmaiden",
   "The Matrix",
   "The Lighthouse",
   "The Shining",
   "The Social Network",
   "The Tree of Life",
+  "The Virgin Suicides",
+  "The Witch",
   "There Will Be Blood",
   "Terrence Malick",
+  "Twin Peaks",
+  "Upstream Color",
   "Under the Skin",
   "Upgrade",
   "Villeneuve",
+  "Vertigo",
+  "Videodrome",
   "WALL-E",
   "Wes Anderson",
+  "Woman in the Dunes",
   "Yi Yi",
   "Wong Kar-wai",
   "Yorgos Lanthimos",
   "Zhang Yimou",
+  "2001: A Space Odyssey",
+  "8 1/2",
+  "Akira",
+  "Amelie",
+  "Annihilation",
+  "Beau Travail",
+  "Before Sunrise",
+  "Being John Malkovich",
+  "Blue Velvet",
+  "Burning",
+  "Cache",
+  "Chungking Express",
+  "Cinema Paradiso",
+  "City of God",
+  "Close-Up",
+  "Columbus",
+  "Decision to Leave",
+  "Donnie Darko",
+  "Enter the Void",
+  "Eyes Wide Shut",
+  "Fantastic Planet",
+  "First Reformed",
+  "Fitzcarraldo",
+  "Ghost in the Shell",
+  "Good Time",
+  "Hausu",
+  "Holy Motors",
+  "Ikiru",
+  "Incendies",
+  "Inland Empire",
+  "Jeanne Dielman",
+  "Last Year at Marienbad",
+  "Lost Highway",
+  "Melancholia",
+  "MirrorMask",
+  "My Neighbor Totoro",
+  "Nostalghia",
+  "Once Upon a Time in Hollywood",
+  "Orpheus",
+  "Paris, Texas",
+  "Picnic at Hanging Rock",
+  "Playtime",
+  "Ran",
+  "Run Lola Run",
+  "Shoplifters",
+  "Singin' in the Rain",
+  "Son of Saul",
+  "Spirited Away",
+  "Synecdoche, New York",
+  "The Act of Killing",
+  "The Seventh Seal",
+  "The Substance",
+  "The Thing",
+  "Three Colors Trilogy",
+  "Tokyo Story",
+  "Under the Silver Lake",
+  "Uncut Gems",
+  "Uncle Boonmee Who Can Recall His Past Lives",
+  "Wings of Desire",
 ] as const;
 
 const RANDOMIZED_INFLUENCE_COUNT = 24;
 
 function getRandomizedOptions<T>(options: readonly T[], count: number): T[] {
-  const shuffled = [...options];
+  const shuffled = [...new Set(options)];
   for (let index = shuffled.length - 1; index > 0; index -= 1) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
     [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
@@ -333,7 +418,7 @@ export function ProjectDevelopmentWizard({
   const [loadingStep, setLoadingStep] = useState<WizardStep | null>(null);
   const [customGenre, setCustomGenre] = useState("");
   const [customInfluence, setCustomInfluence] = useState("");
-  const [randomizedInfluenceOptions] = useState(() =>
+  const [randomizedInfluenceOptions, setRandomizedInfluenceOptions] = useState(() =>
     getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
   );
   const stepOrder = useMemo(() => getStepOrder(), []);
@@ -498,6 +583,12 @@ export function ProjectDevelopmentWizard({
     setCustomInfluence("");
   };
 
+  const reshuffleInfluences = () => {
+    setRandomizedInfluenceOptions(
+      getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
+    );
+  };
+
   const generateConcept = async () =>
     withLoading("concept", async () => {
       const { generateConceptDirections } = await import("@/lib/actions/development");
@@ -630,7 +721,19 @@ export function ProjectDevelopmentWizard({
             </div>
 
             <div className="space-y-3">
-              <Label>Influences</Label>
+              <div className="flex items-center gap-2">
+                <Label>Influences</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={reshuffleInfluences}
+                  className="h-8 w-8 p-0 bg-transparent"
+                  aria-label="Shuffle influence suggestions"
+                >
+                  <Shuffle className="h-4 w-4" />
+                </Button>
+              </div>
               <div className="flex flex-wrap gap-2">
                 {influenceOptions.map((influence) => (
                   <Button
