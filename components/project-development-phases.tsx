@@ -86,28 +86,120 @@ const GENRE_OPTIONS = [
 const INFLUENCE_OPTIONS = [
   "A24",
   "Alfonso Cuaron",
+  "Alex Garland",
+  "Alien",
+  "Arrival",
+  "Barry Jenkins",
+  "Blade Runner",
+  "Blade Runner 2049",
+  "Brandon Cronenberg",
+  "Brazil",
   "Andrei Tarkovsky",
   "Bong Joon-ho",
   "Black Mirror",
+  "Celine Sciamma",
+  "Children of Men",
+  "Chloe Zhao",
   "Coen Brothers",
   "Christopher Nolan",
+  "Claire Denis",
+  "Darren Aronofsky",
+  "Dark",
+  "Dario Argento",
   "David Fincher",
   "Denis Villeneuve",
   "David Lynch",
+  "Drive",
+  "Dune",
+  "Edward Yang",
+  "Eternal Sunshine of the Spotless Mind",
+  "Ex Machina",
+  "Fallen Angels",
+  "Fight Club",
+  "Gaspar Noe",
+  "Get Out",
+  "Guillermo del Toro",
   "Greta Gerwig",
   "Hayao Miyazaki",
+  "Her",
+  "Hirokazu Kore-eda",
+  "Interstellar",
+  "In the Mood for Love",
+  "Jane Campion",
+  "Julia Ducournau",
+  "Kogonada",
+  "Krzysztof Kieslowski",
+  "La Haine",
+  "Lars von Trier",
+  "Luca Guadagnino",
+  "Mad Max: Fury Road",
+  "Michael Haneke",
+  "Moonlight",
+  "Mandy",
+  "Memories of Murder",
+  "Metropolis",
+  "Midsommar",
+  "Nausicaa",
+  "Neon Genesis Evangelion",
+  "Nicholas Winding Refn",
+  "No Country for Old Men",
+  "Oldboy",
+  "Only Lovers Left Alive",
+  "Pan's Labyrinth",
   "Jordan Peele",
+  "Parasite",
   "Park Chan-wook",
+  "Paul Thomas Anderson",
+  "Perfect Blue",
+  "Portrait of a Lady on Fire",
+  "Possession",
+  "Princess Mononoke",
+  "Prisoners",
+  "Roma",
+  "Robert Eggers",
+  "Ryuichi Sakamoto",
   "Quentin Tarantino",
   "Ridley Scott",
+  "Satoshi Kon",
+  "Se7en",
+  "Shane Carruth",
+  "Sicario",
   "Sofia Coppola",
+  "Solaris",
+  "Stalker",
   "Spike Jonze",
   "Studio Ghibli",
+  "Suspiria",
+  "Tarkovsky",
+  "The Matrix",
+  "The Lighthouse",
+  "The Shining",
+  "The Social Network",
+  "The Tree of Life",
+  "There Will Be Blood",
   "Terrence Malick",
+  "Under the Skin",
+  "Upgrade",
+  "Villeneuve",
+  "WALL-E",
   "Wes Anderson",
+  "Yi Yi",
   "Wong Kar-wai",
   "Yorgos Lanthimos",
+  "Zhang Yimou",
 ] as const;
+
+const RANDOMIZED_INFLUENCE_COUNT = 24;
+
+function getRandomizedOptions<T>(options: readonly T[], count: number): T[] {
+  const shuffled = [...options];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+  }
+
+  return shuffled.slice(0, count);
+}
 
 const stepMeta: Record<
   WizardStep,
@@ -241,6 +333,9 @@ export function ProjectDevelopmentWizard({
   const [loadingStep, setLoadingStep] = useState<WizardStep | null>(null);
   const [customGenre, setCustomGenre] = useState("");
   const [customInfluence, setCustomInfluence] = useState("");
+  const [randomizedInfluenceOptions] = useState(() =>
+    getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
+  );
   const stepOrder = useMemo(() => getStepOrder(), []);
   const requestedStep = searchParams.get("step") as WizardStep | null;
   const activeStep =
@@ -322,8 +417,13 @@ export function ProjectDevelopmentWizard({
     ),
   ];
   const influenceOptions = [
-    ...INFLUENCE_OPTIONS,
-    ...selectedInfluences.filter((influence) => !INFLUENCE_OPTIONS.includes(influence as (typeof INFLUENCE_OPTIONS)[number])),
+    ...randomizedInfluenceOptions,
+    ...selectedInfluences.filter(
+      (influence) =>
+        !randomizedInfluenceOptions.includes(
+          influence as (typeof randomizedInfluenceOptions)[number]
+        )
+    ),
   ];
 
   const updateConcept = (value: string) => {
