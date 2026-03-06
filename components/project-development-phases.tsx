@@ -191,10 +191,7 @@ function WizardStepFrame({
               <Icon className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                {meta.label}
-              </p>
-              <CardTitle className="mt-1 text-2xl">{meta.label}</CardTitle>
+              <CardTitle className="text-2xl">{meta.label}</CardTitle>
               <p className="mt-2 max-w-2xl text-sm text-muted-foreground">{meta.description}</p>
               <div className="mt-3 flex items-center gap-2">
                 <Badge variant={status === "complete" ? "default" : "secondary"}>{status}</Badge>

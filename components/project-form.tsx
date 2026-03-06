@@ -2630,6 +2630,8 @@ export default function ProjectForm({
     </div>
   );
 
+  const showLegacyAdvancedDetails = false;
+
   return (
     <form onSubmit={handleSubmit}>
       <div>
@@ -2676,6 +2678,7 @@ export default function ProjectForm({
             }}
           />
         </Suspense>
+        {showLegacyAdvancedDetails && (
         <details className="mt-6 rounded-xl border border-border bg-muted/20" open={!isEditing}>
           <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-muted-foreground">
             Advanced project details
@@ -6247,6 +6250,7 @@ export default function ProjectForm({
           )}
           </div>
         </details>
+        )}
       </div>
     </form>
   );
