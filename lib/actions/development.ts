@@ -25,6 +25,7 @@ function buildProjectContext(project: Partial<ProjectFormData>): string {
       filmLength: project.filmLength || project.duration || "",
       conceptSeed: project.development?.conceptSeed || "",
       conceptStatement: project.development?.conceptStatement || "",
+      influences: project.development?.influences || [],
       characters: (project.characters || []).map((character) => ({
         name: character.name,
         role: character.role,

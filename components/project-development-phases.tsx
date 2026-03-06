@@ -56,6 +56,32 @@ interface ProjectDevelopmentWizardProps {
 
 type WizardStep = WorkflowPhase;
 
+const GENRE_OPTIONS = [
+  "Action",
+  "Comedy",
+  "Documentary",
+  "Drama",
+  "Experimental",
+  "Fantasy",
+  "Horror",
+  "Romance",
+  "Sci-Fi",
+  "Thriller",
+] as const;
+
+const INFLUENCE_OPTIONS = [
+  "A24",
+  "Andrei Tarkovsky",
+  "Black Mirror",
+  "Christopher Nolan",
+  "Denis Villeneuve",
+  "David Lynch",
+  "Hayao Miyazaki",
+  "Jordan Peele",
+  "Studio Ghibli",
+  "Wes Anderson",
+] as const;
+
 const stepMeta: Record<
   WizardStep,
   {
@@ -185,6 +211,7 @@ export function ProjectDevelopmentWizard({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [loadingStep, setLoadingStep] = useState<WizardStep | null>(null);
+  const [customInfluence, setCustomInfluence] = useState("");
   const stepOrder = useMemo(() => getStepOrder(), []);
   const requestedStep = searchParams.get("step") as WizardStep | null;
   const activeStep =
@@ -249,6 +276,55 @@ export function ProjectDevelopmentWizard({
     if (previousStep) {
       setStep(previousStep);
     }
+  };
+
+  const conceptValue = data.development?.conceptStatement || data.development?.conceptSeed || "";
+  const selectedInfluences = data.development?.influences || [];
+  const influenceOptions = [
+    ...INFLUENCE_OPTIONS,
+    ...selectedInfluences.filter((influence) => !INFLUENCE_OPTIONS.includes(influence as (typeof INFLUENCE_OPTIONS)[number])),
+  ];
+
+  const updateConcept = (value: string) => {
+    updateData({
+      ...data,
+      development: {
+        ...data.development,
+        conceptSeed: value,
+        conceptStatement: value,
+      },
+    });
+  };
+
+  const toggleInfluence = (value: string) => {
+    const nextInfluences = selectedInfluences.includes(value)
+      ? selectedInfluences.filter((influence) => influence !== value)
+      : [...selectedInfluences, value];
+
+    updateData({
+      ...data,
+      development: {
+        ...data.development,
+        influences: nextInfluences,
+      },
+    });
+  };
+
+  const addCustomInfluence = () => {
+    const value = customInfluence.trim();
+    if (!value || selectedInfluences.includes(value)) {
+      setCustomInfluence("");
+      return;
+    }
+
+    updateData({
+      ...data,
+      development: {
+        ...data.development,
+        influences: [...selectedInfluences, value],
+      },
+    });
+    setCustomInfluence("");
   };
 
   const generateConcept = async () =>
@@ -331,30 +407,92 @@ export function ProjectDevelopmentWizard({
     switch (activeStep) {
       case "concept":
         return (
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="concept-seed">Concept Seed</Label>
+              <Label htmlFor="concept-statement">Concept</Label>
               <Textarea
-                id="concept-seed"
-                value={data.development?.conceptSeed || ""}
-                onChange={(event) =>
-                  updateData({
-                    ...data,
-                    development: {
-                      ...data.development,
-                      conceptSeed: event.target.value,
-                    },
-                  })
-                }
+                id="concept-statement"
+                value={conceptValue}
+                onChange={(event) => updateConcept(event.target.value)}
                 placeholder="Theme, image, mood, or story spark..."
                 className="bg-background"
                 rows={3}
               />
             </div>
-            <Button type="button" onClick={() => void generateConcept()} disabled={loadingStep === "concept"}>
+
+            <div className="space-y-3">
+              <Label>Genre</Label>
+              <div className="flex flex-wrap gap-2">
+                {GENRE_OPTIONS.map((genre) => (
+                  <Button
+                    key={genre}
+                    type="button"
+                    variant="outline"
+                    onClick={() => updateData({ ...data, genre })}
+                    className={cn(
+                      "bg-transparent",
+                      data.genre === genre && "border-primary bg-primary/10 text-primary hover:bg-primary/10"
+                    )}
+                  >
+                    {genre}
+                  </Button>
+                ))}
+              </div>
+              <Input
+                value={data.genre || ""}
+                onChange={(event) => updateData({ ...data, genre: event.target.value })}
+                placeholder="Enter your own genre"
+                className="bg-background"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>Influences</Label>
+              <div className="flex flex-wrap gap-2">
+                {influenceOptions.map((influence) => (
+                  <Button
+                    key={influence}
+                    type="button"
+                    variant="outline"
+                    onClick={() => toggleInfluence(influence)}
+                    className={cn(
+                      "bg-transparent",
+                      selectedInfluences.includes(influence) &&
+                        "border-primary bg-primary/10 text-primary hover:bg-primary/10"
+                    )}
+                  >
+                    {influence}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={customInfluence}
+                  onChange={(event) => setCustomInfluence(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      addCustomInfluence();
+                    }
+                  }}
+                  placeholder="Add your own influence"
+                  className="bg-background"
+                />
+                <Button type="button" variant="outline" onClick={addCustomInfluence} className="bg-transparent">
+                  Add
+                </Button>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={() => void generateConcept()}
+              disabled={loadingStep === "concept"}
+            >
               <Bot className="mr-2 h-4 w-4" />
               {loadingStep === "concept" ? "Generating..." : "Generate Concepts"}
             </Button>
+
             {(data.development?.conceptDirections || []).length > 0 && (
               <div className="grid gap-3 lg:grid-cols-3">
                 {data.development?.conceptDirections?.map((direction) => {
@@ -370,6 +508,7 @@ export function ProjectDevelopmentWizard({
                           development: {
                             ...data.development,
                             selectedConceptId: direction.id,
+                            conceptSeed: direction.premise,
                             conceptStatement: direction.premise,
                           },
                         })
@@ -387,24 +526,6 @@ export function ProjectDevelopmentWizard({
                 })}
               </div>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="concept-statement">Canonical Concept</Label>
-              <Textarea
-                id="concept-statement"
-                value={data.development?.conceptStatement || ""}
-                onChange={(event) =>
-                  updateData({
-                    ...data,
-                    development: {
-                      ...data.development,
-                      conceptStatement: event.target.value,
-                    },
-                  })
-                }
-                className="bg-background"
-                rows={3}
-              />
-            </div>
           </div>
         );
 
