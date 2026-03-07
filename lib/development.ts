@@ -27,9 +27,21 @@ export function derivePhaseStatus(project: ProjectFormData): Record<WorkflowPhas
       project.logline ||
       project.title
   );
+  const startMode = project.development?.startMode;
+  const sourceImportReady =
+    startMode === "blank"
+      ? true
+      : Boolean(
+          project.development?.sourceDocument &&
+            project.development?.sourceTextKey &&
+            project.development?.sourceContextPack &&
+            project.development?.sourceImportStatus === "ready"
+        );
 
   return {
     ...defaults,
+    "start-mode": { status: startMode ? "complete" : "not_started" },
+    "source-import": { status: sourceImportReady ? "complete" : "not_started" },
     concept: { status: conceptReady ? "complete" : "not_started" },
     "title-logline": {
       status: project.title || project.logline ? "complete" : "not_started",
@@ -81,30 +93,35 @@ export function getPublishedPhases(project: ProjectFormData): WorkflowPhase[] {
   return WORKFLOW_PHASES.filter((phase) => visibility[phase] === "published");
 }
 
-export function getStepOrder(): WorkflowPhase[] {
-  return [...WORKFLOW_PHASES];
+export function getStepOrder(project?: Partial<ProjectFormData>): WorkflowPhase[] {
+  const startMode = project?.development?.startMode;
+  return WORKFLOW_PHASES.filter((step) => step !== "source-import" || startMode === "import");
 }
 
-export function getNextStep(currentStep: WorkflowPhase): WorkflowPhase | null {
-  const order = getStepOrder();
+export function getNextStep(currentStep: WorkflowPhase, project?: Partial<ProjectFormData>): WorkflowPhase | null {
+  const order = getStepOrder(project);
   const index = order.indexOf(currentStep);
   return index >= 0 && index < order.length - 1 ? order[index + 1] : null;
 }
 
-export function getPreviousStep(currentStep: WorkflowPhase): WorkflowPhase | null {
-  const order = getStepOrder();
+export function getPreviousStep(currentStep: WorkflowPhase, project?: Partial<ProjectFormData>): WorkflowPhase | null {
+  const order = getStepOrder(project);
   const index = order.indexOf(currentStep);
   return index > 0 ? order[index - 1] : null;
 }
 
 export function getFirstIncompleteStep(project: ProjectFormData): WorkflowPhase {
   const status = derivePhaseStatus(project);
-  return getStepOrder().find((step) => status[step].status !== "complete") || "shot-prompts";
+  return getStepOrder(project).find((step) => status[step].status !== "complete") || "shot-prompts";
 }
 
 export function canEnterStep(project: ProjectFormData, step: WorkflowPhase): boolean {
-  const order = getStepOrder();
+  const order = getStepOrder(project);
   const targetIndex = order.indexOf(step);
+
+  if (targetIndex === -1) {
+    return false;
+  }
 
   if (targetIndex <= 0) {
     return true;

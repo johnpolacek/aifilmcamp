@@ -214,6 +214,8 @@ export default function ProjectForm({
     sound: useId(),
     other: useId(),
   };
+  const [draftProjectId] = useState(() => projectId || `project-draft-${Date.now()}`);
+  const effectiveProjectId = projectId || draftProjectId;
 
   const [formData, setFormData] = useState<ProjectFormData>({
     title: initialData?.title || "",
@@ -440,7 +442,13 @@ export default function ProjectForm({
       const { submitProjectForm } = await import("@/lib/actions/projects");
 
       // This will handle both create and update, plus authentication
-      const result = await submitProjectForm(persistedData, projectId, redirectPath);
+      const result = await submitProjectForm(
+        persistedData,
+        projectId,
+        redirectPath,
+        false,
+        !isEditing ? effectiveProjectId : undefined
+      );
 
       // If there's an error result (not a redirect), show it
       if (result && !result.success) {
@@ -497,7 +505,7 @@ export default function ProjectForm({
       return {
         id:
           existingScene?.id || `scene-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        projectId: existingScene?.projectId || projectId || "new-project",
+        projectId: existingScene?.projectId || effectiveProjectId,
         sceneNumber: index + 1,
         title: item.title,
         screenplay: existingScene?.screenplay || `${item.title}\n\n${item.summary}`,
@@ -545,7 +553,13 @@ export default function ProjectForm({
       });
 
       const { submitProjectForm } = await import("@/lib/actions/projects");
-      const result = await submitProjectForm(persistedData, undefined, redirectPath, true);
+      const result = await submitProjectForm(
+        persistedData,
+        undefined,
+        redirectPath,
+        true,
+        effectiveProjectId
+      );
 
       if (!result?.success || !result.projectId) {
         throw new Error(result?.error || "Failed to create project");
@@ -2656,7 +2670,7 @@ export default function ProjectForm({
         characters, locations, and shot breakdowns.
       </p>
       <SceneList
-        projectId={projectId || "new-project"}
+        projectId={effectiveProjectId}
         scenes={formData.scenes || []}
         characters={formData.characters || []}
         locations={formData.setting?.locations || []}
@@ -2704,7 +2718,7 @@ export default function ProjectForm({
         <Suspense fallback={<div className="h-px" />}>
           <ProjectDevelopmentPhases
             data={formData}
-            projectId={projectId}
+            projectId={effectiveProjectId}
             onChange={setFormData}
             onSyncScenesFromBreakdown={handleSyncScenesFromBreakdown}
             onCreateProject={!isEditing ? createProjectFromWizard : undefined}
@@ -4435,7 +4449,7 @@ export default function ProjectForm({
                 </p>
 
                 <SceneList
-                  projectId={projectId || "new-project"}
+                  projectId={effectiveProjectId}
                   scenes={formData.scenes || []}
                   characters={formData.characters || []}
                   locations={formData.setting?.locations || []}
@@ -6083,7 +6097,7 @@ export default function ProjectForm({
                 </p>
 
                 <SceneList
-                  projectId={projectId || "new-project"}
+                  projectId={effectiveProjectId}
                   scenes={formData.scenes || []}
                   characters={formData.characters || []}
                   locations={formData.setting?.locations || []}

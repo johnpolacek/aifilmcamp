@@ -10,6 +10,8 @@ export const FILM_LENGTH_OPTIONS = [
 export type FilmLengthOption = (typeof FILM_LENGTH_OPTIONS)[number];
 
 export const WORKFLOW_PHASES = [
+  "start-mode",
+  "source-import",
   "concept",
   "title-logline",
   "film-length",
@@ -34,6 +36,25 @@ export interface PhaseStatus {
 
 export type PhaseStatusMap = Partial<Record<WorkflowPhase, PhaseStatus>>;
 export type PhaseVisibilityMap = Partial<Record<WorkflowPhase, PhaseVisibility>>;
+export type StartMode = "blank" | "import";
+export type SourceDocumentKind = "pdf" | "docx" | "txt" | "md";
+export type SourceImportStatus = "idle" | "uploading" | "ready" | "error";
+
+export interface SourceContextEntitySeed {
+  name: string;
+  description: string;
+}
+
+export interface SourceContextPack {
+  brief: string;
+  conceptSeed: string;
+  genreSuggestions: string[];
+  influenceSuggestions: string[];
+  vibeKeywords: string[];
+  characterSeeds: SourceContextEntitySeed[];
+  locationSeeds: SourceContextEntitySeed[];
+  storyFacts: string[];
+}
 
 export interface DevelopmentConceptDirection {
   id: string;
@@ -64,6 +85,7 @@ export interface ScenePlanItem {
 }
 
 export interface ProjectDevelopmentData {
+  startMode?: StartMode;
   conceptSeed?: string;
   conceptDirections?: DevelopmentConceptDirection[];
   selectedConceptId?: string;
@@ -71,12 +93,26 @@ export interface ProjectDevelopmentData {
   vibe?: string;
   genres?: string[];
   influences?: string[];
+  sourceDocument?: {
+    name: string;
+    filename: string;
+    size?: number;
+    type?: string;
+  };
+  sourceDocumentKind?: SourceDocumentKind;
+  sourceTextKey?: string;
+  sourceImportStatus?: SourceImportStatus;
+  sourceImportUpdatedAt?: string;
+  sourceImportError?: string;
+  sourceContextPack?: SourceContextPack;
   outline?: StoryOutlineBeat[];
   scriptBreakdown?: ScenePlanItem[];
 }
 
 export function createDefaultPhaseVisibility(): Record<WorkflowPhase, PhaseVisibility> {
   return {
+    "start-mode": "private",
+    "source-import": "private",
     concept: "published",
     "title-logline": "published",
     "film-length": "published",
@@ -91,6 +127,8 @@ export function createDefaultPhaseVisibility(): Record<WorkflowPhase, PhaseVisib
 
 export function createDefaultPhaseStatus(): Record<WorkflowPhase, PhaseStatus> {
   return {
+    "start-mode": { status: "not_started" },
+    "source-import": { status: "not_started" },
     concept: { status: "not_started" },
     "title-logline": { status: "not_started" },
     "film-length": { status: "not_started" },

@@ -6,6 +6,8 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { ProjectFormData } from "@/components/project-form";
 import type { Scene } from "@/lib/scenes-client";
+import { getObjectFromS3 } from "@/lib/s3";
+import type { SourceContextPack } from "@/lib/types/development";
 
 function getTextModel() {
   const apiKey =
@@ -31,6 +33,7 @@ async function requireAuth() {
 function buildProjectContext(project: Partial<ProjectFormData>): string {
   return JSON.stringify(
     {
+      startMode: project.development?.startMode || "",
       title: project.title || "",
       logline: project.logline || "",
       genre: project.genre || "",
@@ -40,6 +43,7 @@ function buildProjectContext(project: Partial<ProjectFormData>): string {
       conceptStatement: project.development?.conceptStatement || "",
       vibe: project.development?.vibe || "",
       influences: project.development?.influences || [],
+      sourceContextPack: project.development?.sourceContextPack || null,
       characters: (project.characters || []).map((character) => ({
         name: character.name,
         role: character.role,
@@ -59,6 +63,134 @@ function buildProjectContext(project: Partial<ProjectFormData>): string {
     null,
     2
   );
+}
+
+const sourceContextEntitySchema = z.object({
+  name: z.string(),
+  description: z.string(),
+});
+
+const sourceContextPackSchema = z.object({
+  brief: z.string(),
+  conceptSeed: z.string(),
+  genreSuggestions: z.array(z.string()).max(6),
+  influenceSuggestions: z.array(z.string()).max(8),
+  vibeKeywords: z.array(z.string()).max(8),
+  characterSeeds: z.array(sourceContextEntitySchema).max(8),
+  locationSeeds: z.array(sourceContextEntitySchema).max(8),
+  storyFacts: z.array(z.string()).max(12),
+});
+
+function chunkSourceText(text: string, chunkSize = 12000): string[] {
+  const paragraphs = text.split(/\n\s*\n/);
+  const chunks: string[] = [];
+  let currentChunk = "";
+
+  for (const paragraph of paragraphs) {
+    const normalized = paragraph.trim();
+    if (!normalized) continue;
+
+    const candidate = currentChunk ? `${currentChunk}\n\n${normalized}` : normalized;
+    if (candidate.length > chunkSize && currentChunk) {
+      chunks.push(currentChunk);
+      currentChunk = normalized;
+      continue;
+    }
+
+    if (normalized.length > chunkSize) {
+      for (let index = 0; index < normalized.length; index += chunkSize) {
+        chunks.push(normalized.slice(index, index + chunkSize));
+      }
+      currentChunk = "";
+      continue;
+    }
+
+    currentChunk = candidate;
+  }
+
+  if (currentChunk) {
+    chunks.push(currentChunk);
+  }
+
+  return chunks.length > 0 ? chunks : [text.slice(0, chunkSize)];
+}
+
+function dedupeStrings(values: string[], limit: number): string[] {
+  return [...new Set(values.map((value) => value.trim()).filter(Boolean))].slice(0, limit);
+}
+
+function mergeSourceContextPacks(packs: SourceContextPack[]): SourceContextPack {
+  return {
+    brief: packs.map((pack) => pack.brief).filter(Boolean).join("\n"),
+    conceptSeed: packs.map((pack) => pack.conceptSeed).find(Boolean) || "",
+    genreSuggestions: dedupeStrings(packs.flatMap((pack) => pack.genreSuggestions), 6),
+    influenceSuggestions: dedupeStrings(packs.flatMap((pack) => pack.influenceSuggestions), 8),
+    vibeKeywords: dedupeStrings(packs.flatMap((pack) => pack.vibeKeywords), 8),
+    characterSeeds: packs.flatMap((pack) => pack.characterSeeds).slice(0, 8),
+    locationSeeds: packs.flatMap((pack) => pack.locationSeeds).slice(0, 8),
+    storyFacts: dedupeStrings(packs.flatMap((pack) => pack.storyFacts), 12),
+  };
+}
+
+async function generateSourceContextFromText(
+  project: Partial<ProjectFormData>,
+  sourceText: string
+): Promise<SourceContextPack> {
+  if (sourceText.length <= 14000) {
+    const { output } = await generateText({
+      model: getTextModel(),
+      output: Output.object({ schema: sourceContextPackSchema }),
+      prompt: `You are ingesting a source document for an AI film project.
+
+Turn this source into a compact reusable creative context pack. Keep it high-signal and practical for later project generation.
+
+Project context:
+${buildProjectContext(project)}
+
+Source document text:
+${sourceText}`,
+    });
+
+    return output;
+  }
+
+  const chunks = chunkSourceText(sourceText);
+  const partialPacks = await Promise.all(
+    chunks.map(async (chunk, index) => {
+      const { output } = await generateText({
+        model: getTextModel(),
+        output: Output.object({ schema: sourceContextPackSchema }),
+        prompt: `You are summarizing one chunk of a source document for an AI film project.
+
+Return the most useful creative signals from this chunk only.
+
+Chunk ${index + 1} of ${chunks.length}
+
+Project context:
+${buildProjectContext(project)}
+
+Source chunk:
+${chunk}`,
+      });
+
+      return output;
+    })
+  );
+
+  const mergedPack = mergeSourceContextPacks(partialPacks);
+  const { output } = await generateText({
+    model: getTextModel(),
+    output: Output.object({ schema: sourceContextPackSchema }),
+    prompt: `You are combining partial source-document summaries into one final reusable context pack for an AI film project.
+
+Project context:
+${buildProjectContext(project)}
+
+Partial summaries:
+${JSON.stringify(mergedPack, null, 2)}`,
+  });
+
+  return output;
 }
 
 export async function generateConceptDirections(project: Partial<ProjectFormData>) {
@@ -90,6 +222,17 @@ ${buildProjectContext(project)}`,
     id: `concept-${Date.now()}-${index}`,
     ...direction,
   }));
+}
+
+export async function ingestSourceDocument(project: Partial<ProjectFormData>, sourceTextKey: string) {
+  await requireAuth();
+
+  const sourceText = await getObjectFromS3(sourceTextKey);
+  if (!sourceText) {
+    throw new Error("Imported source text could not be loaded.");
+  }
+
+  return generateSourceContextFromText(project, sourceText);
 }
 
 export async function generateRandomConceptSeed(input: {

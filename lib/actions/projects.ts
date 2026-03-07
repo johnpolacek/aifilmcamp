@@ -5,6 +5,26 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ProjectFormData } from "@/components/project-form";
 import { deleteProject as deleteProjectFromS3, getProject, saveProject } from "@/lib/projects";
+import { deleteObjectFromS3, getFileBufferFromS3, putObjectToS3, uploadFileFromBuffer } from "@/lib/s3";
+import type { SourceDocumentKind } from "@/lib/types/development";
+
+const MAX_PROJECT_FILE_SIZE = 50 * 1024 * 1024;
+
+function sanitizeFilename(value: string) {
+  return value.replace(/[^a-zA-Z0-9.-]/g, "_");
+}
+
+function normalizeExtractedText(value: string) {
+  return value.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function getSourceDocumentKey(projectId: string, filename: string) {
+  return `projects/${projectId}/source/${filename}`;
+}
+
+function getSourceTextKey(projectId: string, filename: string) {
+  return `projects/${projectId}/source/${filename}-extracted.txt`;
+}
 
 /**
  * Get the username from the current Clerk user
@@ -23,7 +43,7 @@ async function getCurrentUsername(): Promise<string> {
 /**
  * Create a new project
  */
-export async function createProject(data: ProjectFormData) {
+export async function createProject(data: ProjectFormData, providedProjectId?: string) {
   const { userId } = await auth();
 
   if (!userId) {
@@ -32,7 +52,7 @@ export async function createProject(data: ProjectFormData) {
 
   try {
     // Generate a unique project ID (slug or UUID)
-    const projectId = data.slug || `project-${Date.now()}`;
+    const projectId = providedProjectId || data.slug || `project-${Date.now()}`;
 
     // Add username to project data if not already set
     if (!data.username) {
@@ -520,8 +540,7 @@ export async function uploadProjectFile(
     }
 
     // Validate file size (max 50MB for project files)
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    if (file.size > maxSize) {
+    if (file.size > MAX_PROJECT_FILE_SIZE) {
       return { success: false, error: "File must be less than 50MB" };
     }
 
@@ -531,12 +550,11 @@ export async function uploadProjectFile(
 
     // Generate a unique filename (timestamp + original filename sanitized)
     const timestamp = Date.now();
-    const originalName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_"); // Sanitize filename
+    const originalName = sanitizeFilename(file.name);
     const filename = `${timestamp}-${originalName}`;
     const key = `projects/${username}/files/${filename}`;
 
     // Upload file to S3
-    const { uploadFileFromBuffer } = await import("@/lib/s3");
     await uploadFileFromBuffer(buffer, key, file.type || "application/octet-stream");
 
     // Revalidate pages that show project data
@@ -584,6 +602,236 @@ export async function uploadProjectFile(
   }
 }
 
+async function extractTextFromPdfBuffer(
+  pdfBuffer: Buffer,
+  options?: { stripToFirstSceneHeading?: boolean; filename?: string }
+): Promise<{ success: true; text: string } | { success: false; error: string }> {
+  try {
+    const pdfParseModule = await import("pdf-parse/lib/pdf-parse.js");
+    const pdfParse = pdfParseModule.default || pdfParseModule;
+
+    if (typeof pdfParse !== "function") {
+      return {
+        success: false,
+        error: "PDF parsing library failed to load. Please try again.",
+      };
+    }
+
+    const pdfData = await pdfParse(pdfBuffer);
+    if (!pdfData?.text) {
+      return {
+        success: false,
+        error: "Could not extract text from PDF. The PDF may be image-based or corrupted.",
+      };
+    }
+
+    let extractedText = normalizeExtractedText(pdfData.text);
+    if (!extractedText) {
+      return {
+        success: false,
+        error: "PDF appears to be empty or contains only images. Text extraction requires a text-based PDF.",
+      };
+    }
+
+    if (options?.stripToFirstSceneHeading) {
+      const firstSceneMatch = extractedText.match(/^(INT\.|EXT\.)/im);
+      if (firstSceneMatch && firstSceneMatch.index !== undefined && firstSceneMatch.index > 0) {
+        extractedText = extractedText.substring(firstSceneMatch.index);
+      }
+    }
+
+    console.log(
+      "[extractTextFromPdfBuffer] Successfully extracted text:",
+      JSON.stringify(
+        {
+          textLength: extractedText.length,
+          pageCount: pdfData.numpages || 0,
+          filename: options?.filename || "from buffer",
+        },
+        null,
+        2
+      )
+    );
+
+    return { success: true, text: extractedText };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to extract text from PDF",
+    };
+  }
+}
+
+async function extractTextFromDocxBuffer(
+  buffer: Buffer
+): Promise<{ success: true; text: string } | { success: false; error: string }> {
+  try {
+    const JSZip = (await import("jszip")).default;
+    const zip = await JSZip.loadAsync(buffer);
+    const documentXml = await zip.file("word/document.xml")?.async("string");
+
+    if (!documentXml) {
+      return { success: false, error: "DOCX file is missing document content." };
+    }
+
+    const text = normalizeExtractedText(
+      documentXml
+        .replace(/<w:p[^>]*>/g, "\n")
+        .replace(/<w:tab\/>/g, "\t")
+        .replace(/<w:br\/>/g, "\n")
+        .replace(/<w:cr\/>/g, "\n")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&apos;/g, "'")
+    );
+
+    if (!text) {
+      return { success: false, error: "DOCX file appears to be empty." };
+    }
+
+    return { success: true, text };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to extract text from DOCX",
+    };
+  }
+}
+
+async function extractTextFromSourceFile(
+  buffer: Buffer,
+  file: { name: string; type?: string }
+): Promise<{ success: true; text: string; kind: SourceDocumentKind } | { success: false; error: string }> {
+  const lowerName = file.name.toLowerCase();
+  if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) {
+    const result = await extractTextFromPdfBuffer(buffer, { filename: file.name });
+    return result.success ? { ...result, kind: "pdf" } : result;
+  }
+
+  if (
+    file.type ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    lowerName.endsWith(".docx")
+  ) {
+    const result = await extractTextFromDocxBuffer(buffer);
+    return result.success ? { ...result, kind: "docx" } : result;
+  }
+
+  if (file.type === "text/plain" || lowerName.endsWith(".txt")) {
+    return {
+      success: true,
+      text: normalizeExtractedText(buffer.toString("utf8")),
+      kind: "txt",
+    };
+  }
+
+  if (
+    file.type === "text/markdown" ||
+    lowerName.endsWith(".md") ||
+    lowerName.endsWith(".markdown")
+  ) {
+    return {
+      success: true,
+      text: normalizeExtractedText(buffer.toString("utf8")),
+      kind: "md",
+    };
+  }
+
+  return { success: false, error: "Unsupported file format. Use PDF, DOCX, TXT, or MD." };
+}
+
+export async function uploadSourceDocument(
+  projectId: string,
+  formData: FormData
+): Promise<
+  | {
+      success: true;
+      filename: string;
+      originalName: string;
+      size: number;
+      type: string;
+      sourceTextKey: string;
+      sourceDocumentKind: SourceDocumentKind;
+    }
+  | { success: false; error: string }
+> {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false, error: "You must be signed in to upload a file" };
+  }
+
+  try {
+    const file = formData.get("file") as File;
+    if (!file) {
+      return { success: false, error: "No file provided" };
+    }
+
+    if (file.size > MAX_PROJECT_FILE_SIZE) {
+      return { success: false, error: "File must be less than 50MB" };
+    }
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const extracted = await extractTextFromSourceFile(buffer, file);
+    if (!extracted.success) {
+      return extracted;
+    }
+
+    const timestamp = Date.now();
+    const filename = `${timestamp}-${sanitizeFilename(file.name)}`;
+    const sourceKey = getSourceDocumentKey(projectId, filename);
+    const sourceTextKey = getSourceTextKey(projectId, filename);
+
+    await uploadFileFromBuffer(buffer, sourceKey, file.type || "application/octet-stream");
+    await putObjectToS3(sourceTextKey, extracted.text, "text/plain; charset=utf-8");
+
+    return {
+      success: true,
+      filename,
+      originalName: file.name,
+      size: file.size,
+      type: file.type || "application/octet-stream",
+      sourceTextKey,
+      sourceDocumentKind: extracted.kind,
+    };
+  } catch (error) {
+    console.error("Error uploading source document:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to upload source document",
+    };
+  }
+}
+
+export async function removeSourceDocument(
+  projectId: string,
+  filename?: string,
+  sourceTextKey?: string
+): Promise<{ success: true } | { success: false; error: string }> {
+  const { userId } = await auth();
+  if (!userId) {
+    return { success: false, error: "You must be signed in to remove a source document" };
+  }
+
+  try {
+    if (filename) {
+      await deleteObjectFromS3(getSourceDocumentKey(projectId, filename));
+    }
+    if (sourceTextKey) {
+      await deleteObjectFromS3(sourceTextKey);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error("Error removing source document:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to remove source document",
+    };
+  }
+}
+
 /**
  * Extract text from a PDF file
  * Can extract from either a file buffer (during upload) or from S3 (existing file)
@@ -606,7 +854,6 @@ export async function extractPdfText(
     if (fileBuffer) {
       pdfBuffer = fileBuffer;
     } else if (filename && username) {
-      const { getFileBufferFromS3 } = await import("@/lib/s3");
       const key = `projects/${username}/files/${filename}`;
       const buffer = await getFileBufferFromS3(key);
       
@@ -617,79 +864,10 @@ export async function extractPdfText(
     } else {
       return { success: false, error: "Either file buffer or filename with username must be provided" };
     }
-
-    // Extract text using pdf-parse v1.1.1
-    // Import directly from lib to avoid the test file loading issue in index.js
-    // The index.js has code that runs when module.parent is undefined (ESM context)
-    const pdfParseModule = await import("pdf-parse/lib/pdf-parse.js");
-    const pdfParse = pdfParseModule.default || pdfParseModule;
-    
-    if (typeof pdfParse !== "function") {
-      console.error(
-        "[extractPdfText] pdf-parse import issue:",
-        JSON.stringify(
-          {
-            hasDefault: !!pdfParseModule.default,
-            defaultType: typeof pdfParseModule.default,
-            moduleKeys: Object.keys(pdfParseModule),
-          },
-          null,
-          2
-        )
-      );
-      return {
-        success: false,
-        error: "PDF parsing library failed to load. Please try again.",
-      };
-    }
-    
-    // v1 API: pdfParse(buffer) returns Promise with { text, numpages, info }
-    const pdfData = await pdfParse(pdfBuffer);
-
-    if (!pdfData || !pdfData.text) {
-      return { success: false, error: "Could not extract text from PDF. The PDF may be image-based or corrupted." };
-    }
-
-    let extractedText = pdfData.text.trim();
-
-    if (!extractedText) {
-      return { success: false, error: "PDF appears to be empty or contains only images. Text extraction requires a text-based PDF." };
-    }
-
-    // Clean up screenplay text: strip everything before the first scene heading
-    // Scene headings start with INT. (interior) or EXT. (exterior)
-    const firstSceneMatch = extractedText.match(/^(INT\.|EXT\.)/im);
-    if (firstSceneMatch && firstSceneMatch.index !== undefined && firstSceneMatch.index > 0) {
-      const originalLength = extractedText.length;
-      extractedText = extractedText.substring(firstSceneMatch.index);
-      console.log(
-        "[extractPdfText] Stripped front matter:",
-        JSON.stringify(
-          {
-            originalLength,
-            newLength: extractedText.length,
-            strippedChars: originalLength - extractedText.length,
-          },
-          null,
-          2
-        )
-      );
-    }
-
-    console.log(
-      "[extractPdfText] Successfully extracted text:",
-      JSON.stringify(
-        {
-          textLength: extractedText.length,
-          pageCount: pdfData.numpages || 0,
-          filename: filename || "from buffer",
-        },
-        null,
-        2
-      )
-    );
-
-    return { success: true, text: extractedText };
+    return extractTextFromPdfBuffer(pdfBuffer, {
+      stripToFirstSceneHeading: true,
+      filename,
+    });
   } catch (error) {
     console.error(
       "[extractPdfText] Error extracting PDF text:",
@@ -727,7 +905,8 @@ export async function submitProjectForm(
   data: ProjectFormData,
   projectId?: string,
   redirectPath: string = "/dashboard",
-  skipRedirect: boolean = false
+  skipRedirect: boolean = false,
+  createProjectId?: string
 ) {
   const { userId } = await auth();
 
@@ -743,7 +922,7 @@ export async function submitProjectForm(
       await updateProject(projectId, data);
     } else {
       // Create new project
-      const result = await createProject(data);
+      const result = await createProject(data, createProjectId);
       resolvedProjectId = result.projectId;
     }
 

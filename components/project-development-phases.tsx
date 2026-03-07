@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
   ChevronLeft,
@@ -13,6 +13,7 @@ import {
   Lightbulb,
   Map,
   Shuffle,
+  Upload,
   X,
   Users,
 } from "lucide-react";
@@ -45,6 +46,7 @@ import { cn } from "@/lib/utils";
 import {
   FILM_LENGTH_OPTIONS,
   type PhaseVisibility,
+  type StartMode,
   type WorkflowPhase,
 } from "@/lib/types/development";
 
@@ -294,11 +296,24 @@ const stepMeta: Record<
     label: string;
     description: string;
     icon: typeof Lightbulb;
+    supportsVisibility?: boolean;
   }
 > = {
-  concept: {
+  "start-mode": {
     label: "New Project",
-    description: "Start a new project by shaping the core concept you want to develop.",
+    description: "Choose whether to start from a blank slate or bring in source material first.",
+    icon: Lightbulb,
+    supportsVisibility: false,
+  },
+  "source-import": {
+    label: "Import Source",
+    description: "Upload a source document so AI can seed the project from your material.",
+    icon: Upload,
+    supportsVisibility: false,
+  },
+  concept: {
+    label: "Concept",
+    description: "Shape the core concept you want to develop.",
     icon: Lightbulb,
   },
   "title-logline": {
@@ -377,19 +392,21 @@ function WizardStepFrame({
               <Icon className="h-5 w-5" />
             </div>
             <CardTitle className="text-2xl">{meta.label}</CardTitle>
-            <div className="ml-auto flex items-center gap-3">
-              <Label htmlFor={`${step}-public-switch`} className="text-sm font-medium text-foreground">
-                Public
-              </Label>
-              <Switch
-                id={`${step}-public-switch`}
-                checked={visibility === "published"}
-                onCheckedChange={(checked) =>
-                  onVisibilityChange(step, checked ? "published" : "private")
-                }
-                aria-label="Toggle public visibility"
-              />
-            </div>
+            {meta.supportsVisibility !== false && (
+              <div className="ml-auto flex items-center gap-3">
+                <Label htmlFor={`${step}-public-switch`} className="text-sm font-medium text-foreground">
+                  Public
+                </Label>
+                <Switch
+                  id={`${step}-public-switch`}
+                  checked={visibility === "published"}
+                  onCheckedChange={(checked) =>
+                    onVisibilityChange(step, checked ? "published" : "private")
+                  }
+                  aria-label="Toggle public visibility"
+                />
+              </div>
+            )}
           </div>
           <p className="w-full text-sm text-muted-foreground">{meta.description}</p>
         </div>
@@ -418,14 +435,16 @@ export function ProjectDevelopmentWizard({
   stepContent,
 }: ProjectDevelopmentWizardProps) {
   const router = useRouter();
+  const sourceFileInputRef = useRef<HTMLInputElement>(null);
   const [loadingStep, setLoadingStep] = useState<WizardStep | null>(null);
   const [customGenre, setCustomGenre] = useState("");
   const [customInfluence, setCustomInfluence] = useState("");
   const [isRandomizingConcept, setIsRandomizingConcept] = useState(false);
+  const [isImportingSource, setIsImportingSource] = useState(false);
   const [randomizedInfluenceOptions, setRandomizedInfluenceOptions] = useState(() =>
     INFLUENCE_OPTIONS.slice(0, RANDOMIZED_INFLUENCE_COUNT)
   );
-  const stepOrder = useMemo(() => getStepOrder(), []);
+  const stepOrder = useMemo(() => getStepOrder(data), [data]);
   const [activeStep, setActiveStep] = useState<WizardStep>(() => getFirstIncompleteStep(data));
   const activeStepIndex = stepOrder.indexOf(activeStep);
   const currentStatus = derivePhaseStatus(data)[activeStep].status;
@@ -467,9 +486,9 @@ export function ProjectDevelopmentWizard({
     }
   };
 
-  const nextStep = getNextStep(activeStep);
-  const previousStep = getPreviousStep(activeStep);
-  const isCreateProjectStep = !projectId && activeStep === "title-logline" && !!onCreateProject;
+  const nextStep = getNextStep(activeStep, data);
+  const previousStep = getPreviousStep(activeStep, data);
+  const isCreateProjectStep = !!onCreateProject && activeStep === "title-logline";
   const canCreateProject = data.title.trim().length > 0 && data.logline.trim().length > 0;
 
   const handleNext = async () => {
@@ -497,6 +516,8 @@ export function ProjectDevelopmentWizard({
   };
 
   const conceptValue = data.development?.conceptStatement || data.development?.conceptSeed || "";
+  const sourceFile = data.development?.sourceDocument;
+  const sourceBrief = data.development?.sourceContextPack?.brief || "";
   const selectedGenres =
     data.development?.genres ||
     data.genre
@@ -521,6 +542,18 @@ export function ProjectDevelopmentWizard({
   ];
   const canGenerateConcepts =
     conceptValue.trim().length > 0 || selectedGenres.length > 0 || selectedInfluences.length > 0;
+
+  const clearSourceData = (startMode: StartMode = "blank") => ({
+    ...data.development,
+    startMode,
+    sourceDocument: undefined,
+    sourceDocumentKind: undefined,
+    sourceTextKey: undefined,
+    sourceImportStatus: undefined,
+    sourceImportUpdatedAt: undefined,
+    sourceImportError: undefined,
+    sourceContextPack: undefined,
+  });
 
   const updateConcept = (value: string) => {
     updateData({
@@ -592,6 +625,133 @@ export function ProjectDevelopmentWizard({
       },
     });
     setCustomInfluence("");
+  };
+
+  const chooseStartMode = (startMode: StartMode) => {
+    if (startMode === "blank") {
+      updateData({
+        ...data,
+        development: clearSourceData("blank"),
+      });
+      setStep("concept");
+      return;
+    }
+
+    updateData({
+      ...data,
+      development: {
+        ...data.development,
+        startMode: "import",
+        sourceImportStatus:
+          data.development?.sourceImportStatus === "ready" ? "ready" : "idle",
+        sourceImportError: undefined,
+      },
+    });
+    setStep("source-import");
+  };
+
+  const handleSourceFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !projectId) {
+      return;
+    }
+
+    setIsImportingSource(true);
+    const loadingToast = toast.loading("Importing source document...");
+
+    try {
+      const { uploadSourceDocument, removeSourceDocument } = await import("@/lib/actions/projects");
+      const { ingestSourceDocument } = await import("@/lib/actions/development");
+
+      if (sourceFile?.filename || data.development?.sourceTextKey) {
+        await removeSourceDocument(projectId, sourceFile?.filename, data.development?.sourceTextKey);
+      }
+
+      const uploadFormData = new FormData();
+      uploadFormData.append("file", file);
+
+      const uploadResult = await uploadSourceDocument(projectId, uploadFormData);
+      if (!uploadResult.success) {
+        throw new Error(uploadResult.error || "Failed to upload source document");
+      }
+
+      const sourceContextPack = await ingestSourceDocument(data, uploadResult.sourceTextKey);
+      updateData({
+        ...data,
+        genre: sourceContextPack.genreSuggestions.join(", "),
+        development: {
+          ...data.development,
+          startMode: "import",
+          sourceDocument: {
+            name: uploadResult.originalName,
+            filename: uploadResult.filename,
+            size: uploadResult.size,
+            type: uploadResult.type,
+          },
+          sourceDocumentKind: uploadResult.sourceDocumentKind,
+          sourceTextKey: uploadResult.sourceTextKey,
+          sourceImportStatus: "ready",
+          sourceImportUpdatedAt: new Date().toISOString(),
+          sourceImportError: undefined,
+          sourceContextPack,
+          conceptSeed: sourceContextPack.conceptSeed,
+          conceptStatement: sourceContextPack.conceptSeed,
+          genres: sourceContextPack.genreSuggestions,
+          influences: sourceContextPack.influenceSuggestions,
+        },
+      });
+      toast.success("Source imported successfully", { id: loadingToast });
+      setStep("concept");
+    } catch (error) {
+      console.error("Error importing source document:", error);
+      updateData({
+        ...data,
+        development: {
+          ...data.development,
+          startMode: "import",
+          sourceImportStatus: "error",
+          sourceImportError:
+            error instanceof Error ? error.message : "Failed to import source document",
+        },
+      });
+      toast.error(
+        error instanceof Error ? error.message : "Failed to import source document",
+        { id: loadingToast }
+      );
+    } finally {
+      event.target.value = "";
+      setIsImportingSource(false);
+    }
+  };
+
+  const removeSource = async () => {
+    if (!projectId) {
+      return;
+    }
+
+    setIsImportingSource(true);
+    try {
+      const { removeSourceDocument } = await import("@/lib/actions/projects");
+      const result = await removeSourceDocument(
+        projectId,
+        sourceFile?.filename,
+        data.development?.sourceTextKey
+      );
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to remove source document");
+      }
+
+      updateData({
+        ...data,
+        development: clearSourceData("import"),
+      });
+      toast.success("Removed source document");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to remove source document");
+    } finally {
+      setIsImportingSource(false);
+    }
   };
 
   const getRandomItem = <T,>(items: readonly T[]): T =>
@@ -716,9 +876,112 @@ export function ProjectDevelopmentWizard({
     }
 
     switch (activeStep) {
+      case "start-mode":
+        return (
+          <div className="grid gap-4 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => chooseStartMode("blank")}
+              className={cn(
+                "rounded-xl border border-border bg-background p-6 text-left transition-colors hover:border-primary hover:bg-primary/5",
+                data.development?.startMode === "blank" && "border-primary bg-primary/5"
+              )}
+            >
+              <p className="text-lg font-semibold">Start from Blank</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Build the concept from scratch using your own ideas plus AI assistance.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => chooseStartMode("import")}
+              className={cn(
+                "rounded-xl border border-border bg-background p-6 text-left transition-colors hover:border-primary hover:bg-primary/5",
+                data.development?.startMode === "import" && "border-primary bg-primary/5"
+              )}
+            >
+              <p className="text-lg font-semibold">Import Source Document</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Upload a PDF, DOCX, TXT, or Markdown file and let AI seed the project from it.
+              </p>
+            </button>
+          </div>
+        );
+
+      case "source-import":
+        return (
+          <div className="space-y-6">
+            <input
+              ref={sourceFileInputRef}
+              type="file"
+              accept=".pdf,.docx,.txt,.md,.markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/markdown"
+              onChange={(event) => void handleSourceFileChange(event)}
+              className="hidden"
+            />
+            <div className="rounded-lg border border-border bg-muted/20 p-4">
+              <p className="text-sm text-muted-foreground">
+                Import one primary source document. AI will turn it into a reusable project context
+                pack and prefill the concept step.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                onClick={() => sourceFileInputRef.current?.click()}
+                disabled={isImportingSource}
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                {isImportingSource
+                  ? "Importing..."
+                  : sourceFile
+                    ? "Replace Source Document"
+                    : "Upload Source Document"}
+              </Button>
+              {sourceFile && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void removeSource()}
+                  disabled={isImportingSource}
+                >
+                  Remove Source
+                </Button>
+              )}
+            </div>
+            {sourceFile && (
+              <div className="rounded-lg border border-border bg-background p-4">
+                <p className="font-medium">{sourceFile.name}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {data.development?.sourceDocumentKind?.toUpperCase()} ·{" "}
+                  {sourceFile.size ? `${Math.round(sourceFile.size / 1024)} KB` : "Size unavailable"}
+                </p>
+                {sourceBrief && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      Source Brief
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground/85">{sourceBrief}</p>
+                  </div>
+                )}
+              </div>
+            )}
+            {data.development?.sourceImportError && (
+              <p className="text-sm text-destructive">{data.development.sourceImportError}</p>
+            )}
+          </div>
+        );
+
       case "concept":
         return (
           <div className="space-y-6">
+            {sourceBrief && (
+              <div className="rounded-lg border border-border bg-muted/20 p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                  Source Brief
+                </p>
+                <p className="mt-3 text-sm leading-relaxed text-foreground/85">{sourceBrief}</p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="concept-statement">Concept</Label>
               <Textarea
