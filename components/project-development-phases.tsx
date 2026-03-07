@@ -307,7 +307,7 @@ const stepMeta: Record<
   },
   "source-import": {
     label: "Import Source",
-    description: "Upload a source document so AI can seed the project from your material.",
+    description: "Upload an outline, brainstorm export, or screenplay draft so AI can seed the project from your material.",
     icon: Upload,
     supportsVisibility: false,
   },
@@ -902,7 +902,7 @@ export function ProjectDevelopmentWizard({
             >
               <p className="text-lg font-semibold">Import Source Document</p>
               <p className="mt-2 text-sm text-muted-foreground">
-                Upload a PDF, DOCX, TXT, or Markdown file and let AI seed the project from it.
+                Bring in an outline, treatment, brainstorm export, or screenplay draft.
               </p>
             </button>
           </div>
@@ -920,8 +920,13 @@ export function ProjectDevelopmentWizard({
             />
             <div className="rounded-lg border border-border bg-muted/20 p-4">
               <p className="text-sm text-muted-foreground">
-                Import one primary source document. AI will turn it into a reusable project context
-                pack and prefill the concept step.
+                Import one primary creative-development document. Best results come from an outline,
+                treatment, LLM conversation export, or screenplay draft with clear story ideas,
+                scenes, characters, or dramatic structure.
+              </p>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Supported file formats are PDF, DOCX, TXT, and Markdown, but the feature is tuned
+                for story-development writing rather than generic documents.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">

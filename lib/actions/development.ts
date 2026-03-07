@@ -140,14 +140,23 @@ async function generateSourceContextFromText(
     const { output } = await generateText({
       model: getTextModel(),
       output: Output.object({ schema: sourceContextPackSchema }),
-      prompt: `You are ingesting a source document for an AI film project.
+      prompt: `You are ingesting creative-development source material for an AI film project.
+
+The source is most likely one of:
+- an outline or treatment
+- an exported LLM brainstorming conversation
+- a draft screenplay or scene pages
 
 Turn this source into a compact reusable creative context pack. Keep it high-signal and practical for later project generation.
+If the text is an outline or treatment, extract structure, premise, characters, locations, and dramatic arc.
+If the text is a brainstorming conversation, reconcile fragmented ideas into one coherent promising direction instead of mirroring every idea literally.
+If the text is screenplay pages, infer narrative intent, characters, locations, tone, and implied structure even if the full story is not present.
+Do not treat every exploratory idea as canonical. Prefer the strongest unifying concept.
 
 Project context:
 ${buildProjectContext(project)}
 
-Source document text:
+Source material text:
 ${sourceText}`,
     });
 
@@ -160,9 +169,12 @@ ${sourceText}`,
       const { output } = await generateText({
         model: getTextModel(),
         output: Output.object({ schema: sourceContextPackSchema }),
-        prompt: `You are summarizing one chunk of a source document for an AI film project.
+        prompt: `You are summarizing one chunk of creative-development source material for an AI film project.
 
+The source is likely an outline, treatment, brainstorming conversation export, or screenplay pages.
 Return the most useful creative signals from this chunk only.
+If this chunk is exploratory brainstorming, consolidate it toward the strongest direction.
+If this chunk is screenplay material, extract implied structure and character/location signals.
 
 Chunk ${index + 1} of ${chunks.length}
 
@@ -180,8 +192,11 @@ ${chunk}`,
   const mergedPack = mergeSourceContextPacks(partialPacks);
   const { output } = await generateText({
     model: getTextModel(),
-    output: Output.object({ schema: sourceContextPackSchema }),
-    prompt: `You are combining partial source-document summaries into one final reusable context pack for an AI film project.
+      output: Output.object({ schema: sourceContextPackSchema }),
+    prompt: `You are combining partial summaries of creative-development source material into one final reusable context pack for an AI film project.
+
+The original source was likely an outline, treatment, brainstorming conversation export, or screenplay draft.
+Produce one coherent direction that can seed the project, not a dump of all possibilities.
 
 Project context:
 ${buildProjectContext(project)}
