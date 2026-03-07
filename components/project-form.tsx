@@ -198,26 +198,8 @@ interface ProjectFormProps {
   useGridLayout?: boolean;
 }
 
-export default function ProjectForm({
-  initialData,
-  projectId,
-  isEditing = false,
-  redirectPath = "/dashboard",
-  useGridLayout = false,
-}: ProjectFormProps) {
-  const router = useRouter();
-  const genreSelectId = useId();
-  const durationSelectId = useId();
-  const toolSelectIds = {
-    video: useId(),
-    image: useId(),
-    sound: useId(),
-    other: useId(),
-  };
-  const [draftProjectId] = useState(() => projectId || `project-draft-${Date.now()}`);
-  const effectiveProjectId = projectId || draftProjectId;
-
-  const [formData, setFormData] = useState<ProjectFormData>({
+function createInitialProjectFormData(initialData?: Partial<ProjectFormData>): ProjectFormData {
+  return {
     title: initialData?.title || "",
     logline: initialData?.logline || "",
     duration: initialData?.duration || "",
@@ -243,7 +225,36 @@ export default function ProjectForm({
     screenplay: initialData?.screenplay,
     username: initialData?.username,
     slug: initialData?.slug,
-  });
+    publishedAt: initialData?.publishedAt,
+    isPublished: initialData?.isPublished,
+  };
+}
+
+function createEmptyProjectFormData(): ProjectFormData {
+  return createInitialProjectFormData();
+}
+
+export default function ProjectForm({
+  initialData,
+  projectId,
+  isEditing = false,
+  redirectPath = "/dashboard",
+  useGridLayout = false,
+}: ProjectFormProps) {
+  const router = useRouter();
+  const genreSelectId = useId();
+  const durationSelectId = useId();
+  const toolSelectIds = {
+    video: useId(),
+    image: useId(),
+    sound: useId(),
+    other: useId(),
+  };
+  const [draftProjectId, setDraftProjectId] = useState(() => projectId || `project-draft-${Date.now()}`);
+  const effectiveProjectId = projectId || draftProjectId;
+
+  const [formData, setFormData] = useState<ProjectFormData>(() => createInitialProjectFormData(initialData));
+  const [wizardResetKey, setWizardResetKey] = useState(0);
 
   const [newLinkUrl, setNewLinkUrl] = useState("");
   const [selectedTool, setSelectedTool] = useState<Record<ToolCategory, string>>({
@@ -576,6 +587,65 @@ export default function ProjectForm({
       throw error;
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const startOverWizard = async () => {
+    if (isEditing) {
+      return;
+    }
+
+    if (formData.development?.sourceDocument?.filename || formData.development?.sourceTextKey) {
+      try {
+        const { removeSourceDocument } = await import("@/lib/actions/projects");
+        await removeSourceDocument(
+          effectiveProjectId,
+          formData.development?.sourceDocument?.filename,
+          formData.development?.sourceTextKey
+        );
+      } catch (error) {
+        console.error("Error removing source document during start over:", error);
+      }
+    }
+
+    const emptyData = createEmptyProjectFormData();
+    setFormData(emptyData);
+    setDraftProjectId(`project-draft-${Date.now()}`);
+    setWizardResetKey((current) => current + 1);
+    setNewLinkUrl("");
+    setSelectedTool({ video: "", image: "", sound: "", other: "" });
+    setCustomToolInput({ video: "", image: "", sound: "", other: "" });
+    setPreviewImage(null);
+    setHasVideoTool(false);
+    setEditingCharacterIndex(null);
+    setConfirmingCharacterDelete(null);
+    setShowAllCharacters(false);
+    setShowExtractCharactersDialog(false);
+    setIsExtractingCharacters(false);
+    setEditingLocationIndex(null);
+    setConfirmingLocationDelete(null);
+    setShowAllLocations(false);
+    setShowExtractLocationsDialog(false);
+    setIsExtractingLocations(false);
+    setShowRemoveScreenplayConfirm(false);
+    setCharacterPreviewImages({});
+    setCharacterAdditionalPreviewImages({});
+    setLocationPreviewImages({});
+    setLocationAdditionalPreviewImages({});
+    setUploadingCharacterIndex(null);
+    setUploadingCharacterAdditionalIndex(null);
+    setUploadingLocationIndex(null);
+    setUploadingLocationAdditionalIndex(null);
+    setAutoSaveStatus("idle");
+    setIsEditingProjectInfo(true);
+    lastSavedDataRef.current = JSON.stringify(emptyData);
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+
+    if (projectFileInputRef.current) {
+      projectFileInputRef.current.value = "";
     }
   };
 
@@ -2717,11 +2787,13 @@ export default function ProjectForm({
         </div>
         <Suspense fallback={<div className="h-px" />}>
           <ProjectDevelopmentPhases
+            key={wizardResetKey}
             data={formData}
             projectId={effectiveProjectId}
             onChange={setFormData}
             onSyncScenesFromBreakdown={handleSyncScenesFromBreakdown}
             onCreateProject={!isEditing ? createProjectFromWizard : undefined}
+            onStartOver={!isEditing ? startOverWizard : undefined}
             stepContent={{
               characters: characterWizardContent,
               assets: assetWizardContent,

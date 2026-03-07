@@ -23,6 +23,14 @@ import { toast } from "sonner";
 import type { ProjectFormData } from "@/components/project-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -58,6 +66,7 @@ interface ProjectDevelopmentWizardProps {
   onChange: (nextData: ProjectFormData) => void;
   onSyncScenesFromBreakdown: () => void;
   onCreateProject?: (data: ProjectFormData) => Promise<string>;
+  onStartOver?: () => Promise<void> | void;
   stepContent?: Partial<Record<WizardStep, React.ReactNode>>;
 }
 
@@ -369,6 +378,8 @@ function WizardStepFrame({
   nextLabel,
   nextDisabled,
   isLastStep,
+  onStartOver,
+  isStartingOver,
   children,
 }: {
   data: ProjectFormData;
@@ -379,6 +390,8 @@ function WizardStepFrame({
   nextLabel?: string;
   nextDisabled: boolean;
   isLastStep: boolean;
+  onStartOver?: () => void;
+  isStartingOver?: boolean;
   children: React.ReactNode;
 }) {
   const meta = stepMeta[step];
@@ -415,10 +428,22 @@ function WizardStepFrame({
       </CardHeader>
       <CardContent>{children}</CardContent>
       <CardFooter className="flex items-center justify-between border-t border-border pt-6">
-        <Button type="button" variant="outline" onClick={onPrevious} disabled={!onPrevious}>
-          <ChevronLeft className="mr-2 h-4 w-4" />
-          Previous
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onPrevious}
+            disabled={!onPrevious || isStartingOver}
+          >
+            <ChevronLeft className="mr-2 h-4 w-4" />
+            Previous
+          </Button>
+          {onStartOver && (
+            <Button type="button" variant="ghost" onClick={onStartOver} disabled={isStartingOver}>
+              Start Over
+            </Button>
+          )}
+        </div>
         <Button type="button" onClick={onNext} disabled={nextDisabled}>
           {nextLabel || (isLastStep ? "Finish" : "Next")}
           {(nextLabel || !isLastStep) && <ChevronRight className="ml-2 h-4 w-4" />}
@@ -434,6 +459,7 @@ export function ProjectDevelopmentWizard({
   onChange,
   onSyncScenesFromBreakdown,
   onCreateProject,
+  onStartOver,
   stepContent,
 }: ProjectDevelopmentWizardProps) {
   const router = useRouter();
@@ -444,6 +470,8 @@ export function ProjectDevelopmentWizard({
   const [isRandomizingConcept, setIsRandomizingConcept] = useState(false);
   const [isImportingSource, setIsImportingSource] = useState(false);
   const [isSourceBriefExpanded, setIsSourceBriefExpanded] = useState(false);
+  const [isStartOverDialogOpen, setIsStartOverDialogOpen] = useState(false);
+  const [isStartingOver, setIsStartingOver] = useState(false);
   const [randomizedInfluenceOptions, setRandomizedInfluenceOptions] = useState(() =>
     INFLUENCE_OPTIONS.slice(0, RANDOMIZED_INFLUENCE_COUNT)
   );
@@ -519,6 +547,20 @@ export function ProjectDevelopmentWizard({
   const handlePrevious = () => {
     if (previousStep) {
       setStep(previousStep);
+    }
+  };
+
+  const handleStartOver = async () => {
+    if (!onStartOver) {
+      return;
+    }
+
+    setIsStartingOver(true);
+    try {
+      await onStartOver();
+      setIsStartOverDialogOpen(false);
+    } finally {
+      setIsStartingOver(false);
     }
   };
 
@@ -1604,9 +1646,40 @@ export function ProjectDevelopmentWizard({
           (isCreateProjectStep ? !canCreateProject : !nextStep ? false : currentStatus !== "complete")
         }
         isLastStep={activeStepIndex === stepOrder.length - 1}
+        onStartOver={onStartOver ? () => setIsStartOverDialogOpen(true) : undefined}
+        isStartingOver={isStartingOver}
       >
         {renderStepBody()}
       </WizardStepFrame>
+      <Dialog open={isStartOverDialogOpen} onOpenChange={setIsStartOverDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Start over?</DialogTitle>
+            <DialogDescription>
+              This clears the current draft, removes any imported source document, and returns you
+              to the beginning of the wizard.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsStartOverDialogOpen(false)}
+              disabled={isStartingOver}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void handleStartOver()}
+              disabled={isStartingOver}
+            >
+              {isStartingOver ? "Starting Over..." : "Start Over"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
