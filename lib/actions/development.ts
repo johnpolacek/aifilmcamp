@@ -108,9 +108,58 @@ function normalizeEntitySeeds(
   return normalized;
 }
 
+function normalizeBrief(value: string): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  if (!normalized) {
+    return "";
+  }
+
+  const sentences = normalized.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [normalized];
+  const limitedSentences = sentences
+    .map((sentence) => sentence.trim())
+    .filter(Boolean)
+    .slice(0, 4);
+  const joined = limitedSentences.join(" ");
+
+  if (joined.length <= 420) {
+    return joined;
+  }
+
+  return `${joined.slice(0, 417).trimEnd()}...`;
+}
+
+function inferSourceType(sourceText: string): "screenplay" | "outline" | "brainstorm" | "general" {
+  const sample = sourceText.slice(0, 12000);
+  const screenplaySignals =
+    (sample.match(/\b(INT\.|EXT\.|INT\/EXT\.)/g) || []).length +
+    (sample.match(/^[A-Z0-9 ()'.-]{3,40}$/gm) || []).length;
+
+  if (screenplaySignals >= 6) {
+    return "screenplay";
+  }
+
+  const outlineSignals =
+    (sample.match(/\b(act|sequence|beat|outline|treatment|synopsis)\b/gi) || []).length +
+    (sample.match(/^\s*(\d+\.|-|\*)\s+/gm) || []).length;
+
+  if (outlineSignals >= 6) {
+    return "outline";
+  }
+
+  const brainstormSignals =
+    (sample.match(/\b(user|assistant|chatgpt|claude|brainstorm|idea|option)\b/gi) || []).length +
+    (sample.match(/^#{1,3}\s+/gm) || []).length;
+
+  if (brainstormSignals >= 6) {
+    return "brainstorm";
+  }
+
+  return "general";
+}
+
 function normalizeSourceContextPack(raw: z.infer<typeof sourceContextPackSchema>): SourceContextPack {
   return {
-    brief: raw.brief.trim(),
+    brief: normalizeBrief(raw.brief),
     conceptSeed: raw.conceptSeed.trim(),
     genreSuggestions: dedupeStrings(raw.genreSuggestions, 6),
     influenceSuggestions: dedupeStrings(raw.influenceSuggestions, 8),
@@ -187,6 +236,8 @@ async function generateSourceContextFromText(
   project: Partial<ProjectFormData>,
   sourceText: string
 ): Promise<SourceContextPack> {
+  const sourceType = inferSourceType(sourceText);
+
   if (sourceText.length <= 14000) {
     const { output } = await generateText({
       model: getTextModel(),
@@ -201,11 +252,15 @@ The source is most likely one of:
 Turn this source into a compact reusable creative context pack. Keep it high-signal and practical for later project generation.
 If the text is an outline or treatment, extract structure, premise, characters, locations, and dramatic arc.
 If the text is a brainstorming conversation, reconcile fragmented ideas into one coherent promising direction instead of mirroring every idea literally.
-If the text is screenplay pages, infer narrative intent, characters, locations, tone, and implied structure even if the full story is not present.
+If the text is screenplay pages, prioritize protagonist, world, inciting situation, core conflict, tone, and central thematic pressure even if the full story is not present.
+For screenplay-like material, the brief must be concise and premise-oriented, not an act-by-act recap.
+Avoid plot-by-plot recap unless the source is clearly an outline or treatment.
 Do not treat every exploratory idea as canonical. Prefer the strongest unifying concept.
 
 Project context:
 ${buildProjectContext(project)}
+
+Detected source type: ${sourceType}
 
 Source material text:
 ${sourceText}`,
@@ -225,12 +280,15 @@ ${sourceText}`,
 The source is likely an outline, treatment, brainstorming conversation export, or screenplay pages.
 Return the most useful creative signals from this chunk only.
 If this chunk is exploratory brainstorming, consolidate it toward the strongest direction.
-If this chunk is screenplay material, extract implied structure and character/location signals.
+If this chunk is screenplay material, focus on protagonist, world, conflict, tone, and thematic pressure rather than plot recap.
+Keep the brief concise and premise-oriented for screenplay-like material.
 
 Chunk ${index + 1} of ${chunks.length}
 
 Project context:
 ${buildProjectContext(project)}
+
+Detected source type: ${sourceType}
 
 Source chunk:
 ${chunk}`,
@@ -248,9 +306,12 @@ ${chunk}`,
 
 The original source was likely an outline, treatment, brainstorming conversation export, or screenplay draft.
 Produce one coherent direction that can seed the project, not a dump of all possibilities.
+If the source is screenplay-like, keep the brief concise and centered on protagonist, world, inciting situation, core conflict, and tone rather than detailed plot progression.
 
 Project context:
 ${buildProjectContext(project)}
+
+Detected source type: ${sourceType}
 
 Partial summaries:
 ${JSON.stringify(mergedPack, null, 2)}`,

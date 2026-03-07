@@ -5,8 +5,10 @@ import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ClipboardList,
   Eye,
   FileText,
@@ -441,6 +443,7 @@ export function ProjectDevelopmentWizard({
   const [customInfluence, setCustomInfluence] = useState("");
   const [isRandomizingConcept, setIsRandomizingConcept] = useState(false);
   const [isImportingSource, setIsImportingSource] = useState(false);
+  const [isSourceBriefExpanded, setIsSourceBriefExpanded] = useState(false);
   const [randomizedInfluenceOptions, setRandomizedInfluenceOptions] = useState(() =>
     INFLUENCE_OPTIONS.slice(0, RANDOMIZED_INFLUENCE_COUNT)
   );
@@ -453,6 +456,10 @@ export function ProjectDevelopmentWizard({
   useEffect(() => {
     setRandomizedInfluenceOptions(getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT));
   }, []);
+
+  useEffect(() => {
+    setIsSourceBriefExpanded(false);
+  }, [data.development?.sourceContextPack?.brief]);
 
   useEffect(() => {
     if (!canEnterStep(data, activeStep)) {
@@ -525,6 +532,7 @@ export function ProjectDevelopmentWizard({
       .map((genre) => genre.trim())
       .filter(Boolean);
   const selectedInfluences = data.development?.influences || [];
+  const suggestedInfluenceValues = data.development?.sourceContextPack?.influenceSuggestions || [];
   const genreOptions = [
     ...GENRE_OPTIONS,
     ...selectedGenres.filter(
@@ -539,7 +547,12 @@ export function ProjectDevelopmentWizard({
           influence as (typeof randomizedInfluenceOptions)[number]
         )
     ),
-  ];
+  ].filter((influence) => !suggestedInfluenceValues.includes(influence));
+  const suggestedInfluences = suggestedInfluenceValues.filter(
+    (influence) => !selectedInfluences.includes(influence)
+  );
+  const sourceBriefPreview =
+    sourceBrief.length > 220 ? `${sourceBrief.slice(0, 217).trimEnd()}...` : sourceBrief;
   const canGenerateConcepts =
     conceptValue.trim().length > 0 || selectedGenres.length > 0 || selectedInfluences.length > 0;
 
@@ -697,7 +710,6 @@ export function ProjectDevelopmentWizard({
           conceptSeed: sourceContextPack.conceptSeed,
           conceptStatement: sourceContextPack.conceptSeed,
           genres: sourceContextPack.genreSuggestions,
-          influences: sourceContextPack.influenceSuggestions,
         },
       });
       toast.success("Source imported successfully", { id: loadingToast });
@@ -979,14 +991,6 @@ export function ProjectDevelopmentWizard({
       case "concept":
         return (
           <div className="space-y-6">
-            {sourceBrief && (
-              <div className="rounded-lg border border-border bg-muted/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                  Source Brief
-                </p>
-                <p className="mt-3 text-sm leading-relaxed text-foreground/85">{sourceBrief}</p>
-              </div>
-            )}
             <div className="space-y-2">
               <Label htmlFor="concept-statement">Concept</Label>
               <Textarea
@@ -1018,33 +1022,101 @@ export function ProjectDevelopmentWizard({
                   {loadingStep === "concept" ? "Generating..." : "Generate Concept"}
                 </Button>
               </div>
-              {(selectedGenres.length > 0 || selectedInfluences.length > 0) && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {selectedGenres.map((genre) => (
-                    <button
-                      key={genre}
-                      type="button"
-                      onClick={() => toggleGenre(genre)}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                    >
-                      <span>{genre}</span>
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  ))}
-                  {selectedInfluences.map((influence) => (
-                    <button
-                      key={influence}
-                      type="button"
-                      onClick={() => toggleInfluence(influence)}
-                      className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                    >
-                      <span>{influence}</span>
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  ))}
+              {selectedGenres.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Genres
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedGenres.map((genre) => (
+                      <button
+                        key={genre}
+                        type="button"
+                        onClick={() => toggleGenre(genre)}
+                        className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                      >
+                        <span>{genre}</span>
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selectedInfluences.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Influences
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedInfluences.map((influence) => (
+                      <button
+                        key={influence}
+                        type="button"
+                        onClick={() => toggleInfluence(influence)}
+                        className="inline-flex items-center gap-2 rounded-full bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                      >
+                        <span>{influence}</span>
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
+
+            {sourceBrief && (
+              <div className="rounded-lg border border-border bg-muted/20 p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                      Source Brief
+                    </p>
+                    <p className="text-sm leading-relaxed text-foreground/85">
+                      {isSourceBriefExpanded ? sourceBrief : sourceBriefPreview}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsSourceBriefExpanded((value) => !value)}
+                    className="shrink-0"
+                  >
+                    {isSourceBriefExpanded ? (
+                      <>
+                        <ChevronUp className="mr-2 h-4 w-4" />
+                        Collapse
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown className="mr-2 h-4 w-4" />
+                        Expand
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {suggestedInfluences.length > 0 && (
+              <div className="space-y-3">
+                <Label>Suggested influences</Label>
+                <div className="flex flex-wrap gap-2">
+                  {suggestedInfluences.map((influence) => (
+                    <Button
+                      key={`suggested-${influence}`}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleInfluence(influence)}
+                      className="h-8 rounded-full bg-transparent px-3 text-xs"
+                    >
+                      {influence}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3">
               <Label>Genre</Label>
