@@ -786,9 +786,10 @@ export function ProjectDevelopmentWizard({
                     key={genre}
                     type="button"
                     variant="outline"
+                    size="sm"
                     onClick={() => toggleGenre(genre)}
                     className={cn(
-                      "bg-transparent",
+                      "h-8 rounded-full bg-transparent px-3 text-xs",
                       selectedGenres.includes(genre) &&
                         "border-primary bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
                     )}
@@ -824,9 +825,10 @@ export function ProjectDevelopmentWizard({
                     key={influence}
                     type="button"
                     variant="outline"
+                    size="sm"
                     onClick={() => toggleInfluence(influence)}
                     className={cn(
-                      "bg-transparent",
+                      "h-8 rounded-full bg-transparent px-3 text-xs",
                       selectedInfluences.includes(influence) &&
                         "border-primary bg-primary/10 text-primary hover:bg-primary/10"
                     )}
