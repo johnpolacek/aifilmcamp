@@ -73,6 +73,57 @@ const sourceContextEntitySchema = z.object({
 const sourceContextPackSchema = z.object({
   brief: z.string(),
   conceptSeed: z.string(),
+  genreSuggestions: z.array(z.string()),
+  influenceSuggestions: z.array(z.string()),
+  vibeKeywords: z.array(z.string()),
+  characterSeeds: z.array(sourceContextEntitySchema),
+  locationSeeds: z.array(sourceContextEntitySchema),
+  storyFacts: z.array(z.string()),
+});
+
+function normalizeEntitySeeds(
+  values: Array<{ name: string; description: string }>,
+  limit: number
+) {
+  const seen = new Set<string>();
+  const normalized: Array<{ name: string; description: string }> = [];
+
+  for (const value of values) {
+    const name = value.name.trim();
+    const description = value.description.trim();
+    const key = name.toLowerCase();
+
+    if (!name || !description || seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    normalized.push({ name, description });
+
+    if (normalized.length >= limit) {
+      break;
+    }
+  }
+
+  return normalized;
+}
+
+function normalizeSourceContextPack(raw: z.infer<typeof sourceContextPackSchema>): SourceContextPack {
+  return {
+    brief: raw.brief.trim(),
+    conceptSeed: raw.conceptSeed.trim(),
+    genreSuggestions: dedupeStrings(raw.genreSuggestions, 6),
+    influenceSuggestions: dedupeStrings(raw.influenceSuggestions, 8),
+    vibeKeywords: dedupeStrings(raw.vibeKeywords, 8),
+    characterSeeds: normalizeEntitySeeds(raw.characterSeeds, 8),
+    locationSeeds: normalizeEntitySeeds(raw.locationSeeds, 8),
+    storyFacts: dedupeStrings(raw.storyFacts, 12),
+  };
+}
+
+const strictSourceContextPackSchema = z.object({
+  brief: z.string(),
+  conceptSeed: z.string(),
   genreSuggestions: z.array(z.string()).max(6),
   influenceSuggestions: z.array(z.string()).max(8),
   vibeKeywords: z.array(z.string()).max(8),
@@ -160,7 +211,7 @@ Source material text:
 ${sourceText}`,
     });
 
-    return output;
+    return strictSourceContextPackSchema.parse(normalizeSourceContextPack(output));
   }
 
   const chunks = chunkSourceText(sourceText);
@@ -185,14 +236,14 @@ Source chunk:
 ${chunk}`,
       });
 
-      return output;
+      return strictSourceContextPackSchema.parse(normalizeSourceContextPack(output));
     })
   );
 
   const mergedPack = mergeSourceContextPacks(partialPacks);
   const { output } = await generateText({
     model: getTextModel(),
-      output: Output.object({ schema: sourceContextPackSchema }),
+    output: Output.object({ schema: sourceContextPackSchema }),
     prompt: `You are combining partial summaries of creative-development source material into one final reusable context pack for an AI film project.
 
 The original source was likely an outline, treatment, brainstorming conversation export, or screenplay draft.
@@ -205,7 +256,7 @@ Partial summaries:
 ${JSON.stringify(mergedPack, null, 2)}`,
   });
 
-  return output;
+  return strictSourceContextPackSchema.parse(normalizeSourceContextPack(output));
 }
 
 export async function generateConceptDirections(project: Partial<ProjectFormData>) {
