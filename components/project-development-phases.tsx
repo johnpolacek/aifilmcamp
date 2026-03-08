@@ -595,8 +595,9 @@ export function ProjectDevelopmentWizard({
   );
   const sourceBriefPreview =
     sourceBrief.length > 220 ? `${sourceBrief.slice(0, 217).trimEnd()}...` : sourceBrief;
+  const hasConcept = conceptValue.trim().length > 0;
   const canGenerateConcepts =
-    conceptValue.trim().length > 0 || selectedGenres.length > 0 || selectedInfluences.length > 0;
+    hasConcept || selectedGenres.length > 0 || selectedInfluences.length > 0;
 
   const clearSourceData = (startMode: StartMode = "blank") => ({
     ...data.development,
@@ -1057,11 +1058,24 @@ export function ProjectDevelopmentWizard({
 
                 <Button
                   type="button"
-                  onClick={() => void generateConcept()}
-                  disabled={loadingStep === "concept" || isRandomizingConcept || !canGenerateConcepts}
+                  onClick={() => (hasConcept ? void handleNext() : void generateConcept())}
+                  disabled={
+                    loadingStep === "concept" ||
+                    isRandomizingConcept ||
+                    (hasConcept ? !nextStep : !canGenerateConcepts)
+                  }
                 >
-                  <Bot className="mr-2 h-4 w-4" />
-                  {loadingStep === "concept" ? "Generating..." : "Generate Concept"}
+                  {hasConcept ? (
+                    <>
+                      Next
+                      <ChevronRight className="ml-2 h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      <Bot className="mr-2 h-4 w-4" />
+                      {loadingStep === "concept" ? "Generating..." : "Generate Concept"}
+                    </>
+                  )}
                 </Button>
               </div>
               {selectedGenres.length > 0 && (
