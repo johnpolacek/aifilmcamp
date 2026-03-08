@@ -54,6 +54,7 @@ import {
   createDefaultPhaseStatus,
   createDefaultPhaseVisibility,
   FILM_LENGTH_OPTIONS,
+  normalizeFilmLengthOption,
 } from "@/lib/types/development";
 
 // Types
@@ -199,11 +200,18 @@ interface ProjectFormProps {
 }
 
 function createInitialProjectFormData(initialData?: Partial<ProjectFormData>): ProjectFormData {
+  const normalizedFilmLength =
+    normalizeFilmLengthOption(initialData?.filmLength) ||
+    normalizeFilmLengthOption(initialData?.duration);
+
   return {
     title: initialData?.title || "",
     logline: initialData?.logline || "",
-    duration: initialData?.duration || "",
-    filmLength: initialData?.filmLength || (initialData?.duration as FilmLengthOption | undefined),
+    duration: normalizedFilmLength || initialData?.duration || "",
+    filmLength:
+      normalizedFilmLength ||
+      initialData?.filmLength ||
+      (initialData?.duration as FilmLengthOption | undefined),
     genre: initialData?.genre || "",
     characters: initialData?.characters || [],
     setting: initialData?.setting || { locations: [] },
@@ -331,13 +339,19 @@ export default function ProjectForm({
   const lastSavedDataRef = useRef<string>(JSON.stringify(formData));
 
   const buildPersistedFormData = useCallback(
-    (currentData: ProjectFormData): ProjectFormData => ({
-      ...currentData,
-      duration: currentData.filmLength || currentData.duration,
-      filmLength: currentData.filmLength || (currentData.duration as FilmLengthOption | undefined),
-      phaseStatus: derivePhaseStatus(currentData),
-      phaseVisibility: ensureProjectPhaseVisibility(currentData),
-    }),
+    (currentData: ProjectFormData): ProjectFormData => {
+      const normalizedFilmLength =
+        normalizeFilmLengthOption(currentData.filmLength) ||
+        normalizeFilmLengthOption(currentData.duration);
+
+      return {
+        ...currentData,
+        duration: normalizedFilmLength || currentData.duration,
+        filmLength: normalizedFilmLength || currentData.filmLength,
+        phaseStatus: derivePhaseStatus(currentData),
+        phaseVisibility: ensureProjectPhaseVisibility(currentData),
+      };
+    },
     []
   );
 

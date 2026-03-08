@@ -1,14 +1,24 @@
 import type { ProjectFormData } from "@/components/project-form";
-import { createDefaultPhaseStatus, createDefaultPhaseVisibility } from "@/lib/types/development";
+import {
+  createDefaultPhaseStatus,
+  createDefaultPhaseVisibility,
+  normalizeFilmLengthOption,
+} from "@/lib/types/development";
 import { getObjectFromS3, listObjectsInS3, putObjectToS3 } from "./s3";
 
 const PROJECTS_PREFIX = "projects/";
 
 function ensureProjectFields(project: ProjectFormData): ProjectFormData {
+  const normalizedFilmLength =
+    normalizeFilmLengthOption(project.filmLength) || normalizeFilmLengthOption(project.duration);
+
   return {
     ...project,
-    duration: project.duration || project.filmLength || "",
-    filmLength: project.filmLength || (project.duration as ProjectFormData["filmLength"]),
+    duration: normalizedFilmLength || project.duration || project.filmLength || "",
+    filmLength:
+      normalizedFilmLength ||
+      project.filmLength ||
+      (project.duration as ProjectFormData["filmLength"]),
     development: project.development || {},
     phaseVisibility: {
       ...createDefaultPhaseVisibility(),

@@ -1,13 +1,34 @@
 export const FILM_LENGTH_OPTIONS = [
-  "30-60 seconds",
-  "1-3 minutes",
-  "3-5 minutes",
-  "5-10 minutes",
-  "10-20 minutes",
-  "20+ minutes",
+  "Short (5 minutes or less)",
+  "Medium (5 to 20 minutes)",
+  "Long (20-60 minutes)",
+  "Feature Length (60+ minutes)",
 ] as const;
 
 export type FilmLengthOption = (typeof FILM_LENGTH_OPTIONS)[number];
+
+const LEGACY_FILM_LENGTH_MAP: Record<string, FilmLengthOption> = {
+  "30-60 seconds": "Short (5 minutes or less)",
+  "1-3 minutes": "Short (5 minutes or less)",
+  "3-5 minutes": "Short (5 minutes or less)",
+  "5-10 minutes": "Medium (5 to 20 minutes)",
+  "10-20 minutes": "Medium (5 to 20 minutes)",
+  "20+ minutes": "Long (20-60 minutes)",
+};
+
+export function normalizeFilmLengthOption(
+  value?: string | null
+): FilmLengthOption | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  if ((FILM_LENGTH_OPTIONS as readonly string[]).includes(value)) {
+    return value as FilmLengthOption;
+  }
+
+  return LEGACY_FILM_LENGTH_MAP[value];
+}
 
 export const WORKFLOW_PHASES = [
   "start-mode",
