@@ -525,7 +525,10 @@ export function ProjectDevelopmentWizard({
   const nextStep = getNextStep(activeStep, data);
   const previousStep = getPreviousStep(activeStep, data);
   const isCreateProjectStep = !!onCreateProject && activeStep === "title-logline";
-  const canCreateProject = data.title.trim().length > 0 && data.logline.trim().length > 0;
+  const canCreateProject =
+    data.title.trim().length > 0 &&
+    data.logline.trim().length > 0 &&
+    Boolean(data.filmLength || data.duration);
 
   const handleNext = async () => {
     if (isCreateProjectStep && onCreateProject) {
@@ -1390,6 +1393,30 @@ export function ProjectDevelopmentWizard({
                 rows={3}
                 placeholder="Describe the core dramatic hook in one sentence"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Film Length</Label>
+              <Select
+                value={data.filmLength || data.duration || ""}
+                onValueChange={(value) =>
+                  updateData({
+                    ...data,
+                    filmLength: value as ProjectFormData["filmLength"],
+                    duration: value,
+                  })
+                }
+              >
+                <SelectTrigger className="bg-background">
+                  <SelectValue placeholder="Select target runtime" />
+                </SelectTrigger>
+                <SelectContent>
+                  {FILM_LENGTH_OPTIONS.map((option) => (
+                    <SelectItem key={option} value={option}>
+                      {option}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <Button
               type="button"

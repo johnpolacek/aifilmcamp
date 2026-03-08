@@ -44,7 +44,10 @@ export function derivePhaseStatus(project: ProjectFormData): Record<WorkflowPhas
     "source-import": { status: sourceImportReady ? "complete" : "not_started" },
     concept: { status: conceptReady ? "complete" : "not_started" },
     "title-logline": {
-      status: project.title || project.logline ? "complete" : "not_started",
+      status:
+        project.title && project.logline && (project.filmLength || project.duration)
+          ? "complete"
+          : "not_started",
     },
     "film-length": { status: project.filmLength || project.duration ? "complete" : "not_started" },
     characters: {
@@ -95,7 +98,9 @@ export function getPublishedPhases(project: ProjectFormData): WorkflowPhase[] {
 
 export function getStepOrder(project?: Partial<ProjectFormData>): WorkflowPhase[] {
   const startMode = project?.development?.startMode;
-  return WORKFLOW_PHASES.filter((step) => step !== "source-import" || startMode === "import");
+  return WORKFLOW_PHASES.filter(
+    (step) => (step !== "source-import" || startMode === "import") && step !== "film-length"
+  );
 }
 
 export function getNextStep(currentStep: WorkflowPhase, project?: Partial<ProjectFormData>): WorkflowPhase | null {
