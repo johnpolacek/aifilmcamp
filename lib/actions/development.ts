@@ -405,10 +405,13 @@ export async function generateTitleAndLogline(project: Partial<ProjectFormData>)
         title: z.string(),
         logline: z.string(),
         conceptStatement: z.string(),
-        vibe: z.string(),
       }),
     }),
-    prompt: `Create one strong title, one logline, one concise concept statement, and one short vibe line for this film project.
+    prompt: `Create one strong title, one strong logline, and one concise concept statement for this film project.
+
+If imported source context is available, use it as the primary grounding for the title and logline.
+Prioritize the protagonist, world, inciting situation, and core conflict over abstract mood words.
+Do not return placeholders.
 
 Project context:
 ${buildProjectContext(project)}`,

@@ -138,12 +138,6 @@ export function ProjectView({
             <div className="space-y-2">
               <p className="text-lg font-semibold">{project.title}</p>
               {project.logline && <p className="text-sm text-muted-foreground">{project.logline}</p>}
-              {project.development?.vibe && (
-                <p className="text-sm text-foreground/80">
-                  <span className="font-medium text-foreground">Vibe:</span>{" "}
-                  {project.development.vibe}
-                </p>
-              )}
             </div>
           </Section>
         )}
