@@ -1,13 +1,10 @@
 "use client";
 
-import {
-  Loader2,
-  Video,
-} from "lucide-react";
+import { Loader2, Video } from "lucide-react";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { AudioWaveform } from "@/components/audio-waveform";
-import { getEffectiveDuration } from "@/lib/scenes-client";
 import type { AudioTrack, Shot } from "@/lib/scenes-client";
+import { getEffectiveDuration } from "@/lib/scenes-client";
 
 // ============================================================================
 // TYPES
@@ -52,9 +49,10 @@ function ShotCard({
   widthPercent,
 }: ShotCardProps) {
   // Get thumbnail URL - prioritize video thumbnail, then start frame image, then video URL
-  const thumbnailUrl = shot.video?.thumbnailUrl && shot.video.thumbnailUrl.trim() 
-    ? shot.video.thumbnailUrl 
-    : shot.startFrameImage || null;
+  const thumbnailUrl =
+    shot.video?.thumbnailUrl && shot.video.thumbnailUrl.trim()
+      ? shot.video.thumbnailUrl
+      : shot.startFrameImage || null;
   const videoUrl = shot.video?.url || null;
 
   return (
@@ -72,7 +70,7 @@ function ShotCard({
       `}
       style={{
         flex: `${widthPercent} 1 0%`,
-        minWidth: '20px',
+        minWidth: "20px",
       }}
     >
       {/* Thumbnail or placeholder */}
@@ -81,15 +79,15 @@ function ShotCard({
           src={thumbnailUrl}
           alt={`Shot ${shot.order + 1}`}
           className="w-full h-full object-cover"
-          style={{ maxWidth: '100%', height: '100%', objectFit: 'cover' }}
+          style={{ maxWidth: "100%", height: "100%", objectFit: "cover" }}
           onError={(e) => {
             if (videoUrl && e.currentTarget.parentElement) {
               const videoEl = document.createElement("video");
               videoEl.src = videoUrl;
               videoEl.className = "w-full h-full object-cover";
-              videoEl.style.maxWidth = '100%';
-              videoEl.style.height = '100%';
-              videoEl.style.objectFit = 'cover';
+              videoEl.style.maxWidth = "100%";
+              videoEl.style.height = "100%";
+              videoEl.style.objectFit = "cover";
               videoEl.muted = true;
               videoEl.playsInline = true;
               e.currentTarget.parentElement.replaceChild(videoEl, e.currentTarget);
@@ -97,11 +95,11 @@ function ShotCard({
           }}
         />
       ) : videoUrl ? (
-        <video 
-          src={videoUrl} 
-          className="w-full h-full object-cover" 
-          style={{ maxWidth: '100%', height: '100%', objectFit: 'cover' }}
-          muted 
+        <video
+          src={videoUrl}
+          className="w-full h-full object-cover"
+          style={{ maxWidth: "100%", height: "100%", objectFit: "cover" }}
+          muted
           playsInline
         />
       ) : shot.video?.status === "processing" ? (
@@ -119,13 +117,10 @@ function ShotCard({
           <Video className="h-6 w-6 text-muted-foreground" />
         </div>
       )}
-      
+
       {/* Audio indicator line - show at bottom for completed videos with audio */}
       {shot.video?.status === "completed" && !shot.audioMuted && (
-        <div 
-          className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600"
-          title="Has audio"
-        />
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-600" title="Has audio" />
       )}
     </div>
   );
@@ -168,14 +163,14 @@ function AudioTrackRow({
       onDragEnd={onDragEnd}
       onMouseDown={onMouseDown}
       className={`absolute h-6 rounded-md cursor-move transition-all overflow-hidden border ${
-        isSelected 
-          ? "border-primary ring-2 ring-primary/30 bg-primary/5" 
+        isSelected
+          ? "border-primary ring-2 ring-primary/30 bg-primary/5"
           : "border-border bg-muted/20 hover:border-primary/50"
       } ${track.muted ? "opacity-40" : ""} ${isDragging ? "opacity-50 scale-95" : ""}`}
       style={{
         left: `${leftPercent}%`,
         width: `${Math.max(0.5, widthPercent)}%`,
-        minWidth: '8px',
+        minWidth: "8px",
       }}
       onClick={onClick}
     >
@@ -273,58 +268,61 @@ export default function Timeline({
 
   // Handle audio track dragging
   // NOTE: During dragging, we only update local visual state. The position is NOT saved until drag ends.
-  const handleAudioTrackMouseDown = useCallback((trackId: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const track = audioTracks.find(t => t.id === trackId);
-    if (!track || !onAudioTrackMove) return;
-    
-    const trackRect = e.currentTarget.getBoundingClientRect();
-    const offsetX = e.clientX - trackRect.left;
-    const startX = e.clientX;
-    setDraggedAudioTrackId(trackId);
-    audioTrackDraggedRef.current = false; // Reset drag flag
-    
-    // Store the final position to save when drag ends
-    let finalStartTimeMs = track.startTimeMs;
+  const handleAudioTrackMouseDown = useCallback(
+    (trackId: string, e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const track = audioTracks.find((t) => t.id === trackId);
+      if (!track || !onAudioTrackMove) return;
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      // Only consider it a drag if moved more than 3 pixels
-      if (Math.abs(moveEvent.clientX - startX) > 3) {
-        audioTrackDraggedRef.current = true;
-      }
-      if (!timelineRef.current) return;
-      const timelineRect = timelineRef.current.getBoundingClientRect();
-      const timelineWidth = timelineRect.width;
-      const newX = moveEvent.clientX - timelineRect.left - offsetX;
-      // Convert pixel position to percentage, then to milliseconds
-      const newPercent = Math.max(0, Math.min(100, (newX / timelineWidth) * 100));
-      const newStartTimeMs = (newPercent / 100) * totalDurationMs;
-      
-      // Store the final position but don't save yet - only update visual state during dragging
-      finalStartTimeMs = newStartTimeMs;
-      
-      // Update local state for visual feedback during dragging (no API calls)
-      setDraggedAudioTrackPosition(newStartTimeMs);
-    };
+      const trackRect = e.currentTarget.getBoundingClientRect();
+      const offsetX = e.clientX - trackRect.left;
+      const startX = e.clientX;
+      setDraggedAudioTrackId(trackId);
+      audioTrackDraggedRef.current = false; // Reset drag flag
 
-    const handleMouseUp = () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      
-      // Only save the position when drag ends (not during dragging)
-      if (audioTrackDraggedRef.current && finalStartTimeMs !== track.startTimeMs) {
-        onAudioTrackMove(trackId, finalStartTimeMs);
-      }
-      
-      // Clear dragged position state
-      setDraggedAudioTrackPosition(null);
-      setDraggedAudioTrackId(null);
-    };
+      // Store the final position to save when drag ends
+      let finalStartTimeMs = track.startTimeMs;
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  }, [audioTracks, totalDurationMs, onAudioTrackMove]);
+      const handleMouseMove = (moveEvent: MouseEvent) => {
+        // Only consider it a drag if moved more than 3 pixels
+        if (Math.abs(moveEvent.clientX - startX) > 3) {
+          audioTrackDraggedRef.current = true;
+        }
+        if (!timelineRef.current) return;
+        const timelineRect = timelineRef.current.getBoundingClientRect();
+        const timelineWidth = timelineRect.width;
+        const newX = moveEvent.clientX - timelineRect.left - offsetX;
+        // Convert pixel position to percentage, then to milliseconds
+        const newPercent = Math.max(0, Math.min(100, (newX / timelineWidth) * 100));
+        const newStartTimeMs = (newPercent / 100) * totalDurationMs;
+
+        // Store the final position but don't save yet - only update visual state during dragging
+        finalStartTimeMs = newStartTimeMs;
+
+        // Update local state for visual feedback during dragging (no API calls)
+        setDraggedAudioTrackPosition(newStartTimeMs);
+      };
+
+      const handleMouseUp = () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+
+        // Only save the position when drag ends (not during dragging)
+        if (audioTrackDraggedRef.current && finalStartTimeMs !== track.startTimeMs) {
+          onAudioTrackMove(trackId, finalStartTimeMs);
+        }
+
+        // Clear dragged position state
+        setDraggedAudioTrackPosition(null);
+        setDraggedAudioTrackId(null);
+      };
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+    },
+    [audioTracks, totalDurationMs, onAudioTrackMove]
+  );
 
   const handleAudioTrackDragStart = useCallback((trackId: string) => {
     setDraggedAudioTrackId(trackId);
@@ -354,7 +352,8 @@ export default function Timeline({
       {/* Shot boundary guide lines */}
       {shotPositions.map(({ shot, startTimeMs, durationMs }) => {
         const startPercent = totalDurationMs > 0 ? (startTimeMs / totalDurationMs) * 100 : 0;
-        const endPercent = totalDurationMs > 0 ? ((startTimeMs + durationMs) / totalDurationMs) * 100 : 0;
+        const endPercent =
+          totalDurationMs > 0 ? ((startTimeMs + durationMs) / totalDurationMs) * 100 : 0;
         return (
           <div key={`shot-boundaries-${shot.id}`} className="contents">
             {/* Start boundary */}
@@ -374,7 +373,7 @@ export default function Timeline({
       {/* Time marker guide lines (every 1 second) */}
       {Array.from({ length: Math.ceil(totalDurationMs / 1000) + 1 }).map((_, i) => {
         const seconds = i;
-        const percent = totalDurationMs > 0 ? (seconds * 1000 / totalDurationMs) * 100 : 0;
+        const percent = totalDurationMs > 0 ? ((seconds * 1000) / totalDurationMs) * 100 : 0;
         return (
           <div
             key={`time-guide-${seconds}`}
@@ -386,19 +385,18 @@ export default function Timeline({
 
       {/* Timeline Ruler */}
       <div className="border-b border-border px-2 py-1 w-full relative z-20">
-        <div className="relative w-full" style={{ height: '24px' }}>
+        <div className="relative w-full" style={{ height: "24px" }}>
           {timeMarkers.map((seconds) => {
-            const leftPercent = totalDurationMs > 0 ? (seconds * 1000 / totalDurationMs) * 100 : 0;
+            const leftPercent =
+              totalDurationMs > 0 ? ((seconds * 1000) / totalDurationMs) * 100 : 0;
             return (
               <div
                 key={seconds}
                 className="absolute top-0 bottom-0 flex flex-col items-center"
-                style={{ left: `${leftPercent}%`, transform: 'translateX(-50%)' }}
+                style={{ left: `${leftPercent}%`, transform: "translateX(-50%)" }}
               >
                 <div className="w-px h-2 bg-border" />
-                <span className="text-[10px] text-muted-foreground mt-0.5">
-                  {seconds}s
-                </span>
+                <span className="text-[10px] text-muted-foreground mt-0.5">{seconds}s</span>
               </div>
             );
           })}
@@ -407,11 +405,7 @@ export default function Timeline({
 
       {/* Shots Row */}
       <div className="border-b border-border px-2 py-2 w-full relative z-20">
-        <div 
-          ref={timelineRef} 
-          className="flex w-full"
-          style={{ height: '64px' }}
-        >
+        <div ref={timelineRef} className="flex w-full" style={{ height: "64px" }}>
           {shotPositions.map(({ shot, widthPercent }) => (
             <ShotCard
               key={shot.id}
@@ -433,16 +427,16 @@ export default function Timeline({
       <div className="px-1 py-1 space-y-1 w-full relative z-20">
         {audioTracks.map((track) => {
           // Use dragged position for visual feedback during dragging, otherwise use actual position
-          const displayStartTimeMs = draggedAudioTrackId === track.id && draggedAudioTrackPosition !== null
-            ? draggedAudioTrackPosition
-            : track.startTimeMs;
-          const leftPercent = totalDurationMs > 0 ? (displayStartTimeMs / totalDurationMs) * 100 : 0;
-          const widthPercent = totalDurationMs > 0 ? (track.durationMs / totalDurationMs) * 100 : 10;
+          const displayStartTimeMs =
+            draggedAudioTrackId === track.id && draggedAudioTrackPosition !== null
+              ? draggedAudioTrackPosition
+              : track.startTimeMs;
+          const leftPercent =
+            totalDurationMs > 0 ? (displayStartTimeMs / totalDurationMs) * 100 : 0;
+          const widthPercent =
+            totalDurationMs > 0 ? (track.durationMs / totalDurationMs) * 100 : 10;
           return (
-            <div
-              key={track.id}
-              className="relative w-full h-6"
-            >
+            <div key={track.id} className="relative w-full h-6">
               <AudioTrackRow
                 track={track}
                 isSelected={selectedAudioTrackId === track.id}
@@ -469,5 +463,5 @@ export default function Timeline({
   );
 }
 
-export { ShotCard, AudioTrackRow };
 export type { TimelineProps };
+export { AudioTrackRow, ShotCard };

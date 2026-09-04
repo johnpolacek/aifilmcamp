@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Loader2, Music, Pause, Play, RotateCcw, Scissors, Upload, Volume2, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AudioWaveform } from "@/components/audio-waveform";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import type { AudioTrack, Shot } from "@/lib/scenes-client";
-import { createNewAudioTrack, getEffectiveDuration } from "@/lib/scenes-client";
+import { createNewAudioTrack } from "@/lib/scenes-client";
 import { uploadFile } from "@/lib/upload-utils";
 
 // ============================================================================
@@ -184,20 +184,20 @@ export function AudioTrackModal({
   // Handle trim apply
   const handleApplyTrim = async () => {
     if (!track || !track.sourceUrl) return;
-    
+
     // If no trim values, just close trim mode
     if (trimStartMs === 0 && trimEndMs === 0) {
       setIsTrimMode(false);
       return;
     }
-    
+
     setIsTrimmingAudio(true);
-    
+
     try {
       // Use original audio if available, otherwise use current audio
       const sourceAudioUrl = track.originalSourceUrl || track.sourceUrl;
       const sourceDuration = track.originalDurationMs || audioDuration;
-      
+
       const response = await fetch("/api/audio/trim", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -211,16 +211,16 @@ export function AudioTrackModal({
           durationMs: sourceDuration,
         }),
       });
-      
+
       const result = await response.json();
-      
+
       if (!result.success) {
         throw new Error(result.error || "Failed to trim audio");
       }
-      
+
       // Calculate effective duration
       const effectiveDuration = sourceDuration - trimStartMs - trimEndMs;
-      
+
       // Create updated track with trimmed audio
       const updatedTrack: AudioTrack = {
         ...track,
@@ -235,7 +235,7 @@ export function AudioTrackModal({
         trimEndMs,
         updatedAt: new Date().toISOString(),
       };
-      
+
       onSave(updatedTrack);
       setIsTrimMode(false);
       toast.success("Audio trimmed successfully");
@@ -250,7 +250,7 @@ export function AudioTrackModal({
   // Handle restore original
   const handleRestoreOriginal = () => {
     if (!track || !track.originalSourceUrl) return;
-    
+
     const updatedTrack: AudioTrack = {
       ...track,
       sourceUrl: track.originalSourceUrl,
@@ -261,7 +261,7 @@ export function AudioTrackModal({
       trimEndMs: undefined,
       updatedAt: new Date().toISOString(),
     };
-    
+
     onSave(updatedTrack);
     setSourceUrl(track.originalSourceUrl);
     setAudioDuration(track.originalDurationMs || audioDuration);
@@ -273,8 +273,8 @@ export function AudioTrackModal({
   const hasOriginal = track?.originalSourceUrl;
 
   // Get source duration for trimmer (use original if available)
-  const sourceDuration = track?.originalSourceUrl 
-    ? (track.originalDurationMs || audioDuration)
+  const sourceDuration = track?.originalSourceUrl
+    ? track.originalDurationMs || audioDuration
     : audioDuration;
 
   return (
@@ -297,10 +297,9 @@ export function AudioTrackModal({
           <DialogDescription>
             {isTrimMode
               ? "Drag the handles to set in and out points. Click play to preview the trimmed segment."
-              : isNew 
-              ? "Import an audio file. Drag on the timeline to position it."
-              : "Adjust audio settings. Drag on the timeline to reposition."
-            }
+              : isNew
+                ? "Import an audio file. Drag on the timeline to position it."
+                : "Adjust audio settings. Drag on the timeline to reposition."}
           </DialogDescription>
         </DialogHeader>
 
@@ -351,13 +350,16 @@ export function AudioTrackModal({
                   onClick={() => {
                     const audio = trimmerAudioRef.current;
                     if (!audio) return;
-                    
+
                     if (isPlaying) {
                       audio.pause();
                     } else {
                       // Start from trim start if before it or at end
                       const trimEndPoint = sourceDuration - trimEndMs;
-                      if (audio.currentTime * 1000 < trimStartMs || audio.currentTime * 1000 >= trimEndPoint) {
+                      if (
+                        audio.currentTime * 1000 < trimStartMs ||
+                        audio.currentTime * 1000 >= trimEndPoint
+                      ) {
                         audio.currentTime = trimStartMs / 1000;
                       }
                       audio.play();
@@ -376,7 +378,7 @@ export function AudioTrackModal({
               {/* Trim Timeline Bar with Waveform */}
               <div className="space-y-3">
                 {/* Custom trim bar with waveform and draggable handles */}
-                <div 
+                <div
                   ref={waveformContainerRef}
                   className="relative h-24 bg-muted border border-border rounded overflow-hidden"
                 >
@@ -394,20 +396,20 @@ export function AudioTrackModal({
                   )}
 
                   {/* Active region highlight (between handles) */}
-                  <div 
+                  <div
                     className="absolute inset-y-0 bg-primary/10 pointer-events-none"
-                    style={{ 
+                    style={{
                       left: `${(trimStartMs / sourceDuration) * 100}%`,
-                      right: `${(trimEndMs / sourceDuration) * 100}%`
+                      right: `${(trimEndMs / sourceDuration) * 100}%`,
                     }}
                   />
-                  
+
                   {/* Trimmed out regions (dark overlay) */}
-                  <div 
+                  <div
                     className="absolute inset-y-0 left-0 bg-black/60 pointer-events-none"
                     style={{ width: `${(trimStartMs / sourceDuration) * 100}%` }}
                   />
-                  <div 
+                  <div
                     className="absolute inset-y-0 right-0 bg-black/60 pointer-events-none"
                     style={{ width: `${(trimEndMs / sourceDuration) * 100}%` }}
                   />
@@ -415,38 +417,47 @@ export function AudioTrackModal({
                   {/* Current time playhead */}
                   <div
                     className="absolute top-0 bottom-0 w-0.5 bg-white z-20 pointer-events-none"
-                    style={{ 
+                    style={{
                       left: `${(currentTime / sourceDuration) * 100}%`,
-                      display: currentTime >= trimStartMs && currentTime <= (sourceDuration - trimEndMs) ? 'block' : 'none'
+                      display:
+                        currentTime >= trimStartMs && currentTime <= sourceDuration - trimEndMs
+                          ? "block"
+                          : "none",
                     }}
                   />
 
                   {/* Left trim handle (In point) */}
                   <div
                     className="absolute top-0 bottom-0 w-2 bg-primary cursor-ew-resize z-30 hover:bg-primary/80 transition-colors"
-                    style={{ left: `${(trimStartMs / sourceDuration) * 100}%`, transform: 'translateX(-50%)' }}
+                    style={{
+                      left: `${(trimStartMs / sourceDuration) * 100}%`,
+                      transform: "translateX(-50%)",
+                    }}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       const startX = e.clientX;
                       const startValue = trimStartMs;
                       const containerWidth = waveformContainerRef.current?.offsetWidth || 1;
-                      
+
                       const handleMouseMove = (moveEvent: MouseEvent) => {
                         const deltaX = moveEvent.clientX - startX;
                         const deltaMs = (deltaX / containerWidth) * sourceDuration;
-                        const newValue = Math.max(0, Math.min(sourceDuration - trimEndMs - 100, startValue + deltaMs));
+                        const newValue = Math.max(
+                          0,
+                          Math.min(sourceDuration - trimEndMs - 100, startValue + deltaMs)
+                        );
                         setTrimStartMs(newValue);
                         if (trimmerAudioRef.current) {
                           trimmerAudioRef.current.currentTime = newValue / 1000;
                           setCurrentTime(newValue);
                         }
                       };
-                      
+
                       const handleMouseUp = () => {
                         document.removeEventListener("mousemove", handleMouseMove);
                         document.removeEventListener("mouseup", handleMouseUp);
                       };
-                      
+
                       document.addEventListener("mousemove", handleMouseMove);
                       document.addEventListener("mouseup", handleMouseUp);
                     }}
@@ -458,17 +469,23 @@ export function AudioTrackModal({
                   {/* Right trim handle (Out point) */}
                   <div
                     className="absolute top-0 bottom-0 w-2 bg-primary cursor-ew-resize z-30 hover:bg-primary/80 transition-colors"
-                    style={{ left: `${(sourceDuration - trimEndMs) / sourceDuration * 100}%`, transform: 'translateX(-50%)' }}
+                    style={{
+                      left: `${((sourceDuration - trimEndMs) / sourceDuration) * 100}%`,
+                      transform: "translateX(-50%)",
+                    }}
                     onMouseDown={(e) => {
                       e.stopPropagation();
                       const startX = e.clientX;
                       const startValue = trimEndMs;
                       const containerWidth = waveformContainerRef.current?.offsetWidth || 1;
-                      
+
                       const handleMouseMove = (moveEvent: MouseEvent) => {
                         const deltaX = moveEvent.clientX - startX;
                         const deltaMs = (deltaX / containerWidth) * sourceDuration;
-                        const newValue = Math.max(0, Math.min(sourceDuration - trimStartMs - 100, startValue - deltaMs));
+                        const newValue = Math.max(
+                          0,
+                          Math.min(sourceDuration - trimStartMs - 100, startValue - deltaMs)
+                        );
                         setTrimEndMs(newValue);
                         if (trimmerAudioRef.current) {
                           const outPoint = (sourceDuration - newValue) / 1000;
@@ -476,12 +493,12 @@ export function AudioTrackModal({
                           setCurrentTime(sourceDuration - newValue);
                         }
                       };
-                      
+
                       const handleMouseUp = () => {
                         document.removeEventListener("mousemove", handleMouseMove);
                         document.removeEventListener("mouseup", handleMouseUp);
                       };
-                      
+
                       document.addEventListener("mousemove", handleMouseMove);
                       document.addEventListener("mouseup", handleMouseUp);
                     }}
@@ -505,7 +522,9 @@ export function AudioTrackModal({
                   </div>
                   <div className="text-muted-foreground">
                     <span className="text-xs">Out:</span>{" "}
-                    <span className="font-mono">{((sourceDuration - trimEndMs) / 1000).toFixed(2)}s</span>
+                    <span className="font-mono">
+                      {((sourceDuration - trimEndMs) / 1000).toFixed(2)}s
+                    </span>
                   </div>
                 </div>
               </div>
@@ -516,12 +535,12 @@ export function AudioTrackModal({
               {sourceUrl ? (
                 <div className="space-y-2">
                   <div>
-                    <audio 
+                    <audio
                       ref={audioRef}
-                      src={sourceUrl} 
-                      controls 
+                      src={sourceUrl}
+                      controls
                       className="w-full"
-                      style={{ colorScheme: 'dark' }}
+                      style={{ colorScheme: "dark" }}
                       onLoadedMetadata={handleLoadedMetadata}
                     />
                   </div>
@@ -545,7 +564,8 @@ export function AudioTrackModal({
                         <>
                           {(audioDuration / 1000).toFixed(1)}s
                           <span className="ml-1">
-                            (original: {((track?.originalDurationMs || audioDuration) / 1000).toFixed(1)}s)
+                            (original:{" "}
+                            {((track?.originalDurationMs || audioDuration) / 1000).toFixed(1)}s)
                           </span>
                         </>
                       ) : (
@@ -581,9 +601,7 @@ export function AudioTrackModal({
                     <Volume2 className="h-4 w-4" />
                     Volume
                   </Label>
-                  <span className="text-sm text-muted-foreground">
-                    {Math.round(volume * 100)}%
-                  </span>
+                  <span className="text-sm text-muted-foreground">{Math.round(volume * 100)}%</span>
                 </div>
                 <Slider
                   value={[volume * 100]}
@@ -613,7 +631,8 @@ export function AudioTrackModal({
                     Trim Video to Create Overlap
                   </Button>
                   <p className="text-xs text-muted-foreground">
-                    Trim the source video so it starts when this audio starts, creating overlap with previous shot.
+                    Trim the source video so it starts when this audio starts, creating overlap with
+                    previous shot.
                   </p>
                 </div>
               )}
@@ -643,8 +662,8 @@ export function AudioTrackModal({
                 </Button>
               )}
               <div className="flex-1" />
-              <Button 
-                type="button" 
+              <Button
+                type="button"
                 variant="outline"
                 onClick={() => {
                   // Cancel - reset trim values and exit trim mode
@@ -656,7 +675,7 @@ export function AudioTrackModal({
               >
                 Cancel
               </Button>
-              <Button 
+              <Button
                 type="button"
                 disabled={isTrimmingAudio || (trimStartMs === 0 && trimEndMs === 0)}
                 onClick={handleApplyTrim}
@@ -704,29 +723,16 @@ export function AudioTrackModal({
               )}
               {/* Restore original button */}
               {hasOriginal && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRestoreOriginal}
-                >
+                <Button type="button" variant="outline" size="sm" onClick={handleRestoreOriginal}>
                   <RotateCcw className="h-3 w-3 mr-1.5" />
                   Restore
                 </Button>
               )}
               <div className="flex-1" />
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-              >
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onClick={handleSave}
-                disabled={!sourceUrl}
-              >
+              <Button type="button" onClick={handleSave} disabled={!sourceUrl}>
                 {isNew ? "Add Track" : "Save Changes"}
               </Button>
             </>

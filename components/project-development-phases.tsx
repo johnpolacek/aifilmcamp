@@ -1,8 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import type React from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
   ChevronDown,
@@ -16,9 +13,12 @@ import {
   Map,
   Shuffle,
   Upload,
-  X,
   Users,
+  X,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import type React from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { ProjectFormData } from "@/components/project-form";
 import { Button } from "@/components/ui/button";
@@ -52,13 +52,13 @@ import {
   getPromptShotCount,
   getStepOrder,
 } from "@/lib/development";
-import { cn } from "@/lib/utils";
 import {
   FILM_LENGTH_OPTIONS,
   type PhaseVisibility,
   type StartMode,
   type WorkflowPhase,
 } from "@/lib/types/development";
+import { cn } from "@/lib/utils";
 
 interface ProjectDevelopmentWizardProps {
   data: ProjectFormData;
@@ -318,7 +318,8 @@ const stepMeta: Record<
   },
   "source-import": {
     label: "Import Source",
-    description: "Upload an outline, brainstorm export, or screenplay draft so AI can seed the project from your material.",
+    description:
+      "Upload an outline, brainstorm export, or screenplay draft so AI can seed the project from your material.",
     icon: Upload,
     supportsVisibility: false,
   },
@@ -349,12 +350,14 @@ const stepMeta: Record<
   },
   "script-breakdown": {
     label: "Script Breakdown",
-    description: "Turn the outline into scene-by-scene planning with locations, characters, and intent.",
+    description:
+      "Turn the outline into scene-by-scene planning with locations, characters, and intent.",
     icon: ClipboardList,
   },
   screenplay: {
     label: "Screenplay",
-    description: "Draft and refine the screenplay while keeping the breakdown as the source of truth.",
+    description:
+      "Draft and refine the screenplay while keeping the breakdown as the source of truth.",
     icon: FileText,
   },
   assets: {
@@ -409,7 +412,10 @@ function WizardStepFrame({
             <CardTitle className="text-2xl">{meta.label}</CardTitle>
             {meta.supportsVisibility !== false && (
               <div className="ml-auto flex items-center gap-3">
-                <Label htmlFor={`${step}-public-switch`} className="text-sm font-medium text-foreground">
+                <Label
+                  htmlFor={`${step}-public-switch`}
+                  className="text-sm font-medium text-foreground"
+                >
                   Public
                 </Label>
                 <Switch
@@ -438,7 +444,7 @@ function WizardStepFrame({
             <ChevronLeft className="mr-2 h-4 w-4" />
             Previous
           </Button>
-          {onStartOver && (
+          {onStartOver && data.development?.startMode && (
             <Button type="button" variant="ghost" onClick={onStartOver} disabled={isStartingOver}>
               Start Over
             </Button>
@@ -483,12 +489,14 @@ export function ProjectDevelopmentWizard({
   const setStep = (step: WizardStep) => setActiveStep(step);
 
   useEffect(() => {
-    setRandomizedInfluenceOptions(getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT));
+    setRandomizedInfluenceOptions(
+      getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
+    );
   }, []);
 
   useEffect(() => {
     setIsSourceBriefExpanded(false);
-  }, [data.development?.sourceContextPack?.brief]);
+  }, []);
 
   useEffect(() => {
     if (!canEnterStep(data, activeStep)) {
@@ -702,8 +710,7 @@ export function ProjectDevelopmentWizard({
       development: {
         ...data.development,
         startMode: "import",
-        sourceImportStatus:
-          data.development?.sourceImportStatus === "ready" ? "ready" : "idle",
+        sourceImportStatus: data.development?.sourceImportStatus === "ready" ? "ready" : "idle",
         sourceImportError: undefined,
       },
     });
@@ -724,7 +731,11 @@ export function ProjectDevelopmentWizard({
       const { ingestSourceDocument } = await import("@/lib/actions/development");
 
       if (sourceFile?.filename || data.development?.sourceTextKey) {
-        await removeSourceDocument(projectId, sourceFile?.filename, data.development?.sourceTextKey);
+        await removeSourceDocument(
+          projectId,
+          sourceFile?.filename,
+          data.development?.sourceTextKey
+        );
       }
 
       const uploadFormData = new FormData();
@@ -773,10 +784,9 @@ export function ProjectDevelopmentWizard({
             error instanceof Error ? error.message : "Failed to import source document",
         },
       });
-      toast.error(
-        error instanceof Error ? error.message : "Failed to import source document",
-        { id: loadingToast }
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to import source document", {
+        id: loadingToast,
+      });
     } finally {
       event.target.value = "";
       setIsImportingSource(false);
@@ -840,7 +850,9 @@ export function ProjectDevelopmentWizard({
           influences: [randomInfluence],
         },
       });
-      setRandomizedInfluenceOptions(getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT));
+      setRandomizedInfluenceOptions(
+        getRandomizedOptions(INFLUENCE_OPTIONS, RANDOMIZED_INFLUENCE_COUNT)
+      );
       toast.success("Generated a random concept seed");
     } finally {
       setIsRandomizingConcept(false);
@@ -852,7 +864,8 @@ export function ProjectDevelopmentWizard({
       const { generateConceptDirections } = await import("@/lib/actions/development");
       const directions = await generateConceptDirections(data);
       const selectedDirection = directions[0];
-      const conceptStatement = selectedDirection?.premise || data.development?.conceptStatement || "";
+      const conceptStatement =
+        selectedDirection?.premise || data.development?.conceptStatement || "";
 
       if (!conceptStatement) {
         toast.error("Could not generate a concept from the current inputs.");
@@ -921,6 +934,7 @@ export function ProjectDevelopmentWizard({
     data.logline,
     data.title,
     loadingStep,
+    generateTitle,
   ]);
 
   const generateOutlineDraft = async () =>
@@ -1051,7 +1065,9 @@ export function ProjectDevelopmentWizard({
                 <p className="font-medium">{sourceFile.name}</p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {data.development?.sourceDocumentKind?.toUpperCase()} ·{" "}
-                  {sourceFile.size ? `${Math.round(sourceFile.size / 1024)} KB` : "Size unavailable"}
+                  {sourceFile.size
+                    ? `${Math.round(sourceFile.size / 1024)} KB`
+                    : "Size unavailable"}
                 </p>
                 {sourceBrief && (
                   <div className="mt-4 space-y-2">
@@ -1245,7 +1261,12 @@ export function ProjectDevelopmentWizard({
                   placeholder="Add your own genre"
                   className="bg-background"
                 />
-                <Button type="button" variant="outline" onClick={addCustomGenre} className="bg-transparent">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addCustomGenre}
+                  className="bg-transparent"
+                >
                   Add
                 </Button>
               </div>
@@ -1284,7 +1305,12 @@ export function ProjectDevelopmentWizard({
                   placeholder="Add your own influence"
                   className="bg-background"
                 />
-                <Button type="button" variant="outline" onClick={addCustomInfluence} className="bg-transparent">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addCustomInfluence}
+                  className="bg-transparent"
+                >
                   Add
                 </Button>
               </div>
@@ -1317,7 +1343,9 @@ export function ProjectDevelopmentWizard({
                     >
                       <p className="font-medium">{direction.title}</p>
                       <p className="mt-2 text-sm text-muted-foreground">{direction.premise}</p>
-                      <p className="mt-2 text-xs uppercase tracking-wide text-primary">{direction.tone}</p>
+                      <p className="mt-2 text-xs uppercase tracking-wide text-primary">
+                        {direction.tone}
+                      </p>
                     </button>
                   );
                 })}
@@ -1467,7 +1495,10 @@ export function ProjectDevelopmentWizard({
             </p>
             <div className="grid gap-3 md:grid-cols-2">
               {(data.characters || []).map((character, index) => (
-                <div key={`${character.name}-${index}`} className="rounded-lg border border-border bg-background p-4">
+                <div
+                  key={`${character.name}-${index}`}
+                  className="rounded-lg border border-border bg-background p-4"
+                >
                   <p className="font-medium">{character.name || `Character ${index + 1}`}</p>
                   {character.role && <p className="mt-1 text-sm text-primary">{character.role}</p>}
                   {character.appearance && (
@@ -1483,7 +1514,11 @@ export function ProjectDevelopmentWizard({
         return (
           <div className="space-y-4">
             <div className="flex gap-2">
-              <Button type="button" onClick={() => void generateOutlineDraft()} disabled={loadingStep === "outline"}>
+              <Button
+                type="button"
+                onClick={() => void generateOutlineDraft()}
+                disabled={loadingStep === "outline"}
+              >
                 <Bot className="mr-2 h-4 w-4" />
                 {loadingStep === "outline" ? "Generating..." : "Generate Outline"}
               </Button>
@@ -1621,7 +1656,11 @@ export function ProjectDevelopmentWizard({
         return (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
-              <Button type="button" onClick={() => void generateScreenplay()} disabled={loadingStep === "screenplay"}>
+              <Button
+                type="button"
+                onClick={() => void generateScreenplay()}
+                disabled={loadingStep === "screenplay"}
+              >
                 <Bot className="mr-2 h-4 w-4" />
                 {loadingStep === "screenplay" ? "Generating..." : "Generate Screenplay Draft"}
               </Button>
@@ -1650,9 +1689,13 @@ export function ProjectDevelopmentWizard({
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Character reference images:{" "}
-              {data.characters?.filter((character) => character.mainImage || character.images?.length).length || 0}
+              {data.characters?.filter(
+                (character) => character.mainImage || character.images?.length
+              ).length || 0}
               {" · "}Location reference images:{" "}
-              {data.setting?.locations?.filter((location) => location.image || location.images?.length).length || 0}
+              {data.setting?.locations?.filter(
+                (location) => location.image || location.images?.length
+              ).length || 0}
             </p>
             <p className="text-sm text-muted-foreground">
               Use the asset and location editors in the advanced project details below to curate
@@ -1661,7 +1704,7 @@ export function ProjectDevelopmentWizard({
           </div>
         );
 
-      case "shot-prompts":
+      case "shot-prompts": {
         const firstScene = data.scenes?.[0];
         return (
           <div className="space-y-4">
@@ -1684,6 +1727,7 @@ export function ProjectDevelopmentWizard({
             )}
           </div>
         );
+      }
     }
   };
 
@@ -1698,7 +1742,11 @@ export function ProjectDevelopmentWizard({
         nextLabel={isCreateProjectStep ? "Create Project" : undefined}
         nextDisabled={
           loadingStep === activeStep ||
-          (isCreateProjectStep ? !canCreateProject : !nextStep ? false : currentStatus !== "complete")
+          (isCreateProjectStep
+            ? !canCreateProject
+            : !nextStep
+              ? false
+              : currentStatus !== "complete")
         }
         isLastStep={activeStepIndex === stepOrder.length - 1}
         onStartOver={onStartOver ? () => setIsStartOverDialogOpen(true) : undefined}

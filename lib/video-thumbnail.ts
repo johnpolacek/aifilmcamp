@@ -27,24 +27,23 @@ export async function generateThumbnailFromFile(
     quality?: number;
   } = {}
 ): Promise<ThumbnailResult> {
-  const {
-    seekToMiddle = true,
-    seekToSeconds,
-    maxWidth = 1280,
-    quality = 0.85,
-  } = options;
+  const { seekToMiddle = true, seekToSeconds, maxWidth = 1280, quality = 0.85 } = options;
 
   console.log(
     "[generateThumbnailFromFile] Starting thumbnail generation:",
-    JSON.stringify({
-      fileName: videoFile.name,
-      fileSize: videoFile.size,
-      fileType: videoFile.type,
-      seekToMiddle,
-      seekToSeconds,
-      maxWidth,
-      quality,
-    }, null, 2)
+    JSON.stringify(
+      {
+        fileName: videoFile.name,
+        fileSize: videoFile.size,
+        fileType: videoFile.type,
+        seekToMiddle,
+        seekToSeconds,
+        maxWidth,
+        quality,
+      },
+      null,
+      2
+    )
   );
 
   return new Promise((resolve) => {
@@ -78,27 +77,29 @@ export async function generateThumbnailFromFile(
 
     // Create object URL for the video file
     const videoUrl = URL.createObjectURL(videoFile);
-    
+
     // Set up video element - these properties help with loading
     video.preload = "auto"; // Use "auto" instead of "metadata" for better compatibility
     video.muted = true;
     video.playsInline = true;
     video.autoplay = false;
-    
+
     // Some browsers need crossOrigin even for blob URLs
     video.crossOrigin = "anonymous";
 
     // Function to extract frame once video is ready
     const extractFrame = () => {
       if (resolved) return;
-      
+
       try {
         // Calculate dimensions maintaining aspect ratio
         let width = video.videoWidth;
         let height = video.videoHeight;
 
         if (!width || !height) {
-          console.warn("[generateThumbnailFromFile] Video dimensions not available - continuing without thumbnail");
+          console.warn(
+            "[generateThumbnailFromFile] Video dimensions not available - continuing without thumbnail"
+          );
           cleanup(videoUrl);
           safeResolve({ success: false, error: "Video dimensions not available" });
           return;
@@ -115,13 +116,17 @@ export async function generateThumbnailFromFile(
 
         console.log(
           "[generateThumbnailFromFile] Extracting frame:",
-          JSON.stringify({
-            originalWidth: video.videoWidth,
-            originalHeight: video.videoHeight,
-            canvasWidth: width,
-            canvasHeight: height,
-            currentTime: video.currentTime,
-          }, null, 2)
+          JSON.stringify(
+            {
+              originalWidth: video.videoWidth,
+              originalHeight: video.videoHeight,
+              canvasWidth: width,
+              canvasHeight: height,
+              currentTime: video.currentTime,
+            },
+            null,
+            2
+          )
         );
 
         // Draw the video frame to canvas
@@ -139,11 +144,15 @@ export async function generateThumbnailFromFile(
 
               console.log(
                 "[generateThumbnailFromFile] Thumbnail generated successfully:",
-                JSON.stringify({
-                  blobSize: blob.size,
-                  dataUrlLength: thumbnailDataUrl.length,
-                  durationMs: Math.round(video.duration * 1000),
-                }, null, 2)
+                JSON.stringify(
+                  {
+                    blobSize: blob.size,
+                    dataUrlLength: thumbnailDataUrl.length,
+                    durationMs: Math.round(video.duration * 1000),
+                  },
+                  null,
+                  2
+                )
               );
 
               safeResolve({
@@ -179,19 +188,23 @@ export async function generateThumbnailFromFile(
     // Handle metadata loaded - get duration and seek to middle
     const handleMetadataLoaded = () => {
       if (resolved) return;
-      
+
       const durationMs = Math.round(video.duration * 1000);
       const seekTime = seekToSeconds ?? (seekToMiddle ? video.duration / 2 : 0.1);
 
       console.log(
         "[generateThumbnailFromFile] Video metadata loaded:",
-        JSON.stringify({
-          duration: video.duration,
-          durationMs,
-          videoWidth: video.videoWidth,
-          videoHeight: video.videoHeight,
-          seekTime,
-        }, null, 2)
+        JSON.stringify(
+          {
+            duration: video.duration,
+            durationMs,
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+            seekTime,
+          },
+          null,
+          2
+        )
       );
 
       // Seek to the desired time
@@ -199,12 +212,12 @@ export async function generateThumbnailFromFile(
     };
 
     video.onloadedmetadata = handleMetadataLoaded;
-    
+
     // Also listen for loadeddata as a fallback - some browsers fire this but not loadedmetadata
     video.onloadeddata = () => {
       if (resolved) return;
       console.log("[generateThumbnailFromFile] Video data loaded (fallback)");
-      
+
       // If we have metadata, try to seek
       if (video.duration && video.videoWidth && video.videoHeight) {
         handleMetadataLoaded();
@@ -232,7 +245,9 @@ export async function generateThumbnailFromFile(
     timeoutId = setTimeout(() => {
       if (!resolved) {
         cleanup(videoUrl);
-        console.warn("[generateThumbnailFromFile] Timeout waiting for video to load - continuing without thumbnail");
+        console.warn(
+          "[generateThumbnailFromFile] Timeout waiting for video to load - continuing without thumbnail"
+        );
         safeResolve({ success: false, error: "Timeout waiting for video to load" });
       }
     }, 30000);
@@ -255,22 +270,21 @@ export async function generateThumbnailFromUrl(
     quality?: number;
   } = {}
 ): Promise<ThumbnailResult> {
-  const {
-    seekToMiddle = true,
-    seekToSeconds,
-    maxWidth = 1280,
-    quality = 0.85,
-  } = options;
+  const { seekToMiddle = true, seekToSeconds, maxWidth = 1280, quality = 0.85 } = options;
 
   console.log(
     "[generateThumbnailFromUrl] Starting thumbnail generation from URL:",
-    JSON.stringify({
-      videoUrl: videoUrl.substring(0, 100),
-      seekToMiddle,
-      seekToSeconds,
-      maxWidth,
-      quality,
-    }, null, 2)
+    JSON.stringify(
+      {
+        videoUrl: videoUrl.substring(0, 100),
+        seekToMiddle,
+        seekToSeconds,
+        maxWidth,
+        quality,
+      },
+      null,
+      2
+    )
   );
 
   return new Promise((resolve) => {
@@ -297,13 +311,17 @@ export async function generateThumbnailFromUrl(
 
       console.log(
         "[generateThumbnailFromUrl] Video metadata loaded:",
-        JSON.stringify({
-          duration: video.duration,
-          durationMs,
-          videoWidth: video.videoWidth,
-          videoHeight: video.videoHeight,
-          seekTime,
-        }, null, 2)
+        JSON.stringify(
+          {
+            duration: video.duration,
+            durationMs,
+            videoWidth: video.videoWidth,
+            videoHeight: video.videoHeight,
+            seekTime,
+          },
+          null,
+          2
+        )
       );
 
       video.currentTime = seekTime;
@@ -327,13 +345,17 @@ export async function generateThumbnailFromUrl(
 
         console.log(
           "[generateThumbnailFromUrl] Extracting frame:",
-          JSON.stringify({
-            originalWidth: video.videoWidth,
-            originalHeight: video.videoHeight,
-            canvasWidth: width,
-            canvasHeight: height,
-            currentTime: video.currentTime,
-          }, null, 2)
+          JSON.stringify(
+            {
+              originalWidth: video.videoWidth,
+              originalHeight: video.videoHeight,
+              canvasWidth: width,
+              canvasHeight: height,
+              currentTime: video.currentTime,
+            },
+            null,
+            2
+          )
         );
 
         // Draw the video frame to canvas
@@ -348,11 +370,15 @@ export async function generateThumbnailFromUrl(
 
               console.log(
                 "[generateThumbnailFromUrl] Thumbnail generated successfully:",
-                JSON.stringify({
-                  blobSize: blob.size,
-                  dataUrlLength: thumbnailDataUrl.length,
-                  durationMs: Math.round(video.duration * 1000),
-                }, null, 2)
+                JSON.stringify(
+                  {
+                    blobSize: blob.size,
+                    dataUrlLength: thumbnailDataUrl.length,
+                    durationMs: Math.round(video.duration * 1000),
+                  },
+                  null,
+                  2
+                )
               );
 
               resolve({
@@ -400,4 +426,3 @@ export async function generateThumbnailFromUrl(
     }, 30000);
   });
 }
-

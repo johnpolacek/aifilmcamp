@@ -277,7 +277,10 @@ export function EditScenePromptsView({
                     onClick={() =>
                       setDraft({
                         ...draft,
-                        promptShots: [...(draft.promptShots || []), createNewPromptShot((draft.promptShots?.length || 0) + 1)],
+                        promptShots: [
+                          ...(draft.promptShots || []),
+                          createNewPromptShot((draft.promptShots?.length || 0) + 1),
+                        ],
                       })
                     }
                   >
@@ -288,7 +291,10 @@ export function EditScenePromptsView({
 
                 <div className="space-y-4">
                   {(draft.promptShots || []).map((shot, index) => (
-                    <div key={shot.id} className="rounded-lg border border-border bg-background p-4">
+                    <div
+                      key={shot.id}
+                      className="rounded-lg border border-border bg-background p-4"
+                    >
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <Input
                           value={shot.title}
@@ -301,7 +307,9 @@ export function EditScenePromptsView({
                           onClick={() =>
                             setDraft({
                               ...draft,
-                              promptShots: draft.promptShots?.filter((promptShot) => promptShot.id !== shot.id),
+                              promptShots: draft.promptShots?.filter(
+                                (promptShot) => promptShot.id !== shot.id
+                              ),
                             })
                           }
                         >
@@ -311,7 +319,9 @@ export function EditScenePromptsView({
                       <div className="grid gap-3 md:grid-cols-3">
                         <Input
                           value={shot.framing}
-                          onChange={(event) => updatePromptShot(index, "framing", event.target.value)}
+                          onChange={(event) =>
+                            updatePromptShot(index, "framing", event.target.value)
+                          }
                           placeholder="Framing"
                         />
                         <Input
@@ -327,7 +337,11 @@ export function EditScenePromptsView({
                           max={15}
                           value={shot.durationEstimateSeconds || 4}
                           onChange={(event) =>
-                            updatePromptShot(index, "durationEstimateSeconds", Number(event.target.value))
+                            updatePromptShot(
+                              index,
+                              "durationEstimateSeconds",
+                              Number(event.target.value)
+                            )
                           }
                           placeholder="Duration"
                         />

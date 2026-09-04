@@ -1,9 +1,9 @@
+import { readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { uploadImageFromBuffer } from "@/lib/s3";
-import { readFileSync, writeFileSync, unlinkSync } from "fs";
-import { join } from "path";
-import { tmpdir } from "os";
 
 /**
  * Extract a frame from the middle of a video using ffmpeg
@@ -14,19 +14,21 @@ async function extractVideoThumbnail(
 ): Promise<Buffer | null> {
   console.log(
     "[generate-thumbnail] Starting thumbnail extraction:",
-    JSON.stringify({ 
-      videoBufferSize: videoBuffer.length, 
-      durationMs,
-      durationSeconds: durationMs / 1000 
-    }, null, 2)
+    JSON.stringify(
+      {
+        videoBufferSize: videoBuffer.length,
+        durationMs,
+        durationSeconds: durationMs / 1000,
+      },
+      null,
+      2
+    )
   );
 
   try {
     const ffmpeg = await import("fluent-ffmpeg").catch(() => null);
     if (!ffmpeg) {
-      console.log(
-        "[generate-thumbnail] ffmpeg not available for thumbnail extraction"
-      );
+      console.log("[generate-thumbnail] ffmpeg not available for thumbnail extraction");
       return null;
     }
 
@@ -60,14 +62,13 @@ async function extractVideoThumbnail(
 
       // Extract frame at middle of video
       await new Promise<void>((resolve, reject) => {
-        ffmpeg.default(tempVideoPath)
+        ffmpeg
+          .default(tempVideoPath)
           .seekInput(middleTime)
           .frames(1)
           .output(tempImagePath)
           .on("end", () => {
-            console.log(
-              "[generate-thumbnail] Frame extraction completed successfully"
-            );
+            console.log("[generate-thumbnail] Frame extraction completed successfully");
             resolve();
           })
           .on("error", (err: Error) => {
@@ -84,10 +85,14 @@ async function extractVideoThumbnail(
       const thumbnailBuffer = Buffer.from(readFileSync(tempImagePath));
       console.log(
         "[generate-thumbnail] Thumbnail extracted successfully:",
-        JSON.stringify({ 
-          thumbnailBufferSize: thumbnailBuffer.length,
-          tempImagePath 
-        }, null, 2)
+        JSON.stringify(
+          {
+            thumbnailBufferSize: thumbnailBuffer.length,
+            tempImagePath,
+          },
+          null,
+          2
+        )
       );
 
       return thumbnailBuffer;
@@ -99,7 +104,11 @@ async function extractVideoThumbnail(
       } catch (cleanupError) {
         console.error(
           "[generate-thumbnail] Error cleaning up temp files:",
-          JSON.stringify({ error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) }, null, 2)
+          JSON.stringify(
+            { error: cleanupError instanceof Error ? cleanupError.message : String(cleanupError) },
+            null,
+            2
+          )
         );
       }
     }
@@ -117,10 +126,7 @@ export async function POST(request: Request) {
     // Check authentication
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body
@@ -128,10 +134,7 @@ export async function POST(request: Request) {
     const { videoUrl, projectId, sceneId, videoId, durationMs } = body;
 
     if (!videoUrl) {
-      return NextResponse.json(
-        { success: false, error: "Video URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Video URL is required" }, { status: 400 });
     }
 
     if (!projectId || !sceneId) {
@@ -143,13 +146,17 @@ export async function POST(request: Request) {
 
     console.log(
       "[generate-thumbnail] Generating thumbnail for uploaded video:",
-      JSON.stringify({ 
-        videoUrl: videoUrl.substring(0, 100),
-        projectId, 
-        sceneId, 
-        videoId,
-        durationMs 
-      }, null, 2)
+      JSON.stringify(
+        {
+          videoUrl: videoUrl.substring(0, 100),
+          projectId,
+          sceneId,
+          videoId,
+          durationMs,
+        },
+        null,
+        2
+      )
     );
 
     // Download video
@@ -157,10 +164,14 @@ export async function POST(request: Request) {
     if (!videoResponse.ok) {
       console.error(
         "[generate-thumbnail] Failed to download video:",
-        JSON.stringify({ 
-          status: videoResponse.status, 
-          statusText: videoResponse.statusText 
-        }, null, 2)
+        JSON.stringify(
+          {
+            status: videoResponse.status,
+            statusText: videoResponse.statusText,
+          },
+          null,
+          2
+        )
       );
       return NextResponse.json(
         { success: false, error: "Failed to download video" },
@@ -179,9 +190,7 @@ export async function POST(request: Request) {
     const thumbnailBuffer = await extractVideoThumbnail(videoBuffer, videoDurationMs);
 
     if (!thumbnailBuffer) {
-      console.log(
-        "[generate-thumbnail] Thumbnail generation returned null"
-      );
+      console.log("[generate-thumbnail] Thumbnail generation returned null");
       return NextResponse.json(
         { success: false, error: "Failed to generate thumbnail" },
         { status: 500 }
@@ -196,11 +205,7 @@ export async function POST(request: Request) {
       JSON.stringify({ thumbnailKey, thumbnailBufferSize: thumbnailBuffer.length }, null, 2)
     );
 
-    const thumbnailUrl = await uploadImageFromBuffer(
-      thumbnailBuffer,
-      thumbnailKey,
-      "image/jpeg"
-    );
+    const thumbnailUrl = await uploadImageFromBuffer(thumbnailBuffer, thumbnailKey, "image/jpeg");
 
     console.log(
       "[generate-thumbnail] Thumbnail generated and uploaded successfully:",
@@ -214,17 +219,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(
       "[generate-thumbnail] Error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
 
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
-

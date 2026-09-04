@@ -44,7 +44,7 @@ export default async function EditScenePage({
   const user = await currentUser();
   const currentUsername =
     user?.username || user?.emailAddresses[0]?.emailAddress.split("@")[0] || "";
-  
+
   if (projectData.username !== currentUsername) {
     redirect("/dashboard");
   }

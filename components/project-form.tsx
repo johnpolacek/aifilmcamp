@@ -40,9 +40,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { derivePhaseStatus, ensureProjectPhaseVisibility } from "@/lib/development";
 import { getImageUrl } from "@/lib/image-utils";
 import type { Scene } from "@/lib/scenes-client";
-import { derivePhaseStatus, ensureProjectPhaseVisibility } from "@/lib/development";
 import { extractAllCharacters, extractAllLocations } from "@/lib/screenplay-parser";
 import type {
   FilmLengthOption,
@@ -258,10 +258,14 @@ export default function ProjectForm({
     sound: useId(),
     other: useId(),
   };
-  const [draftProjectId, setDraftProjectId] = useState(() => projectId || `project-draft-${Date.now()}`);
+  const [draftProjectId, setDraftProjectId] = useState(
+    () => projectId || `project-draft-${Date.now()}`
+  );
   const effectiveProjectId = projectId || draftProjectId;
 
-  const [formData, setFormData] = useState<ProjectFormData>(() => createInitialProjectFormData(initialData));
+  const [formData, setFormData] = useState<ProjectFormData>(() =>
+    createInitialProjectFormData(initialData)
+  );
   const [wizardResetKey, setWizardResetKey] = useState(0);
 
   const [newLinkUrl, setNewLinkUrl] = useState("");
@@ -338,22 +342,19 @@ export default function ProjectForm({
   const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedDataRef = useRef<string>(JSON.stringify(formData));
 
-  const buildPersistedFormData = useCallback(
-    (currentData: ProjectFormData): ProjectFormData => {
-      const normalizedFilmLength =
-        normalizeFilmLengthOption(currentData.filmLength) ||
-        normalizeFilmLengthOption(currentData.duration);
+  const buildPersistedFormData = useCallback((currentData: ProjectFormData): ProjectFormData => {
+    const normalizedFilmLength =
+      normalizeFilmLengthOption(currentData.filmLength) ||
+      normalizeFilmLengthOption(currentData.duration);
 
-      return {
-        ...currentData,
-        duration: normalizedFilmLength || currentData.duration,
-        filmLength: normalizedFilmLength || currentData.filmLength,
-        phaseStatus: derivePhaseStatus(currentData),
-        phaseVisibility: ensureProjectPhaseVisibility(currentData),
-      };
-    },
-    []
-  );
+    return {
+      ...currentData,
+      duration: normalizedFilmLength || currentData.duration,
+      filmLength: normalizedFilmLength || currentData.filmLength,
+      phaseStatus: derivePhaseStatus(currentData),
+      phaseVisibility: ensureProjectPhaseVisibility(currentData),
+    };
+  }, []);
 
   // Auto-save function (only for editing existing projects)
   const autoSave = useCallback(async () => {
@@ -457,9 +458,9 @@ export default function ProjectForm({
         slug:
           !isEditing && formData.title
             ? formData.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/(^-|-$)/g, "")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/(^-|-$)/g, "")
             : formData.slug,
       });
 
@@ -556,7 +557,7 @@ export default function ProjectForm({
       scenes: nextScenes,
     }));
     toast.success("Scenes synced from the script breakdown");
-  }, [formData.development?.scriptBreakdown, formData.scenes, projectId]);
+  }, [formData.development?.scriptBreakdown, formData.scenes, effectiveProjectId]);
 
   const handleCancel = () => {
     router.push(redirectPath);
@@ -2090,7 +2091,9 @@ export default function ProjectForm({
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{character.name || `Character ${index + 1}`}</p>
+                    <p className="truncate font-medium">
+                      {character.name || `Character ${index + 1}`}
+                    </p>
                     <p className="truncate text-sm text-muted-foreground">
                       {character.role || "No role yet"}
                     </p>
@@ -2491,7 +2494,9 @@ export default function ProjectForm({
                       )}
                     </div>
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{location.name || `Location ${index + 1}`}</p>
+                      <p className="truncate font-medium">
+                        {location.name || `Location ${index + 1}`}
+                      </p>
                       <p className="truncate text-sm text-muted-foreground">
                         {location.storyPurpose || "No story purpose yet"}
                       </p>
@@ -2641,7 +2646,9 @@ export default function ProjectForm({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleLocationAdditionalImageClick(index, imageIndex)}
+                                onClick={() =>
+                                  handleLocationAdditionalImageClick(index, imageIndex)
+                                }
                                 disabled={
                                   uploadingLocationAdditionalIndex?.locationIndex === index &&
                                   uploadingLocationAdditionalIndex?.imageIndex === imageIndex
@@ -2667,7 +2674,9 @@ export default function ProjectForm({
                               }}
                               type="file"
                               accept="image/*"
-                              onChange={(e) => handleLocationAdditionalImageChange(e, index, imageIndex)}
+                              onChange={(e) =>
+                                handleLocationAdditionalImageChange(e, index, imageIndex)
+                              }
                               className="hidden"
                             />
                           </div>
@@ -2816,203 +2825,24 @@ export default function ProjectForm({
           />
         </Suspense>
         {showLegacyAdvancedDetails && (
-        <details className="mt-6 rounded-xl border border-border bg-muted/20" open={!isEditing}>
-          <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-muted-foreground">
-            Advanced project details
-          </summary>
-          <div className={cn("px-4 pb-4", useGridLayout ? "grid grid-cols-3 gap-6" : "space-y-6")}>
-          {/* Left Column - Project Info, Screenplay, Links, Tools */}
-          {useGridLayout && (
-            <div className="space-y-6 pr-8 border-r border-border">
-              {/* Project Info Section */}
-              {!isEditingProjectInfo ? (
-                /* Compact Project Info View */
-                <div className="flex flex-col gap-4">
-                  {/* Thumbnail */}
-                  <div className="w-full">
-                    <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted">
-                      {formData.thumbnail && formData.username ? (
-                        <OptimizedImage
-                          type="thumbnail"
-                          filename={formData.thumbnail}
-                          username={formData.username}
-                          alt="Project image"
-                          fill
-                          objectFit="cover"
-                          sizes="256px"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Film className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {/* Info */}
-                  <div className="w-full space-y-2">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3 className="text-2xl font-semibold truncate">
-                          {formData.title || "Untitled Project"}
-                        </h3>
-                        {formData.logline && (
-                          <p className="text-muted-foreground line-clamp-2">{formData.logline}</p>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingProjectInfo(true)}
-                        className="shrink-0 bg-transparent"
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.genre && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
-                          {formData.genre}
-                        </span>
-                      )}
-                      {(formData.filmLength || formData.duration) && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
-                          {formData.filmLength || formData.duration}
-                        </span>
-                      )}
-                    </div>
-                    {formData.filmLink && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        <LinkIcon className="h-3 w-3 inline mr-1" />
-                        {formData.filmLink}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* Expanded Project Info Edit Form */
-                <div className="space-y-6 p-4 rounded-lg border border-border bg-muted/10">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Project Info</h3>
-                    {isEditing && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingProjectInfo(false)}
-                        className="bg-transparent"
-                      >
-                        Done
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Project Title *</Label>
-                      <Input
-                        id="title"
-                        placeholder="Enter your project title"
-                        value={formData.title}
-                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                        className="bg-background"
-                        required
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="logline">Logline</Label>
-                      <Input
-                        id="logline"
-                        placeholder="A one-sentence summary of your film's story"
-                        value={formData.logline || ""}
-                        onChange={(e) => setFormData({ ...formData, logline: e.target.value })}
-                        className="bg-background"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        A brief, compelling description of your film in 1-2 sentences
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="genre">Genre</Label>
-                        <Select
-                          value={formData.genre}
-                          onValueChange={(value) => setFormData({ ...formData, genre: value })}
-                        >
-                          <SelectTrigger id={genreSelectId} className="w-full bg-background">
-                            <SelectValue placeholder="Select genre..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Action">Action</SelectItem>
-                            <SelectItem value="Animation">Animation</SelectItem>
-                            <SelectItem value="Comedy">Comedy</SelectItem>
-                            <SelectItem value="Documentary">Documentary</SelectItem>
-                            <SelectItem value="Drama">Drama</SelectItem>
-                            <SelectItem value="Fantasy">Fantasy</SelectItem>
-                            <SelectItem value="Horror">Horror</SelectItem>
-                            <SelectItem value="Romance">Romance</SelectItem>
-                            <SelectItem value="Sci-Fi">Sci-Fi</SelectItem>
-                            <SelectItem value="Thriller">Thriller</SelectItem>
-                            <SelectItem value="Experimental">Experimental</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="duration">Film Length</Label>
-                        <Select
-                          value={formData.filmLength || formData.duration}
-                          onValueChange={(value) =>
-                            setFormData({ ...formData, filmLength: value as FilmLengthOption, duration: value })
-                          }
-                        >
-                          <SelectTrigger id={durationSelectId} className="w-full bg-background">
-                            <SelectValue placeholder="Select film length..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {FILM_LENGTH_OPTIONS.map((option) => (
-                              <SelectItem key={option} value={option}>
-                                {option}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="filmLink">Film Link</Label>
-                      <Input
-                        id="filmLink"
-                        placeholder="YouTube or Vimeo URL (e.g., https://youtube.com/watch?v=...)"
-                        value={formData.filmLink || ""}
-                        onChange={(e) => setFormData({ ...formData, filmLink: e.target.value })}
-                        className="bg-background"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Add a link to your film on YouTube or Vimeo
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="thumbnail">Project Image</Label>
-                      <div className="space-y-4">
-                        {/* Thumbnail Preview */}
-                        <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted/30">
-                          {previewImage ? (
-                            <ImagePreview
-                              src={previewImage}
-                              isUploading={isUploadingImage}
-                              isUploaded={!!formData.thumbnail}
-                              alt="Project image"
-                              aspectRatio="video"
-                              objectFit="cover"
-                            />
-                          ) : formData.thumbnail && formData.username ? (
+          <details className="mt-6 rounded-xl border border-border bg-muted/20" open={!isEditing}>
+            <summary className="cursor-pointer list-none px-4 py-3 text-sm font-medium text-muted-foreground">
+              Advanced project details
+            </summary>
+            <div
+              className={cn("px-4 pb-4", useGridLayout ? "grid grid-cols-3 gap-6" : "space-y-6")}
+            >
+              {/* Left Column - Project Info, Screenplay, Links, Tools */}
+              {useGridLayout && (
+                <div className="space-y-6 pr-8 border-r border-border">
+                  {/* Project Info Section */}
+                  {!isEditingProjectInfo ? (
+                    /* Compact Project Info View */
+                    <div className="flex flex-col gap-4">
+                      {/* Thumbnail */}
+                      <div className="w-full">
+                        <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted">
+                          {formData.thumbnail && formData.username ? (
                             <OptimizedImage
                               type="thumbnail"
                               filename={formData.thumbnail}
@@ -3020,1730 +2850,1764 @@ export default function ProjectForm({
                               alt="Project image"
                               fill
                               objectFit="cover"
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              sizes="256px"
                             />
-                          ) : null}
-                          {/* Upload overlay */}
-                          <button
-                            type="button"
-                            onClick={handleImageClick}
-                            disabled={isUploadingImage}
-                            className="group absolute inset-0 flex items-center justify-center bg-black/60 opacity-50 hover:opacity-100 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
-                            aria-label="Upload project image"
-                          >
-                            {isUploadingImage ? (
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                            ) : (
-                              <div className="flex flex-col items-center gap-2">
-                                <Camera className="h-8 w-8 text-white" />
-                                <span className="text-sm text-white font-medium">
-                                  {formData.thumbnail ? "Change Image" : "Upload Image"}
-                                </span>
-                              </div>
-                            )}
-                          </button>
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Film className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
-
-                        {/* Upload Button */}
-                        <div className="flex items-center gap-4">
+                      </div>
+                      {/* Info */}
+                      <div className="w-full space-y-2">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <h3 className="text-2xl font-semibold truncate">
+                              {formData.title || "Untitled Project"}
+                            </h3>
+                            {formData.logline && (
+                              <p className="text-muted-foreground line-clamp-2">
+                                {formData.logline}
+                              </p>
+                            )}
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={handleImageClick}
-                            disabled={isUploadingImage}
+                            size="sm"
+                            onClick={() => setIsEditingProjectInfo(true)}
+                            className="shrink-0 bg-transparent"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
+                          </Button>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {formData.genre && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                              {formData.genre}
+                            </span>
+                          )}
+                          {(formData.filmLength || formData.duration) && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+                              {formData.filmLength || formData.duration}
+                            </span>
+                          )}
+                        </div>
+                        {formData.filmLink && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            <LinkIcon className="h-3 w-3 inline mr-1" />
+                            {formData.filmLink}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Expanded Project Info Edit Form */
+                    <div className="space-y-6 p-4 rounded-lg border border-border bg-muted/10">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Project Info</h3>
+                        {isEditing && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsEditingProjectInfo(false)}
                             className="bg-transparent"
                           >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {isUploadingImage
-                              ? "Uploading..."
-                              : formData.thumbnail
-                                ? "Change Image"
-                                : "Upload Image"}
+                            Done
                           </Button>
-                          <span className="text-sm text-muted-foreground">
-                            {formData.thumbnail ? "Image uploaded" : "No image selected"}
-                          </span>
+                        )}
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="title">Project Title *</Label>
+                          <Input
+                            id="title"
+                            placeholder="Enter your project title"
+                            value={formData.title}
+                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                            className="bg-background"
+                            required
+                          />
                         </div>
 
-                        {/* Hidden file input */}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="hidden"
-                          disabled={isUploadingImage}
-                        />
+                        <div className="space-y-2">
+                          <Label htmlFor="logline">Logline</Label>
+                          <Input
+                            id="logline"
+                            placeholder="A one-sentence summary of your film's story"
+                            value={formData.logline || ""}
+                            onChange={(e) => setFormData({ ...formData, logline: e.target.value })}
+                            className="bg-background"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            A brief, compelling description of your film in 1-2 sentences
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="genre">Genre</Label>
+                            <Select
+                              value={formData.genre}
+                              onValueChange={(value) => setFormData({ ...formData, genre: value })}
+                            >
+                              <SelectTrigger id={genreSelectId} className="w-full bg-background">
+                                <SelectValue placeholder="Select genre..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Action">Action</SelectItem>
+                                <SelectItem value="Animation">Animation</SelectItem>
+                                <SelectItem value="Comedy">Comedy</SelectItem>
+                                <SelectItem value="Documentary">Documentary</SelectItem>
+                                <SelectItem value="Drama">Drama</SelectItem>
+                                <SelectItem value="Fantasy">Fantasy</SelectItem>
+                                <SelectItem value="Horror">Horror</SelectItem>
+                                <SelectItem value="Romance">Romance</SelectItem>
+                                <SelectItem value="Sci-Fi">Sci-Fi</SelectItem>
+                                <SelectItem value="Thriller">Thriller</SelectItem>
+                                <SelectItem value="Experimental">Experimental</SelectItem>
+                                <SelectItem value="Other">Other</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="duration">Film Length</Label>
+                            <Select
+                              value={formData.filmLength || formData.duration}
+                              onValueChange={(value) =>
+                                setFormData({
+                                  ...formData,
+                                  filmLength: value as FilmLengthOption,
+                                  duration: value,
+                                })
+                              }
+                            >
+                              <SelectTrigger id={durationSelectId} className="w-full bg-background">
+                                <SelectValue placeholder="Select film length..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {FILM_LENGTH_OPTIONS.map((option) => (
+                                  <SelectItem key={option} value={option}>
+                                    {option}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="filmLink">Film Link</Label>
+                          <Input
+                            id="filmLink"
+                            placeholder="YouTube or Vimeo URL (e.g., https://youtube.com/watch?v=...)"
+                            value={formData.filmLink || ""}
+                            onChange={(e) => setFormData({ ...formData, filmLink: e.target.value })}
+                            className="bg-background"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Add a link to your film on YouTube or Vimeo
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="thumbnail">Project Image</Label>
+                          <div className="space-y-4">
+                            {/* Thumbnail Preview */}
+                            <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted/30">
+                              {previewImage ? (
+                                <ImagePreview
+                                  src={previewImage}
+                                  isUploading={isUploadingImage}
+                                  isUploaded={!!formData.thumbnail}
+                                  alt="Project image"
+                                  aspectRatio="video"
+                                  objectFit="cover"
+                                />
+                              ) : formData.thumbnail && formData.username ? (
+                                <OptimizedImage
+                                  type="thumbnail"
+                                  filename={formData.thumbnail}
+                                  username={formData.username}
+                                  alt="Project image"
+                                  fill
+                                  objectFit="cover"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                />
+                              ) : null}
+                              {/* Upload overlay */}
+                              <button
+                                type="button"
+                                onClick={handleImageClick}
+                                disabled={isUploadingImage}
+                                className="group absolute inset-0 flex items-center justify-center bg-black/60 opacity-50 hover:opacity-100 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
+                                aria-label="Upload project image"
+                              >
+                                {isUploadingImage ? (
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                ) : (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Camera className="h-8 w-8 text-white" />
+                                    <span className="text-sm text-white font-medium">
+                                      {formData.thumbnail ? "Change Image" : "Upload Image"}
+                                    </span>
+                                  </div>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Upload Button */}
+                            <div className="flex items-center gap-4">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleImageClick}
+                                disabled={isUploadingImage}
+                                className="bg-transparent"
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                {isUploadingImage
+                                  ? "Uploading..."
+                                  : formData.thumbnail
+                                    ? "Change Image"
+                                    : "Upload Image"}
+                              </Button>
+                              <span className="text-sm text-muted-foreground">
+                                {formData.thumbnail ? "Image uploaded" : "No image selected"}
+                              </span>
+                            </div>
+
+                            {/* Hidden file input */}
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                              className="hidden"
+                              disabled={isUploadingImage}
+                            />
+                          </div>
+                        </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Screenplay Section */}
+                  <div className="space-y-4 pt-4 border-t border-border" suppressHydrationWarning>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <File className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Screenplay / Script</h3>
+                      </div>
+                      {isEditing &&
+                        projectId &&
+                        (formData.screenplayText || formData.screenplay) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              router.push(`/dashboard/projects/${projectId}/screenplay`)
+                            }
+                            className="bg-transparent"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit Screenplay
+                          </Button>
+                        )}
+                    </div>
+                    {!formData.screenplayText && (
+                      <p className="text-sm text-muted-foreground">
+                        Upload a PDF screenplay or use the editor to write your screenplay. The text
+                        will be automatically extracted from PDFs.
+                      </p>
+                    )}
+
+                    {/* Screenplay Status - One Line */}
+                    {formData.screenplayText ? (
+                      <div className="flex items-center justify-between gap-3 px-3 py-2 bg-muted/30 rounded-lg border border-border">
+                        <span className="text-sm text-muted-foreground">
+                          {formData.screenplayText.split(/\s+/).filter((w) => w.length > 0).length}{" "}
+                          words • {formData.screenplayText.match(/^(INT\.|EXT\.)/gm)?.length || 0}{" "}
+                          scenes
+                        </span>
+                        <div className="flex items-center gap-3">
+                          {showRemoveScreenplayConfirm ? (
+                            <>
+                              <span className="text-xs text-muted-foreground">
+                                Replace screenplay?
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setShowRemoveScreenplayConfirm(false);
+                                  projectFileInputRef.current?.click();
+                                }}
+                                type="button"
+                                className="text-primary hover:text-primary/80 font-medium text-xs"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setShowRemoveScreenplayConfirm(false)}
+                                type="button"
+                                className="text-muted-foreground hover:text-foreground text-xs"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setShowRemoveScreenplayConfirm(true)}
+                              type="button"
+                              className="text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              Replace
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleProjectFileClick}
+                        disabled={isUploadingFile}
+                        className="bg-transparent"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {isUploadingFile ? "Uploading..." : "Upload PDF"}
+                      </Button>
+                    )}
+
+                    {/* Hidden file input - Always rendered so ref is always available */}
+                    <input
+                      ref={projectFileInputRef}
+                      type="file"
+                      onChange={handleProjectFileChange}
+                      className="hidden"
+                      disabled={isUploadingFile}
+                      accept=".pdf,application/pdf"
+                    />
+                  </div>
+
+                  {/* Project Links Section */}
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <LinkIcon className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Project Links</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Add links to your project (YouTube, Vimeo, Instagram, etc.)
+                    </p>
+
+                    <div className="space-y-3">
+                      {formData.links.links.map((link, index) => (
+                        <div
+                          key={`${link.label}-${link.url}-${index}`}
+                          className="flex items-center gap-2 p-3 bg-muted/30 rounded-md"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{link.label}</p>
+                            <p className="text-xs text-muted-foreground truncate">{link.url}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeLink(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter URL (e.g., https://youtube.com/watch?v=...)"
+                          value={newLinkUrl}
+                          onChange={(e) => setNewLinkUrl(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addLink();
+                            }
+                          }}
+                          className="bg-background"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addLink}
+                          className="bg-transparent"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Tools Section */}
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Wrench className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Tools</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Add the tools you used, organized by category
+                    </p>
+
+                    {/* Add tools by category */}
+                    <div className="space-y-4">
+                      {(["video", "image", "sound", "other"] as ToolCategory[]).map((category) => {
+                        const toolsInCategory = getToolsByCategory(category);
+                        return (
+                          <div key={category} className="space-y-2">
+                            <Label htmlFor={`tool-${category}`}>{getCategoryLabel(category)}</Label>
+                            {/* Display added tools for this category */}
+                            {toolsInCategory.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {toolsInCategory.map((tool, _index) => {
+                                  const globalIndex = formData.tools.indexOf(tool);
+                                  return (
+                                    <div
+                                      key={`${category}-${tool.name}-${globalIndex}`}
+                                      className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm"
+                                    >
+                                      <span>{tool.name}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeTool(globalIndex)}
+                                        className="hover:text-primary/70 transition-colors"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <div className="space-y-2">
+                              <Select
+                                value={selectedTool[category]}
+                                onValueChange={(value) => {
+                                  setSelectedTool({ ...selectedTool, [category]: value });
+                                  if (value !== "Other") {
+                                    // Auto-add tool when selected (not "Other")
+                                    addTool(category, value);
+                                  } else {
+                                    setCustomToolInput({ ...customToolInput, [category]: "" });
+                                  }
+                                }}
+                                key={`tool-select-${category}`}
+                              >
+                                <SelectTrigger
+                                  id={toolSelectIds[category]}
+                                  className="w-full bg-background"
+                                >
+                                  <SelectValue
+                                    placeholder={`Add ${getCategoryLabel(category).toLowerCase()} tool...`}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {COMMON_TOOLS[category].map((tool) => (
+                                    <SelectItem key={tool} value={tool}>
+                                      {tool}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {selectedTool[category] === "Other" && (
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="Enter custom tool"
+                                    value={customToolInput[category]}
+                                    onChange={(e) =>
+                                      setCustomToolInput({
+                                        ...customToolInput,
+                                        [category]: e.target.value,
+                                      })
+                                    }
+                                    onKeyPress={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        addTool(category);
+                                      }
+                                    }}
+                                    className="flex-1 bg-background"
+                                  />
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => addTool(category)}
+                                    disabled={!customToolInput[category].trim()}
+                                    className="bg-transparent"
+                                  >
+                                    <Plus className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                            {category === "video" && !hasVideoTool && (
+                              <p className="text-xs text-muted-foreground pb-2">
+                                Optional. Add legacy video tools only if they are part of your
+                                broader workflow.
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Screenplay Section */}
-              <div className="space-y-4 pt-4 border-t border-border" suppressHydrationWarning>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <File className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Screenplay / Script</h3>
-                  </div>
-                  {isEditing && projectId && (formData.screenplayText || formData.screenplay) && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => router.push(`/dashboard/projects/${projectId}/screenplay`)}
-                      className="bg-transparent"
-                    >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit Screenplay
-                    </Button>
-                  )}
-                </div>
-                {!formData.screenplayText && (
-                  <p className="text-sm text-muted-foreground">
-                    Upload a PDF screenplay or use the editor to write your screenplay. The text
-                    will be automatically extracted from PDFs.
-                  </p>
-                )}
-
-                {/* Screenplay Status - One Line */}
-                {formData.screenplayText ? (
-                  <div className="flex items-center justify-between gap-3 px-3 py-2 bg-muted/30 rounded-lg border border-border">
-                    <span className="text-sm text-muted-foreground">
-                      {formData.screenplayText.split(/\s+/).filter((w) => w.length > 0).length}{" "}
-                      words • {formData.screenplayText.match(/^(INT\.|EXT\.)/gm)?.length || 0}{" "}
-                      scenes
-                    </span>
-                    <div className="flex items-center gap-3">
-                      {showRemoveScreenplayConfirm ? (
-                        <>
-                          <span className="text-xs text-muted-foreground">Replace screenplay?</span>
-                          <button
-                            onClick={() => {
-                              setShowRemoveScreenplayConfirm(false);
-                              projectFileInputRef.current?.click();
-                            }}
-                            type="button"
-                            className="text-primary hover:text-primary/80 font-medium text-xs"
-                          >
-                            Yes
-                          </button>
-                          <button
-                            onClick={() => setShowRemoveScreenplayConfirm(false)}
-                            type="button"
-                            className="text-muted-foreground hover:text-foreground text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setShowRemoveScreenplayConfirm(true)}
-                          type="button"
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          Replace
-                        </button>
-                      )}
+              {/* Right Column - Characters, Locations, Scenes (col-span-2) */}
+              {useGridLayout && (
+                <div className="col-span-2 space-y-6">
+                  {/* Characters Section */}
+                  <div ref={charactersSectionRef} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Characters</h3>
                     </div>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleProjectFileClick}
-                    disabled={isUploadingFile}
-                    className="bg-transparent"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {isUploadingFile ? "Uploading..." : "Upload PDF"}
-                  </Button>
-                )}
 
-                {/* Hidden file input - Always rendered so ref is always available */}
-                <input
-                  ref={projectFileInputRef}
-                  type="file"
-                  onChange={handleProjectFileChange}
-                  className="hidden"
-                  disabled={isUploadingFile}
-                  accept=".pdf,application/pdf"
-                />
-              </div>
+                    <div className="space-y-2">
+                      {/* Character List - Compact One-Liner View */}
+                      {(formData.characters || []).length > 0 && editingCharacterIndex === null && (
+                        <div className="space-y-1.5">
+                          {(() => {
+                            const characters = formData.characters || [];
+                            const shouldShowAll = characters.length <= 10 || showAllCharacters;
+                            const charactersToShow = shouldShowAll
+                              ? characters
+                              : characters.slice(0, 5);
 
-              {/* Project Links Section */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Project Links</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Add links to your project (YouTube, Vimeo, Instagram, etc.)
-                </p>
+                            return (
+                              <>
+                                {charactersToShow.map((character, index) => (
+                                  <div key={`character-compact-${index}`} className="relative">
+                                    <button
+                                      type="button"
+                                      className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
+                                      onClick={() => setEditingCharacterIndex(index)}
+                                    >
+                                      {/* Edit indicator */}
+                                      <div className="pt-0.5 shrink-0">
+                                        <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                                      </div>
 
-                <div className="space-y-3">
-                  {formData.links.links.map((link, index) => (
-                    <div
-                      key={`${link.label}-${link.url}-${index}`}
-                      className="flex items-center gap-2 p-3 bg-muted/30 rounded-md"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{link.label}</p>
-                        <p className="text-xs text-muted-foreground truncate">{link.url}</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLink(index)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
+                                      {/* Character Image - Super Small - Clickable for upload */}
+                                      <div
+                                        className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCharacterMainImageClick(index);
+                                        }}
+                                        title={
+                                          character.mainImage
+                                            ? "Click to replace image"
+                                            : "Click to add image"
+                                        }
+                                      >
+                                        {uploadingCharacterIndex === index ? (
+                                          <div className="w-full h-full flex items-center justify-center bg-muted">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                                          </div>
+                                        ) : character.mainImage && formData.username ? (
+                                          <>
+                                            <OptimizedImage
+                                              type="character"
+                                              filename={character.mainImage}
+                                              username={formData.username}
+                                              alt={character.name || "Character"}
+                                              fill
+                                              objectFit="cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                              <Camera className="h-3 w-3 text-white" />
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
+                                            <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
+                                          </div>
+                                        )}
+                                      </div>
 
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter URL (e.g., https://youtube.com/watch?v=...)"
-                      value={newLinkUrl}
-                      onChange={(e) => setNewLinkUrl(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addLink();
-                        }
-                      }}
-                      className="bg-background"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addLink}
-                      className="bg-transparent"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
+                                      {/* Character Name */}
+                                      <span className="font-medium text-sm shrink-0">
+                                        {character.name || "Unnamed"}
+                                      </span>
 
-              {/* Tools Section */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Tools</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Add the tools you used, organized by category
-                </p>
+                                      {/* Character Appearance - Truncated */}
+                                      <span className="text-xs text-muted-foreground truncate flex-1">
+                                        {character.appearance || "No appearance description"}
+                                      </span>
 
-                {/* Add tools by category */}
-                <div className="space-y-4">
-                  {(["video", "image", "sound", "other"] as ToolCategory[]).map((category) => {
-                    const toolsInCategory = getToolsByCategory(category);
-                    return (
-                      <div key={category} className="space-y-2">
-                        <Label htmlFor={`tool-${category}`}>
-                          {getCategoryLabel(category)}
-                        </Label>
-                        {/* Display added tools for this category */}
-                        {toolsInCategory.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {toolsInCategory.map((tool, _index) => {
-                              const globalIndex = formData.tools.indexOf(tool);
-                              return (
-                                <div
-                                  key={`${category}-${tool.name}-${globalIndex}`}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm"
-                                >
-                                  <span>{tool.name}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeTool(globalIndex)}
-                                    className="hover:text-primary/70 transition-colors"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        <div className="space-y-2">
-                          <Select
-                            value={selectedTool[category]}
-                            onValueChange={(value) => {
-                              setSelectedTool({ ...selectedTool, [category]: value });
-                              if (value !== "Other") {
-                                // Auto-add tool when selected (not "Other")
-                                addTool(category, value);
-                              } else {
-                                setCustomToolInput({ ...customToolInput, [category]: "" });
-                              }
-                            }}
-                            key={`tool-select-${category}`}
-                          >
-                            <SelectTrigger id={toolSelectIds[category]} className="w-full bg-background">
-                              <SelectValue
-                                placeholder={`Add ${getCategoryLabel(category).toLowerCase()} tool...`}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {COMMON_TOOLS[category].map((tool) => (
-                                <SelectItem key={tool} value={tool}>
-                                  {tool}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {selectedTool[category] === "Other" && (
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Enter custom tool"
-                                value={customToolInput[category]}
-                                onChange={(e) =>
-                                  setCustomToolInput({
-                                    ...customToolInput,
-                                    [category]: e.target.value,
-                                  })
-                                }
-                                onKeyPress={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    addTool(category);
-                                  }
-                                }}
-                                className="flex-1 bg-background"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => addTool(category)}
-                                disabled={!customToolInput[category].trim()}
-                                className="bg-transparent"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
+                                      {/* Additional Images Count */}
+                                      {(character.images?.length || 0) > 0 && (
+                                        <span className="text-xs text-muted-foreground shrink-0">
+                                          +{character.images?.length} img
+                                        </span>
+                                      )}
+                                    </button>
+                                    {/* Hidden file input for compact view upload */}
+                                    <input
+                                      ref={(el) => {
+                                        characterFileInputRefs.current[index] = el;
+                                      }}
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => handleCharacterMainImageChange(e, index)}
+                                      className="hidden"
+                                      disabled={uploadingCharacterIndex === index}
+                                    />
+                                  </div>
+                                ))}
+                              </>
+                            );
+                          })()}
                         </div>
-                        {category === "video" && !hasVideoTool && (
-                          <p className="text-xs text-muted-foreground pb-2">
-                            Optional. Add legacy video tools only if they are part of your broader workflow.
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-          )}
+                      )}
 
-          {/* Right Column - Characters, Locations, Scenes (col-span-2) */}
-          {useGridLayout && (
-            <div className="col-span-2 space-y-6">
-              {/* Characters Section */}
-              <div ref={charactersSectionRef} className="space-y-3">
-                <div className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Characters</h3>
-                </div>
-
-                <div className="space-y-2">
-                  {/* Character List - Compact One-Liner View */}
-                  {(formData.characters || []).length > 0 && editingCharacterIndex === null && (
-                    <div className="space-y-1.5">
-                      {(() => {
-                        const characters = formData.characters || [];
-                        const shouldShowAll = characters.length <= 10 || showAllCharacters;
-                        const charactersToShow = shouldShowAll
-                          ? characters
-                          : characters.slice(0, 5);
-
-                        return (
-                          <>
-                            {charactersToShow.map((character, index) => (
-                              <div key={`character-compact-${index}`} className="relative">
-                                <button
+                      {/* Character Edit Form - Expanded View */}
+                      {editingCharacterIndex !== null &&
+                        formData.characters?.[editingCharacterIndex] && (
+                          <Card className="bg-muted/30 border-border">
+                            <CardContent className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium">Edit Character</h4>
+                                <Button
                                   type="button"
-                                  className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
-                                  onClick={() => setEditingCharacterIndex(index)}
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingCharacterIndex(null);
+                                    setConfirmingCharacterDelete(null);
+                                  }}
+                                  className="bg-transparent"
                                 >
-                                  {/* Edit indicator */}
-                                  <div className="pt-0.5 shrink-0">
-                                    <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                                  </div>
+                                  Done
+                                </Button>
+                              </div>
 
-                                  {/* Character Image - Super Small - Clickable for upload */}
-                                  <div
-                                    className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCharacterMainImageClick(index);
-                                    }}
-                                    title={
-                                      character.mainImage
-                                        ? "Click to replace image"
-                                        : "Click to add image"
-                                    }
-                                  >
-                                    {uploadingCharacterIndex === index ? (
-                                      <div className="w-full h-full flex items-center justify-center bg-muted">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                                      </div>
-                                    ) : character.mainImage && formData.username ? (
-                                      <>
-                                        <OptimizedImage
-                                          type="character"
-                                          filename={character.mainImage}
-                                          username={formData.username}
-                                          alt={character.name || "Character"}
-                                          fill
-                                          objectFit="cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                          <Camera className="h-3 w-3 text-white" />
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
-                                        <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
-                                      </div>
-                                    )}
-                                  </div>
+                              {/* Character Name */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`character-name-${editingCharacterIndex}`}>
+                                  Name
+                                </Label>
+                                <Input
+                                  id={`character-name-${editingCharacterIndex}`}
+                                  placeholder="Enter character name"
+                                  value={formData.characters[editingCharacterIndex].name}
+                                  onChange={(e) =>
+                                    updateCharacter(editingCharacterIndex, "name", e.target.value)
+                                  }
+                                  className="bg-background"
+                                />
+                              </div>
 
-                                  {/* Character Name */}
-                                  <span className="font-medium text-sm shrink-0">
-                                    {character.name || "Unnamed"}
-                                  </span>
-
-                                  {/* Character Appearance - Truncated */}
-                                  <span className="text-xs text-muted-foreground truncate flex-1">
-                                    {character.appearance || "No appearance description"}
-                                  </span>
-
-                                  {/* Additional Images Count */}
-                                  {(character.images?.length || 0) > 0 && (
-                                    <span className="text-xs text-muted-foreground shrink-0">
-                                      +{character.images?.length} img
-                                    </span>
+                              {/* Character Main Image */}
+                              <div className="space-y-2">
+                                <Label>Main Image</Label>
+                                <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
+                                  {characterPreviewImages[editingCharacterIndex] ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={characterPreviewImages[editingCharacterIndex]}
+                                        alt={
+                                          formData.characters[editingCharacterIndex].name ||
+                                          "Character"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCharacterMainImageClick(editingCharacterIndex)
+                                        }
+                                        disabled={uploadingCharacterIndex === editingCharacterIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload character main image"
+                                      >
+                                        {uploadingCharacterIndex === editingCharacterIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : formData.characters[editingCharacterIndex].mainImage &&
+                                    formData.username ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={getImageUrl({
+                                          type: "character",
+                                          filename:
+                                            formData.characters[editingCharacterIndex].mainImage!,
+                                          username: formData.username,
+                                        })}
+                                        alt={
+                                          formData.characters[editingCharacterIndex].name ||
+                                          "Character"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCharacterMainImageClick(editingCharacterIndex)
+                                        }
+                                        disabled={uploadingCharacterIndex === editingCharacterIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload character main image"
+                                      >
+                                        {uploadingCharacterIndex === editingCharacterIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full min-h-[200px] flex items-center justify-center relative group">
+                                      <User className="h-12 w-12 text-muted-foreground" />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCharacterMainImageClick(editingCharacterIndex)
+                                        }
+                                        disabled={uploadingCharacterIndex === editingCharacterIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload character main image"
+                                      >
+                                        {uploadingCharacterIndex === editingCharacterIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
                                   )}
-                                </button>
-                                {/* Hidden file input for compact view upload */}
+                                </div>
                                 <input
                                   ref={(el) => {
-                                    characterFileInputRefs.current[index] = el;
+                                    characterFileInputRefs.current[editingCharacterIndex] = el;
                                   }}
                                   type="file"
                                   accept="image/*"
                                   onChange={(e) =>
-                                    handleCharacterMainImageChange(e, index)
+                                    handleCharacterMainImageChange(e, editingCharacterIndex)
                                   }
                                   className="hidden"
-                                  disabled={uploadingCharacterIndex === index}
+                                  disabled={uploadingCharacterIndex === editingCharacterIndex}
                                 />
                               </div>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
 
-                  {/* Character Edit Form - Expanded View */}
-                  {editingCharacterIndex !== null &&
-                    formData.characters?.[editingCharacterIndex] && (
-                      <Card className="bg-muted/30 border-border">
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Edit Character</h4>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingCharacterIndex(null);
-                                setConfirmingCharacterDelete(null);
-                              }}
-                              className="bg-transparent"
-                            >
-                              Done
-                            </Button>
-                          </div>
-
-                          {/* Character Name */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`character-name-${editingCharacterIndex}`}>Name</Label>
-                            <Input
-                              id={`character-name-${editingCharacterIndex}`}
-                              placeholder="Enter character name"
-                              value={formData.characters[editingCharacterIndex].name}
-                              onChange={(e) =>
-                                updateCharacter(editingCharacterIndex, "name", e.target.value)
-                              }
-                              className="bg-background"
-                            />
-                          </div>
-
-                          {/* Character Main Image */}
-                          <div className="space-y-2">
-                            <Label>Main Image</Label>
-                            <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
-                              {characterPreviewImages[editingCharacterIndex] ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={characterPreviewImages[editingCharacterIndex]}
-                                    alt={
-                                      formData.characters[editingCharacterIndex].name || "Character"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleCharacterMainImageClick(editingCharacterIndex)
-                                    }
-                                    disabled={uploadingCharacterIndex === editingCharacterIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload character main image"
-                                  >
-                                    {uploadingCharacterIndex === editingCharacterIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : formData.characters[editingCharacterIndex].mainImage &&
-                                formData.username ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={getImageUrl({
-                                      type: "character",
-                                      filename:
-                                        formData.characters[editingCharacterIndex].mainImage!,
-                                      username: formData.username,
-                                    })}
-                                    alt={
-                                      formData.characters[editingCharacterIndex].name || "Character"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleCharacterMainImageClick(editingCharacterIndex)
-                                    }
-                                    disabled={uploadingCharacterIndex === editingCharacterIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload character main image"
-                                  >
-                                    {uploadingCharacterIndex === editingCharacterIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="w-full min-h-[200px] flex items-center justify-center relative group">
-                                  <User className="h-12 w-12 text-muted-foreground" />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleCharacterMainImageClick(editingCharacterIndex)
-                                    }
-                                    disabled={uploadingCharacterIndex === editingCharacterIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload character main image"
-                                  >
-                                    {uploadingCharacterIndex === editingCharacterIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            <input
-                              ref={(el) => {
-                                characterFileInputRefs.current[editingCharacterIndex] = el;
-                              }}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) =>
-                                handleCharacterMainImageChange(e, editingCharacterIndex)
-                              }
-                              className="hidden"
-                              disabled={uploadingCharacterIndex === editingCharacterIndex}
-                            />
-                          </div>
-
-                          {/* Additional Character Images */}
-                          <div className="space-y-2">
-                            <Label>Additional Images (Different Angles/Attire)</Label>
-                            <div className="columns-2 md:columns-3 gap-4">
-                              {(formData.characters[editingCharacterIndex].images || []).map(
-                                (image, imageIndex) => (
-                                  <div
-                                    key={`${editingCharacterIndex}-${imageIndex}`}
-                                    className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
-                                  >
-                                    {characterAdditionalPreviewImages[editingCharacterIndex]?.[
-                                      imageIndex
-                                    ] ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={
-                                            characterAdditionalPreviewImages[editingCharacterIndex][
-                                              imageIndex
-                                            ]
-                                          }
-                                          alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleCharacterAdditionalImageClick(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingCharacterAdditionalIndex?.characterIndex ===
-                                              editingCharacterIndex &&
-                                            uploadingCharacterAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional character image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingCharacterAdditionalIndex?.characterIndex ===
-                                            editingCharacterIndex &&
-                                          uploadingCharacterAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeCharacterAdditionalImage(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : image && formData.username ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={getImageUrl({
-                                            type: "character",
-                                            filename: image,
-                                            username: formData.username,
-                                          })}
-                                          alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleCharacterAdditionalImageClick(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingCharacterAdditionalIndex?.characterIndex ===
-                                              editingCharacterIndex &&
-                                            uploadingCharacterAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional character image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingCharacterAdditionalIndex?.characterIndex ===
-                                            editingCharacterIndex &&
-                                          uploadingCharacterAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeCharacterAdditionalImage(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div className="w-full min-h-[150px] flex items-center justify-center relative group">
-                                        <Camera className="h-8 w-8 text-muted-foreground" />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleCharacterAdditionalImageClick(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingCharacterAdditionalIndex?.characterIndex ===
-                                              editingCharacterIndex &&
-                                            uploadingCharacterAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional character image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingCharacterAdditionalIndex?.characterIndex ===
-                                            editingCharacterIndex &&
-                                          uploadingCharacterAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                      </div>
-                                    )}
-                                    <input
-                                      ref={(el) => {
-                                        characterAdditionalFileInputRefs.current[
-                                          `${editingCharacterIndex}-${imageIndex}`
-                                        ] = el;
-                                      }}
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) =>
-                                        handleCharacterAdditionalImageChange(
-                                          e,
-                                          editingCharacterIndex,
+                              {/* Additional Character Images */}
+                              <div className="space-y-2">
+                                <Label>Additional Images (Different Angles/Attire)</Label>
+                                <div className="columns-2 md:columns-3 gap-4">
+                                  {(formData.characters[editingCharacterIndex].images || []).map(
+                                    (image, imageIndex) => (
+                                      <div
+                                        key={`${editingCharacterIndex}-${imageIndex}`}
+                                        className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
+                                      >
+                                        {characterAdditionalPreviewImages[editingCharacterIndex]?.[
                                           imageIndex
+                                        ] ? (
+                                          <div className="relative group">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                              src={
+                                                characterAdditionalPreviewImages[
+                                                  editingCharacterIndex
+                                                ][imageIndex]
+                                              }
+                                              alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
+                                              className="w-full h-auto"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleCharacterAdditionalImageClick(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              disabled={
+                                                uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                  editingCharacterIndex &&
+                                                uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                  imageIndex
+                                              }
+                                              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                              aria-label={`Upload additional character image ${imageIndex + 1}`}
+                                            >
+                                              {uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                editingCharacterIndex &&
+                                              uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                imageIndex ? (
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                              ) : (
+                                                <Camera className="h-6 w-6 text-white" />
+                                              )}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                removeCharacterAdditionalImage(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                              aria-label={`Remove image ${imageIndex + 1}`}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ) : image && formData.username ? (
+                                          <div className="relative group">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                              src={getImageUrl({
+                                                type: "character",
+                                                filename: image,
+                                                username: formData.username,
+                                              })}
+                                              alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
+                                              className="w-full h-auto"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleCharacterAdditionalImageClick(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              disabled={
+                                                uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                  editingCharacterIndex &&
+                                                uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                  imageIndex
+                                              }
+                                              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                              aria-label={`Upload additional character image ${imageIndex + 1}`}
+                                            >
+                                              {uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                editingCharacterIndex &&
+                                              uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                imageIndex ? (
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                              ) : (
+                                                <Camera className="h-6 w-6 text-white" />
+                                              )}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                removeCharacterAdditionalImage(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                              aria-label={`Remove image ${imageIndex + 1}`}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div className="w-full min-h-[150px] flex items-center justify-center relative group">
+                                            <Camera className="h-8 w-8 text-muted-foreground" />
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleCharacterAdditionalImageClick(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              disabled={
+                                                uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                  editingCharacterIndex &&
+                                                uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                  imageIndex
+                                              }
+                                              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                              aria-label={`Upload additional character image ${imageIndex + 1}`}
+                                            >
+                                              {uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                editingCharacterIndex &&
+                                              uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                imageIndex ? (
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                              ) : (
+                                                <Camera className="h-6 w-6 text-white" />
+                                              )}
+                                            </button>
+                                          </div>
+                                        )}
+                                        <input
+                                          ref={(el) => {
+                                            characterAdditionalFileInputRefs.current[
+                                              `${editingCharacterIndex}-${imageIndex}`
+                                            ] = el;
+                                          }}
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) =>
+                                            handleCharacterAdditionalImageChange(
+                                              e,
+                                              editingCharacterIndex,
+                                              imageIndex
+                                            )
+                                          }
+                                          className="hidden"
+                                          disabled={
+                                            uploadingCharacterAdditionalIndex?.characterIndex ===
+                                              editingCharacterIndex &&
+                                            uploadingCharacterAdditionalIndex?.imageIndex ===
+                                              imageIndex
+                                          }
+                                        />
+                                      </div>
+                                    )
+                                  )}
+                                  <div className="relative w-full mb-4 break-inside-avoid">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddCharacterAdditionalImageClick(
+                                          editingCharacterIndex
                                         )
                                       }
-                                      className="hidden"
-                                      disabled={
-                                        uploadingCharacterAdditionalIndex?.characterIndex ===
-                                          editingCharacterIndex &&
-                                        uploadingCharacterAdditionalIndex?.imageIndex === imageIndex
-                                      }
-                                    />
+                                      className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
+                                      aria-label="Add additional character image"
+                                    >
+                                      <Plus className="h-8 w-8 text-muted-foreground" />
+                                      <input
+                                        ref={(el) => {
+                                          characterAddImageInputRefs.current[
+                                            editingCharacterIndex
+                                          ] = el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) =>
+                                          handleAddCharacterAdditionalImageChange(
+                                            e,
+                                            editingCharacterIndex
+                                          )
+                                        }
+                                        className="hidden"
+                                        disabled={
+                                          uploadingCharacterAdditionalIndex?.characterIndex ===
+                                          editingCharacterIndex
+                                        }
+                                      />
+                                    </button>
                                   </div>
-                                )
-                              )}
-                              <div className="relative w-full mb-4 break-inside-avoid">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleAddCharacterAdditionalImageClick(editingCharacterIndex)
-                                  }
-                                  className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
-                                  aria-label="Add additional character image"
-                                >
-                                  <Plus className="h-8 w-8 text-muted-foreground" />
-                                  <input
-                                    ref={(el) => {
-                                      characterAddImageInputRefs.current[editingCharacterIndex] =
-                                        el;
-                                    }}
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={(e) =>
-                                      handleAddCharacterAdditionalImageChange(
-                                        e,
-                                        editingCharacterIndex
-                                      )
-                                    }
-                                    className="hidden"
-                                    disabled={
-                                      uploadingCharacterAdditionalIndex?.characterIndex ===
-                                      editingCharacterIndex
-                                    }
-                                  />
-                                </button>
+                                </div>
                               </div>
-                            </div>
-                          </div>
 
-                          {/* Character Appearance */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`character-appearance-${editingCharacterIndex}`}>
-                              Appearance
-                            </Label>
-                            <Textarea
-                              id={`character-appearance-${editingCharacterIndex}`}
-                              placeholder="Describe this character's appearance..."
-                              value={formData.characters[editingCharacterIndex].appearance}
-                              onChange={(e) =>
-                                updateCharacter(editingCharacterIndex, "appearance", e.target.value)
-                              }
-                              rows={3}
-                              className="bg-background resize-none"
-                            />
-                          </div>
+                              {/* Character Appearance */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`character-appearance-${editingCharacterIndex}`}>
+                                  Appearance
+                                </Label>
+                                <Textarea
+                                  id={`character-appearance-${editingCharacterIndex}`}
+                                  placeholder="Describe this character's appearance..."
+                                  value={formData.characters[editingCharacterIndex].appearance}
+                                  onChange={(e) =>
+                                    updateCharacter(
+                                      editingCharacterIndex,
+                                      "appearance",
+                                      e.target.value
+                                    )
+                                  }
+                                  rows={3}
+                                  className="bg-background resize-none"
+                                />
+                              </div>
 
-                          {/* Delete Character Button */}
-                          <div className="pt-4 flex justify-end">
-                            {confirmingCharacterDelete === editingCharacterIndex ? (
-                              <div className="space-y-3 text-right">
-                                <p className="text-sm text-muted-foreground">
-                                  Are you sure you want to delete this character? This action cannot
-                                  be undone.
-                                </p>
-                                <div className="flex items-center justify-end gap-2">
+                              {/* Delete Character Button */}
+                              <div className="pt-4 flex justify-end">
+                                {confirmingCharacterDelete === editingCharacterIndex ? (
+                                  <div className="space-y-3 text-right">
+                                    <p className="text-sm text-muted-foreground">
+                                      Are you sure you want to delete this character? This action
+                                      cannot be undone.
+                                    </p>
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => {
+                                          removeCharacter(editingCharacterIndex);
+                                          setEditingCharacterIndex(null);
+                                          setConfirmingCharacterDelete(null);
+                                        }}
+                                      >
+                                        <Trash className="h-4 w-4 mr-2" />
+                                        Delete Character
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setConfirmingCharacterDelete(null)}
+                                        className="bg-transparent"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
                                   <Button
                                     type="button"
-                                    variant="destructive"
+                                    variant="ghost"
                                     size="sm"
-                                    onClick={() => {
-                                      removeCharacter(editingCharacterIndex);
-                                      setEditingCharacterIndex(null);
-                                      setConfirmingCharacterDelete(null);
-                                    }}
+                                    onClick={() =>
+                                      setConfirmingCharacterDelete(editingCharacterIndex)
+                                    }
+                                    className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                                   >
-                                    <Trash className="h-4 w-4 mr-2" />
+                                    <X className="h-2 w-2 mr-2" />
                                     Delete Character
                                   </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmingCharacterDelete(null)}
-                                    className="bg-transparent"
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
+                                )}
                               </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setConfirmingCharacterDelete(editingCharacterIndex)}
-                                className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-2 w-2 mr-2" />
-                                Delete Character
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                  <div className="flex gap-2 flex-wrap items-center">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addCharacter}
-                      className="bg-transparent"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Character
-                    </Button>
-                    {formData.screenplayText?.trim() && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExtractCharacters}
-                        disabled={isExtractingCharacters}
-                        className="bg-transparent"
-                      >
-                        {isExtractingCharacters ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Extracting...
-                          </>
-                        ) : (
-                          <>
-                            <Film className="h-4 w-4 mr-2" />
-                            Extract from Screenplay
-                          </>
+                            </CardContent>
+                          </Card>
                         )}
-                      </Button>
-                    )}
-                    {(formData.characters?.length || 0) > 10 && (
-                      <>
-                        <div className="flex-1" />
-                        <button
+
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <Button
                           type="button"
-                          onClick={() => {
-                            const wasShowingAll = showAllCharacters;
-                            setShowAllCharacters(!showAllCharacters);
-                            if (wasShowingAll) {
-                              setTimeout(() => {
-                                charactersSectionRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 0);
-                            }
-                          }}
-                          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                          variant="outline"
+                          onClick={addCharacter}
+                          className="bg-transparent"
                         >
-                          <ChevronsDown
-                            className={cn(
-                              "h-4 w-4 transition-transform duration-300",
-                              showAllCharacters ? "rotate-180" : ""
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Character
+                        </Button>
+                        {formData.screenplayText?.trim() && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleExtractCharacters}
+                            disabled={isExtractingCharacters}
+                            className="bg-transparent"
+                          >
+                            {isExtractingCharacters ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Extracting...
+                              </>
+                            ) : (
+                              <>
+                                <Film className="h-4 w-4 mr-2" />
+                                Extract from Screenplay
+                              </>
                             )}
-                          />
-                          {showAllCharacters
-                            ? "Show Less"
-                            : `Show All (${formData.characters?.length})`}
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Extract Characters Confirmation Dialog */}
-                  <ExtractConfirmDialog
-                    open={showExtractCharactersDialog}
-                    onOpenChange={setShowExtractCharactersDialog}
-                    title="Replace All Characters?"
-                    description={`This will replace all ${formData.characters?.length || 0} existing character${(formData.characters?.length || 0) !== 1 ? "s" : ""} with characters extracted from the screenplay. This action cannot be undone.`}
-                    confirmLabel="Replace All Characters"
-                    isLoading={isExtractingCharacters}
-                    onConfirm={performCharacterExtraction}
-                  />
-                </div>
-              </div>
-
-              {/* Locations Section */}
-              <div ref={locationsSectionRef} className="space-y-3 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Camera className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Locations</h3>
-                </div>
-
-                <div className="space-y-2">
-                  {/* Location List - Compact One-Liner View */}
-                  {(formData.setting?.locations || []).length > 0 &&
-                    editingLocationIndex === null && (
-                      <div className="space-y-1.5">
-                        {(() => {
-                          const locations = formData.setting?.locations || [];
-                          const shouldShowAll = locations.length <= 10 || showAllLocations;
-                          const locationsToShow = shouldShowAll ? locations : locations.slice(0, 5);
-
-                          return (
-                            <>
-                              {locationsToShow.map((location, index) => (
-                                <div key={`location-compact-${index}`} className="relative">
-                                  <button
-                                    type="button"
-                                    className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
-                                    onClick={() => setEditingLocationIndex(index)}
-                                  >
-                                    {/* Edit indicator */}
-                                    <div className="pt-0.5 shrink-0">
-                                      <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                                    </div>
-
-                                    {/* Location Image - Super Small - Clickable for upload */}
-                                    <div
-                                      className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleLocationMainImageClick(index);
-                                      }}
-                                      title={
-                                        location.image
-                                          ? "Click to replace image"
-                                          : "Click to add image"
-                                      }
-                                    >
-                                      {uploadingLocationIndex === index ? (
-                                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                                        </div>
-                                      ) : location.image && formData.username ? (
-                                        <>
-                                          <OptimizedImage
-                                            type="location"
-                                            filename={location.image}
-                                            username={formData.username}
-                                            alt={location.name || "Location"}
-                                            fill
-                                            objectFit="cover"
-                                          />
-                                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Camera className="h-3 w-3 text-white" />
-                                          </div>
-                                        </>
-                                      ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
-                                          <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    {/* Location Name */}
-                                    <span className="font-medium text-sm shrink-0">
-                                      {location.name || "Unnamed"}
-                                    </span>
-
-                                    {/* Location Description - Truncated */}
-                                    <span className="text-xs text-muted-foreground truncate flex-1">
-                                      {location.description || "No description"}
-                                    </span>
-
-                                    {/* Additional Images Count */}
-                                    {(location.images?.length || 0) > 0 && (
-                                      <span className="text-xs text-muted-foreground shrink-0">
-                                        +{location.images?.length} img
-                                      </span>
-                                    )}
-                                  </button>
-                                  {/* Hidden file input for compact view upload */}
-                                  <input
-                                    ref={(el) => {
-                                      locationFileInputRefs.current[index] = el;
-                                    }}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleLocationMainImageChange(e, index)}
-                                    className="hidden"
-                                    disabled={uploadingLocationIndex === index}
-                                  />
-                                </div>
-                              ))}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                  {/* Location Edit Form - Expanded View */}
-                  {editingLocationIndex !== null &&
-                    formData.setting?.locations?.[editingLocationIndex] && (
-                      <Card className="bg-muted/30 border-border">
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Edit Location</h4>
-                            <Button
+                          </Button>
+                        )}
+                        {(formData.characters?.length || 0) > 10 && (
+                          <>
+                            <div className="flex-1" />
+                            <button
                               type="button"
-                              variant="outline"
-                              size="sm"
                               onClick={() => {
-                                setEditingLocationIndex(null);
-                                setConfirmingLocationDelete(null);
+                                const wasShowingAll = showAllCharacters;
+                                setShowAllCharacters(!showAllCharacters);
+                                if (wasShowingAll) {
+                                  setTimeout(() => {
+                                    charactersSectionRef.current?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  }, 0);
+                                }
                               }}
-                              className="bg-transparent"
+                              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                             >
-                              Done
-                            </Button>
-                          </div>
-
-                          {/* Location Name */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`location-name-${editingLocationIndex}`}>Name</Label>
-                            <Input
-                              id={`location-name-${editingLocationIndex}`}
-                              placeholder="Enter location name"
-                              value={formData.setting.locations[editingLocationIndex].name}
-                              onChange={(e) =>
-                                updateLocation(editingLocationIndex, "name", e.target.value)
-                              }
-                              className="bg-background"
-                            />
-                          </div>
-
-                          {/* Location Main Image */}
-                          <div className="space-y-2">
-                            <Label>Main Image</Label>
-                            <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
-                              {locationPreviewImages[editingLocationIndex] ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={locationPreviewImages[editingLocationIndex]}
-                                    alt={
-                                      formData.setting.locations[editingLocationIndex].name ||
-                                      "Location"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleLocationMainImageClick(editingLocationIndex)
-                                    }
-                                    disabled={uploadingLocationIndex === editingLocationIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload location main image"
-                                  >
-                                    {uploadingLocationIndex === editingLocationIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : formData.setting.locations[editingLocationIndex].image &&
-                                formData.username ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={getImageUrl({
-                                      type: "location",
-                                      filename:
-                                        formData.setting.locations[editingLocationIndex].image!,
-                                      username: formData.username,
-                                    })}
-                                    alt={
-                                      formData.setting.locations[editingLocationIndex].name ||
-                                      "Location"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleLocationMainImageClick(editingLocationIndex)
-                                    }
-                                    disabled={uploadingLocationIndex === editingLocationIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload location main image"
-                                  >
-                                    {uploadingLocationIndex === editingLocationIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="w-full min-h-[200px] flex items-center justify-center relative group">
-                                  <Camera className="h-12 w-12 text-muted-foreground" />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleLocationMainImageClick(editingLocationIndex)
-                                    }
-                                    disabled={uploadingLocationIndex === editingLocationIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload location main image"
-                                  >
-                                    {uploadingLocationIndex === editingLocationIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            <input
-                              ref={(el) => {
-                                locationFileInputRefs.current[editingLocationIndex] = el;
-                              }}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) =>
-                                handleLocationMainImageChange(e, editingLocationIndex)
-                              }
-                              className="hidden"
-                              disabled={uploadingLocationIndex === editingLocationIndex}
-                            />
-                          </div>
-
-                          {/* Additional Location Images */}
-                          <div className="space-y-2">
-                            <Label>Additional Images (Different Angles/Variations)</Label>
-                            <div className="columns-2 md:columns-3 gap-4">
-                              {(formData.setting.locations[editingLocationIndex].images || []).map(
-                                (image, imageIndex) => (
-                                  <div
-                                    key={`${editingLocationIndex}-${imageIndex}`}
-                                    className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
-                                  >
-                                    {locationAdditionalPreviewImages[editingLocationIndex]?.[
-                                      imageIndex
-                                    ] ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={
-                                            locationAdditionalPreviewImages[editingLocationIndex][
-                                              imageIndex
-                                            ]
-                                          }
-                                          alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleLocationAdditionalImageClick(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingLocationAdditionalIndex?.locationIndex ===
-                                              editingLocationIndex &&
-                                            uploadingLocationAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional location image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingLocationAdditionalIndex?.locationIndex ===
-                                            editingLocationIndex &&
-                                          uploadingLocationAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeLocationAdditionalImage(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : image && formData.username ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={getImageUrl({
-                                            type: "location",
-                                            filename: image,
-                                            username: formData.username,
-                                          })}
-                                          alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleLocationAdditionalImageClick(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingLocationAdditionalIndex?.locationIndex ===
-                                              editingLocationIndex &&
-                                            uploadingLocationAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional location image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingLocationAdditionalIndex?.locationIndex ===
-                                            editingLocationIndex &&
-                                          uploadingLocationAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeLocationAdditionalImage(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div className="w-full min-h-[150px] flex items-center justify-center relative group">
-                                        <Camera className="h-8 w-8 text-muted-foreground" />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleLocationAdditionalImageClick(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingLocationAdditionalIndex?.locationIndex ===
-                                              editingLocationIndex &&
-                                            uploadingLocationAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional location image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingLocationAdditionalIndex?.locationIndex ===
-                                            editingLocationIndex &&
-                                          uploadingLocationAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                      </div>
-                                    )}
-                                    <input
-                                      ref={(el) => {
-                                        locationAdditionalFileInputRefs.current[
-                                          `${editingLocationIndex}-${imageIndex}`
-                                        ] = el;
-                                      }}
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) =>
-                                        handleLocationAdditionalImageChange(
-                                          e,
-                                          editingLocationIndex,
-                                          imageIndex
-                                        )
-                                      }
-                                      className="hidden"
-                                      disabled={
-                                        uploadingLocationAdditionalIndex?.locationIndex ===
-                                          editingLocationIndex &&
-                                        uploadingLocationAdditionalIndex?.imageIndex === imageIndex
-                                      }
-                                    />
-                                  </div>
-                                )
-                              )}
-                              <div className="relative w-full mb-4 break-inside-avoid">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleAddLocationAdditionalImageClick(editingLocationIndex)
-                                  }
-                                  className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
-                                  aria-label="Add additional location image"
-                                >
-                                  <Plus className="h-8 w-8 text-muted-foreground" />
-                                  <input
-                                    ref={(el) => {
-                                      locationAddImageInputRefs.current[editingLocationIndex] = el;
-                                    }}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleAddLocationAdditionalImageChange(
-                                        e,
-                                        editingLocationIndex
-                                      )
-                                    }
-                                    className="hidden"
-                                    disabled={
-                                      uploadingLocationAdditionalIndex?.locationIndex ===
-                                      editingLocationIndex
-                                    }
-                                  />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Location Description */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`location-description-${editingLocationIndex}`}>
-                              Description
-                            </Label>
-                            <Textarea
-                              id={`location-description-${editingLocationIndex}`}
-                              placeholder="Describe this location..."
-                              value={formData.setting.locations[editingLocationIndex].description}
-                              onChange={(e) =>
-                                updateLocation(editingLocationIndex, "description", e.target.value)
-                              }
-                              rows={3}
-                              className="bg-background resize-none"
-                            />
-                          </div>
-
-                          {/* Delete Location Button */}
-                          <div className="pt-4 flex justify-end">
-                            {confirmingLocationDelete === editingLocationIndex ? (
-                              <div className="space-y-3 text-right">
-                                <p className="text-sm text-muted-foreground">
-                                  Are you sure you want to delete this location? This action cannot
-                                  be undone.
-                                </p>
-                                <div className="flex items-center justify-end gap-2">
-                                  <Button
-                                    type="button"
-                                    variant="destructive"
-                                    size="sm"
-                                    onClick={() => {
-                                      removeLocation(editingLocationIndex);
-                                      setEditingLocationIndex(null);
-                                      setConfirmingLocationDelete(null);
-                                    }}
-                                  >
-                                    <Trash className="h-4 w-4 mr-2" />
-                                    Delete Location
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmingLocationDelete(null)}
-                                    className="bg-transparent"
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setConfirmingLocationDelete(editingLocationIndex)}
-                                className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-2 w-2 mr-2" />
-                                Delete Location
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                  <div className="flex gap-2 flex-wrap items-center">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addLocation}
-                      className="bg-transparent"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Location
-                    </Button>
-                    {formData.screenplayText?.trim() && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExtractLocations}
-                        disabled={isExtractingLocations}
-                        className="bg-transparent"
-                      >
-                        {isExtractingLocations ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Extracting...
-                          </>
-                        ) : (
-                          <>
-                            <Film className="h-4 w-4 mr-2" />
-                            Extract from Screenplay
+                              <ChevronsDown
+                                className={cn(
+                                  "h-4 w-4 transition-transform duration-300",
+                                  showAllCharacters ? "rotate-180" : ""
+                                )}
+                              />
+                              {showAllCharacters
+                                ? "Show Less"
+                                : `Show All (${formData.characters?.length})`}
+                            </button>
                           </>
                         )}
-                      </Button>
-                    )}
-                    {(formData.setting?.locations?.length || 0) > 10 && (
-                      <>
-                        <div className="flex-1" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const wasShowingAll = showAllLocations;
-                            setShowAllLocations(!showAllLocations);
-                            if (wasShowingAll) {
-                              setTimeout(() => {
-                                locationsSectionRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 0);
-                            }
-                          }}
-                          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                        >
-                          <ChevronsDown
-                            className={cn(
-                              "h-4 w-4 transition-transform duration-300",
-                              showAllLocations ? "rotate-180" : ""
-                            )}
-                          />
-                          {showAllLocations
-                            ? "Show Less"
-                            : `Show All (${formData.setting?.locations?.length})`}
-                        </button>
-                      </>
-                    )}
-                  </div>
+                      </div>
 
-                  {/* Extract Locations Confirmation Dialog */}
-                  <ExtractConfirmDialog
-                    open={showExtractLocationsDialog}
-                    onOpenChange={setShowExtractLocationsDialog}
-                    title="Replace All Locations?"
-                    description={`This will replace all ${formData.setting?.locations?.length || 0} existing location${(formData.setting?.locations?.length || 0) !== 1 ? "s" : ""} with locations extracted from the screenplay. This action cannot be undone.`}
-                    confirmLabel="Replace All Locations"
-                    isLoading={isExtractingLocations}
-                    onConfirm={performLocationExtraction}
-                  />
-                </div>
-              </div>
-
-              {/* Scenes Section */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Clapperboard className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Scenes</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Add scenes to your project. Each scene can carry screenplay context, characters,
-                  reference assets, and prompt-ready shot breakdowns.
-                </p>
-
-                <SceneList
-                  projectId={effectiveProjectId}
-                  scenes={formData.scenes || []}
-                  characters={formData.characters || []}
-                  locations={formData.setting?.locations || []}
-                  screenplayText={formData.screenplayText}
-                  onScenesChange={(scenes) => setFormData({ ...formData, scenes })}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Default Layout - All sections in order */}
-          {!useGridLayout && (
-            <>
-              {/* Project Info Section */}
-              {!isEditingProjectInfo ? (
-                /* Compact Project Info View */
-                <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-lg border border-border bg-muted/30">
-                  {/* Thumbnail */}
-                  <div className="w-full sm:w-48 md:w-64 shrink-0">
-                    <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted">
-                      {formData.thumbnail && formData.username ? (
-                        <OptimizedImage
-                          type="thumbnail"
-                          filename={formData.thumbnail}
-                          username={formData.username}
-                          alt="Project image"
-                          fill
-                          objectFit="cover"
-                          sizes="256px"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <Film className="h-8 w-8 text-muted-foreground" />
-                        </div>
-                      )}
+                      {/* Extract Characters Confirmation Dialog */}
+                      <ExtractConfirmDialog
+                        open={showExtractCharactersDialog}
+                        onOpenChange={setShowExtractCharactersDialog}
+                        title="Replace All Characters?"
+                        description={`This will replace all ${formData.characters?.length || 0} existing character${(formData.characters?.length || 0) !== 1 ? "s" : ""} with characters extracted from the screenplay. This action cannot be undone.`}
+                        confirmLabel="Replace All Characters"
+                        isLoading={isExtractingCharacters}
+                        onConfirm={performCharacterExtraction}
+                      />
                     </div>
                   </div>
-                  {/* Info */}
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0">
-                        <h3 className="text-2xl font-semibold truncate">
-                          {formData.title || "Untitled Project"}
-                        </h3>
-                        {formData.logline && (
-                          <p className="text-muted-foreground line-clamp-2">{formData.logline}</p>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingProjectInfo(true)}
-                        className="shrink-0 bg-transparent"
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {formData.genre && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
-                          {formData.genre}
-                        </span>
-                      )}
-                      {(formData.filmLength || formData.duration) && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
-                          {formData.filmLength || formData.duration}
-                        </span>
-                      )}
-                    </div>
-                    {formData.filmLink && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        <LinkIcon className="h-3 w-3 inline mr-1" />
-                        {formData.filmLink}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* Expanded Project Info Edit Form */
-                <div className="space-y-6 p-4 rounded-lg border border-border bg-muted/10">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-medium">Project Info</h3>
-                    {isEditing && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditingProjectInfo(false)}
-                        className="bg-transparent"
-                      >
-                        Done
-                      </Button>
-                    )}
-                  </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="title">Project Title *</Label>
-                        <Input
-                          id="title"
-                          placeholder="Enter your project title"
-                          value={formData.title}
-                          onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                          className="bg-background"
-                          required
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="logline">Logline</Label>
-                        <Input
-                          id="logline"
-                          placeholder="A one-sentence summary of your film's story"
-                          value={formData.logline || ""}
-                          onChange={(e) => setFormData({ ...formData, logline: e.target.value })}
-                          className="bg-background"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          A brief, compelling description of your film in 1-2 sentences
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="genre">Genre</Label>
-                          <Select
-                            value={formData.genre}
-                            onValueChange={(value) => setFormData({ ...formData, genre: value })}
-                          >
-                            <SelectTrigger id={genreSelectId} className="w-full bg-background">
-                              <SelectValue placeholder="Select genre..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Action">Action</SelectItem>
-                              <SelectItem value="Animation">Animation</SelectItem>
-                              <SelectItem value="Comedy">Comedy</SelectItem>
-                              <SelectItem value="Documentary">Documentary</SelectItem>
-                              <SelectItem value="Drama">Drama</SelectItem>
-                              <SelectItem value="Fantasy">Fantasy</SelectItem>
-                              <SelectItem value="Horror">Horror</SelectItem>
-                              <SelectItem value="Romance">Romance</SelectItem>
-                              <SelectItem value="Sci-Fi">Sci-Fi</SelectItem>
-                              <SelectItem value="Thriller">Thriller</SelectItem>
-                              <SelectItem value="Experimental">Experimental</SelectItem>
-                              <SelectItem value="Other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="duration">Film Length</Label>
-                          <Select
-                            value={formData.filmLength || formData.duration}
-                            onValueChange={(value) =>
-                              setFormData({
-                                ...formData,
-                                filmLength: value as FilmLengthOption,
-                                duration: value,
-                              })
-                            }
-                          >
-                            <SelectTrigger id={durationSelectId} className="w-full bg-background">
-                              <SelectValue placeholder="Select film length..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {FILM_LENGTH_OPTIONS.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="filmLink">Film Link</Label>
-                        <Input
-                          id="filmLink"
-                          placeholder="YouTube or Vimeo URL (e.g., https://youtube.com/watch?v=...)"
-                          value={formData.filmLink || ""}
-                          onChange={(e) => setFormData({ ...formData, filmLink: e.target.value })}
-                          className="bg-background"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Add a link to your film on YouTube or Vimeo
-                        </p>
-                      </div>
+                  {/* Locations Section */}
+                  <div ref={locationsSectionRef} className="space-y-3 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Camera className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Locations</h3>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="thumbnail">Project Image</Label>
-                      <div className="space-y-4">
-                        {/* Thumbnail Preview */}
-                        <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted/30">
-                          {previewImage ? (
-                            <ImagePreview
-                              src={previewImage}
-                              isUploading={isUploadingImage}
-                              isUploaded={!!formData.thumbnail}
-                              alt="Project image"
-                              aspectRatio="video"
-                              objectFit="cover"
-                            />
-                          ) : formData.thumbnail && formData.username ? (
+                      {/* Location List - Compact One-Liner View */}
+                      {(formData.setting?.locations || []).length > 0 &&
+                        editingLocationIndex === null && (
+                          <div className="space-y-1.5">
+                            {(() => {
+                              const locations = formData.setting?.locations || [];
+                              const shouldShowAll = locations.length <= 10 || showAllLocations;
+                              const locationsToShow = shouldShowAll
+                                ? locations
+                                : locations.slice(0, 5);
+
+                              return (
+                                <>
+                                  {locationsToShow.map((location, index) => (
+                                    <div key={`location-compact-${index}`} className="relative">
+                                      <button
+                                        type="button"
+                                        className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
+                                        onClick={() => setEditingLocationIndex(index)}
+                                      >
+                                        {/* Edit indicator */}
+                                        <div className="pt-0.5 shrink-0">
+                                          <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                                        </div>
+
+                                        {/* Location Image - Super Small - Clickable for upload */}
+                                        <div
+                                          className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLocationMainImageClick(index);
+                                          }}
+                                          title={
+                                            location.image
+                                              ? "Click to replace image"
+                                              : "Click to add image"
+                                          }
+                                        >
+                                          {uploadingLocationIndex === index ? (
+                                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                                            </div>
+                                          ) : location.image && formData.username ? (
+                                            <>
+                                              <OptimizedImage
+                                                type="location"
+                                                filename={location.image}
+                                                username={formData.username}
+                                                alt={location.name || "Location"}
+                                                fill
+                                                objectFit="cover"
+                                              />
+                                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                <Camera className="h-3 w-3 text-white" />
+                                              </div>
+                                            </>
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
+                                              <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Location Name */}
+                                        <span className="font-medium text-sm shrink-0">
+                                          {location.name || "Unnamed"}
+                                        </span>
+
+                                        {/* Location Description - Truncated */}
+                                        <span className="text-xs text-muted-foreground truncate flex-1">
+                                          {location.description || "No description"}
+                                        </span>
+
+                                        {/* Additional Images Count */}
+                                        {(location.images?.length || 0) > 0 && (
+                                          <span className="text-xs text-muted-foreground shrink-0">
+                                            +{location.images?.length} img
+                                          </span>
+                                        )}
+                                      </button>
+                                      {/* Hidden file input for compact view upload */}
+                                      <input
+                                        ref={(el) => {
+                                          locationFileInputRefs.current[index] = el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleLocationMainImageChange(e, index)}
+                                        className="hidden"
+                                        disabled={uploadingLocationIndex === index}
+                                      />
+                                    </div>
+                                  ))}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                      {/* Location Edit Form - Expanded View */}
+                      {editingLocationIndex !== null &&
+                        formData.setting?.locations?.[editingLocationIndex] && (
+                          <Card className="bg-muted/30 border-border">
+                            <CardContent className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium">Edit Location</h4>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingLocationIndex(null);
+                                    setConfirmingLocationDelete(null);
+                                  }}
+                                  className="bg-transparent"
+                                >
+                                  Done
+                                </Button>
+                              </div>
+
+                              {/* Location Name */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`location-name-${editingLocationIndex}`}>
+                                  Name
+                                </Label>
+                                <Input
+                                  id={`location-name-${editingLocationIndex}`}
+                                  placeholder="Enter location name"
+                                  value={formData.setting.locations[editingLocationIndex].name}
+                                  onChange={(e) =>
+                                    updateLocation(editingLocationIndex, "name", e.target.value)
+                                  }
+                                  className="bg-background"
+                                />
+                              </div>
+
+                              {/* Location Main Image */}
+                              <div className="space-y-2">
+                                <Label>Main Image</Label>
+                                <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
+                                  {locationPreviewImages[editingLocationIndex] ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={locationPreviewImages[editingLocationIndex]}
+                                        alt={
+                                          formData.setting.locations[editingLocationIndex].name ||
+                                          "Location"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleLocationMainImageClick(editingLocationIndex)
+                                        }
+                                        disabled={uploadingLocationIndex === editingLocationIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload location main image"
+                                      >
+                                        {uploadingLocationIndex === editingLocationIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : formData.setting.locations[editingLocationIndex].image &&
+                                    formData.username ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={getImageUrl({
+                                          type: "location",
+                                          filename:
+                                            formData.setting.locations[editingLocationIndex].image!,
+                                          username: formData.username,
+                                        })}
+                                        alt={
+                                          formData.setting.locations[editingLocationIndex].name ||
+                                          "Location"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleLocationMainImageClick(editingLocationIndex)
+                                        }
+                                        disabled={uploadingLocationIndex === editingLocationIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload location main image"
+                                      >
+                                        {uploadingLocationIndex === editingLocationIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full min-h-[200px] flex items-center justify-center relative group">
+                                      <Camera className="h-12 w-12 text-muted-foreground" />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleLocationMainImageClick(editingLocationIndex)
+                                        }
+                                        disabled={uploadingLocationIndex === editingLocationIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload location main image"
+                                      >
+                                        {uploadingLocationIndex === editingLocationIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <input
+                                  ref={(el) => {
+                                    locationFileInputRefs.current[editingLocationIndex] = el;
+                                  }}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) =>
+                                    handleLocationMainImageChange(e, editingLocationIndex)
+                                  }
+                                  className="hidden"
+                                  disabled={uploadingLocationIndex === editingLocationIndex}
+                                />
+                              </div>
+
+                              {/* Additional Location Images */}
+                              <div className="space-y-2">
+                                <Label>Additional Images (Different Angles/Variations)</Label>
+                                <div className="columns-2 md:columns-3 gap-4">
+                                  {(
+                                    formData.setting.locations[editingLocationIndex].images || []
+                                  ).map((image, imageIndex) => (
+                                    <div
+                                      key={`${editingLocationIndex}-${imageIndex}`}
+                                      className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
+                                    >
+                                      {locationAdditionalPreviewImages[editingLocationIndex]?.[
+                                        imageIndex
+                                      ] ? (
+                                        <div className="relative group">
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={
+                                              locationAdditionalPreviewImages[editingLocationIndex][
+                                                imageIndex
+                                              ]
+                                            }
+                                            alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
+                                            className="w-full h-auto"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleLocationAdditionalImageClick(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            disabled={
+                                              uploadingLocationAdditionalIndex?.locationIndex ===
+                                                editingLocationIndex &&
+                                              uploadingLocationAdditionalIndex?.imageIndex ===
+                                                imageIndex
+                                            }
+                                            className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                            aria-label={`Upload additional location image ${imageIndex + 1}`}
+                                          >
+                                            {uploadingLocationAdditionalIndex?.locationIndex ===
+                                              editingLocationIndex &&
+                                            uploadingLocationAdditionalIndex?.imageIndex ===
+                                              imageIndex ? (
+                                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                            ) : (
+                                              <Camera className="h-6 w-6 text-white" />
+                                            )}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              removeLocationAdditionalImage(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                            aria-label={`Remove image ${imageIndex + 1}`}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      ) : image && formData.username ? (
+                                        <div className="relative group">
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={getImageUrl({
+                                              type: "location",
+                                              filename: image,
+                                              username: formData.username,
+                                            })}
+                                            alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
+                                            className="w-full h-auto"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleLocationAdditionalImageClick(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            disabled={
+                                              uploadingLocationAdditionalIndex?.locationIndex ===
+                                                editingLocationIndex &&
+                                              uploadingLocationAdditionalIndex?.imageIndex ===
+                                                imageIndex
+                                            }
+                                            className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                            aria-label={`Upload additional location image ${imageIndex + 1}`}
+                                          >
+                                            {uploadingLocationAdditionalIndex?.locationIndex ===
+                                              editingLocationIndex &&
+                                            uploadingLocationAdditionalIndex?.imageIndex ===
+                                              imageIndex ? (
+                                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                            ) : (
+                                              <Camera className="h-6 w-6 text-white" />
+                                            )}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              removeLocationAdditionalImage(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                            aria-label={`Remove image ${imageIndex + 1}`}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        <div className="w-full min-h-[150px] flex items-center justify-center relative group">
+                                          <Camera className="h-8 w-8 text-muted-foreground" />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleLocationAdditionalImageClick(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            disabled={
+                                              uploadingLocationAdditionalIndex?.locationIndex ===
+                                                editingLocationIndex &&
+                                              uploadingLocationAdditionalIndex?.imageIndex ===
+                                                imageIndex
+                                            }
+                                            className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                            aria-label={`Upload additional location image ${imageIndex + 1}`}
+                                          >
+                                            {uploadingLocationAdditionalIndex?.locationIndex ===
+                                              editingLocationIndex &&
+                                            uploadingLocationAdditionalIndex?.imageIndex ===
+                                              imageIndex ? (
+                                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                            ) : (
+                                              <Camera className="h-6 w-6 text-white" />
+                                            )}
+                                          </button>
+                                        </div>
+                                      )}
+                                      <input
+                                        ref={(el) => {
+                                          locationAdditionalFileInputRefs.current[
+                                            `${editingLocationIndex}-${imageIndex}`
+                                          ] = el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) =>
+                                          handleLocationAdditionalImageChange(
+                                            e,
+                                            editingLocationIndex,
+                                            imageIndex
+                                          )
+                                        }
+                                        className="hidden"
+                                        disabled={
+                                          uploadingLocationAdditionalIndex?.locationIndex ===
+                                            editingLocationIndex &&
+                                          uploadingLocationAdditionalIndex?.imageIndex ===
+                                            imageIndex
+                                        }
+                                      />
+                                    </div>
+                                  ))}
+                                  <div className="relative w-full mb-4 break-inside-avoid">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddLocationAdditionalImageClick(editingLocationIndex)
+                                      }
+                                      className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
+                                      aria-label="Add additional location image"
+                                    >
+                                      <Plus className="h-8 w-8 text-muted-foreground" />
+                                      <input
+                                        ref={(el) => {
+                                          locationAddImageInputRefs.current[editingLocationIndex] =
+                                            el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) =>
+                                          handleAddLocationAdditionalImageChange(
+                                            e,
+                                            editingLocationIndex
+                                          )
+                                        }
+                                        className="hidden"
+                                        disabled={
+                                          uploadingLocationAdditionalIndex?.locationIndex ===
+                                          editingLocationIndex
+                                        }
+                                      />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Location Description */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`location-description-${editingLocationIndex}`}>
+                                  Description
+                                </Label>
+                                <Textarea
+                                  id={`location-description-${editingLocationIndex}`}
+                                  placeholder="Describe this location..."
+                                  value={
+                                    formData.setting.locations[editingLocationIndex].description
+                                  }
+                                  onChange={(e) =>
+                                    updateLocation(
+                                      editingLocationIndex,
+                                      "description",
+                                      e.target.value
+                                    )
+                                  }
+                                  rows={3}
+                                  className="bg-background resize-none"
+                                />
+                              </div>
+
+                              {/* Delete Location Button */}
+                              <div className="pt-4 flex justify-end">
+                                {confirmingLocationDelete === editingLocationIndex ? (
+                                  <div className="space-y-3 text-right">
+                                    <p className="text-sm text-muted-foreground">
+                                      Are you sure you want to delete this location? This action
+                                      cannot be undone.
+                                    </p>
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => {
+                                          removeLocation(editingLocationIndex);
+                                          setEditingLocationIndex(null);
+                                          setConfirmingLocationDelete(null);
+                                        }}
+                                      >
+                                        <Trash className="h-4 w-4 mr-2" />
+                                        Delete Location
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setConfirmingLocationDelete(null)}
+                                        className="bg-transparent"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() =>
+                                      setConfirmingLocationDelete(editingLocationIndex)
+                                    }
+                                    className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <X className="h-2 w-2 mr-2" />
+                                    Delete Location
+                                  </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addLocation}
+                          className="bg-transparent"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Location
+                        </Button>
+                        {formData.screenplayText?.trim() && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleExtractLocations}
+                            disabled={isExtractingLocations}
+                            className="bg-transparent"
+                          >
+                            {isExtractingLocations ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Extracting...
+                              </>
+                            ) : (
+                              <>
+                                <Film className="h-4 w-4 mr-2" />
+                                Extract from Screenplay
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        {(formData.setting?.locations?.length || 0) > 10 && (
+                          <>
+                            <div className="flex-1" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const wasShowingAll = showAllLocations;
+                                setShowAllLocations(!showAllLocations);
+                                if (wasShowingAll) {
+                                  setTimeout(() => {
+                                    locationsSectionRef.current?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  }, 0);
+                                }
+                              }}
+                              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                            >
+                              <ChevronsDown
+                                className={cn(
+                                  "h-4 w-4 transition-transform duration-300",
+                                  showAllLocations ? "rotate-180" : ""
+                                )}
+                              />
+                              {showAllLocations
+                                ? "Show Less"
+                                : `Show All (${formData.setting?.locations?.length})`}
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Extract Locations Confirmation Dialog */}
+                      <ExtractConfirmDialog
+                        open={showExtractLocationsDialog}
+                        onOpenChange={setShowExtractLocationsDialog}
+                        title="Replace All Locations?"
+                        description={`This will replace all ${formData.setting?.locations?.length || 0} existing location${(formData.setting?.locations?.length || 0) !== 1 ? "s" : ""} with locations extracted from the screenplay. This action cannot be undone.`}
+                        confirmLabel="Replace All Locations"
+                        isLoading={isExtractingLocations}
+                        onConfirm={performLocationExtraction}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Scenes Section */}
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Clapperboard className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Scenes</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Add scenes to your project. Each scene can carry screenplay context,
+                      characters, reference assets, and prompt-ready shot breakdowns.
+                    </p>
+
+                    <SceneList
+                      projectId={effectiveProjectId}
+                      scenes={formData.scenes || []}
+                      characters={formData.characters || []}
+                      locations={formData.setting?.locations || []}
+                      screenplayText={formData.screenplayText}
+                      onScenesChange={(scenes) => setFormData({ ...formData, scenes })}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Default Layout - All sections in order */}
+              {!useGridLayout && (
+                <>
+                  {/* Project Info Section */}
+                  {!isEditingProjectInfo ? (
+                    /* Compact Project Info View */
+                    <div className="flex flex-col sm:flex-row gap-4 p-4 rounded-lg border border-border bg-muted/30">
+                      {/* Thumbnail */}
+                      <div className="w-full sm:w-48 md:w-64 shrink-0">
+                        <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-muted">
+                          {formData.thumbnail && formData.username ? (
                             <OptimizedImage
                               type="thumbnail"
                               filename={formData.thumbnail}
@@ -4751,1642 +4615,1883 @@ export default function ProjectForm({
                               alt="Project image"
                               fill
                               objectFit="cover"
-                              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                              sizes="256px"
                             />
-                          ) : null}
-                          {/* Upload overlay */}
-                          <button
-                            type="button"
-                            onClick={handleImageClick}
-                            disabled={isUploadingImage}
-                            className="group absolute inset-0 flex items-center justify-center bg-black/60 opacity-50 hover:opacity-100 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
-                            aria-label="Upload project image"
-                          >
-                            {isUploadingImage ? (
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                            ) : (
-                              <div className="flex flex-col items-center gap-2">
-                                <Camera className="h-8 w-8 text-white" />
-                                <span className="text-sm text-white font-medium">
-                                  {formData.thumbnail ? "Change Image" : "Upload Image"}
-                                </span>
-                              </div>
-                            )}
-                          </button>
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <Film className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                          )}
                         </div>
-
-                        {/* Upload Button */}
-                        <div className="flex items-center gap-4">
+                      </div>
+                      {/* Info */}
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <h3 className="text-2xl font-semibold truncate">
+                              {formData.title || "Untitled Project"}
+                            </h3>
+                            {formData.logline && (
+                              <p className="text-muted-foreground line-clamp-2">
+                                {formData.logline}
+                              </p>
+                            )}
+                          </div>
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={handleImageClick}
-                            disabled={isUploadingImage}
-                            className="bg-transparent"
+                            size="sm"
+                            onClick={() => setIsEditingProjectInfo(true)}
+                            className="shrink-0 bg-transparent"
                           >
-                            <Upload className="h-4 w-4 mr-2" />
-                            {isUploadingImage
-                              ? "Uploading..."
-                              : formData.thumbnail
-                                ? "Change Image"
-                                : "Upload Image"}
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit
                           </Button>
-                          <span className="text-sm text-muted-foreground">
-                            {formData.thumbnail ? "Image uploaded" : "No image selected"}
-                          </span>
                         </div>
-
-                        {/* Hidden file input */}
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          className="hidden"
-                          disabled={isUploadingImage}
-                        />
+                        <div className="flex flex-wrap gap-2">
+                          {formData.genre && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary">
+                              {formData.genre}
+                            </span>
+                          )}
+                          {(formData.filmLength || formData.duration) && (
+                            <span className="px-2 py-1 text-xs font-medium rounded-full bg-muted text-muted-foreground">
+                              {formData.filmLength || formData.duration}
+                            </span>
+                          )}
+                        </div>
+                        {formData.filmLink && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            <LinkIcon className="h-3 w-3 inline mr-1" />
+                            {formData.filmLink}
+                          </p>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Screenplay Section */}
-              <div className="space-y-4 pt-4 border-t border-border" suppressHydrationWarning>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <File className="h-5 w-5 text-primary" />
-                    <h3 className="text-lg font-semibold">Screenplay / Script</h3>
-                  </div>
-                  {isEditing && projectId && (formData.screenplayText || formData.screenplay) && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => router.push(`/dashboard/projects/${projectId}/screenplay`)}
-                      className="bg-transparent"
-                    >
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit Screenplay
-                    </Button>
-                  )}
-                </div>
-                {!formData.screenplayText && (
-                  <p className="text-sm text-muted-foreground">
-                    Upload a PDF screenplay or use the editor to write your screenplay. The text
-                    will be automatically extracted from PDFs.
-                  </p>
-                )}
-
-                {/* Screenplay Status - One Line */}
-                {formData.screenplayText ? (
-                  <div className="flex items-center justify-between gap-3 px-3 py-2 bg-muted/30 rounded-lg border border-border">
-                    <span className="text-sm text-muted-foreground">
-                      {formData.screenplayText.split(/\s+/).filter((w) => w.length > 0).length}{" "}
-                      words • {formData.screenplayText.match(/^(INT\.|EXT\.)/gm)?.length || 0}{" "}
-                      scenes
-                    </span>
-                    <div className="flex items-center gap-3">
-                      {showRemoveScreenplayConfirm ? (
-                        <>
-                          <span className="text-xs text-muted-foreground">Replace screenplay?</span>
-                          <button
-                            onClick={() => {
-                              setShowRemoveScreenplayConfirm(false);
-                              projectFileInputRef.current?.click();
-                            }}
+                  ) : (
+                    /* Expanded Project Info Edit Form */
+                    <div className="space-y-6 p-4 rounded-lg border border-border bg-muted/10">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">Project Info</h3>
+                        {isEditing && (
+                          <Button
                             type="button"
-                            className="text-primary hover:text-primary/80 font-medium text-xs"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setIsEditingProjectInfo(false)}
+                            className="bg-transparent"
                           >
-                            Yes
-                          </button>
-                          <button
-                            onClick={() => setShowRemoveScreenplayConfirm(false)}
-                            type="button"
-                            className="text-muted-foreground hover:text-foreground text-xs"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setShowRemoveScreenplayConfirm(true)}
-                          type="button"
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          Replace
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleProjectFileClick}
-                    disabled={isUploadingFile}
-                    className="bg-transparent"
-                  >
-                    <Upload className="h-4 w-4 mr-2" />
-                    {isUploadingFile ? "Uploading..." : "Upload PDF"}
-                  </Button>
-                )}
+                            Done
+                          </Button>
+                        )}
+                      </div>
 
-                {/* Hidden file input - Always rendered so ref is always available */}
-                <input
-                  ref={projectFileInputRef}
-                  type="file"
-                  onChange={handleProjectFileChange}
-                  className="hidden"
-                  disabled={isUploadingFile}
-                  accept=".pdf,application/pdf"
-                />
-              </div>
+                      <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <Label htmlFor="title">Project Title *</Label>
+                            <Input
+                              id="title"
+                              placeholder="Enter your project title"
+                              value={formData.title}
+                              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                              className="bg-background"
+                              required
+                            />
+                          </div>
 
-              {/* Characters Section */}
-              <div ref={charactersSectionRef} className="space-y-3 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Characters</h3>
-                </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="logline">Logline</Label>
+                            <Input
+                              id="logline"
+                              placeholder="A one-sentence summary of your film's story"
+                              value={formData.logline || ""}
+                              onChange={(e) =>
+                                setFormData({ ...formData, logline: e.target.value })
+                              }
+                              className="bg-background"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              A brief, compelling description of your film in 1-2 sentences
+                            </p>
+                          </div>
 
-                <div className="space-y-2">
-                  {/* Character List - Compact One-Liner View */}
-                  {(formData.characters || []).length > 0 && editingCharacterIndex === null && (
-                    <div className="space-y-1.5">
-                      {(() => {
-                        const characters = formData.characters || [];
-                        const shouldShowAll = characters.length <= 10 || showAllCharacters;
-                        const charactersToShow = shouldShowAll
-                          ? characters
-                          : characters.slice(0, 5);
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="genre">Genre</Label>
+                              <Select
+                                value={formData.genre}
+                                onValueChange={(value) =>
+                                  setFormData({ ...formData, genre: value })
+                                }
+                              >
+                                <SelectTrigger id={genreSelectId} className="w-full bg-background">
+                                  <SelectValue placeholder="Select genre..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="Action">Action</SelectItem>
+                                  <SelectItem value="Animation">Animation</SelectItem>
+                                  <SelectItem value="Comedy">Comedy</SelectItem>
+                                  <SelectItem value="Documentary">Documentary</SelectItem>
+                                  <SelectItem value="Drama">Drama</SelectItem>
+                                  <SelectItem value="Fantasy">Fantasy</SelectItem>
+                                  <SelectItem value="Horror">Horror</SelectItem>
+                                  <SelectItem value="Romance">Romance</SelectItem>
+                                  <SelectItem value="Sci-Fi">Sci-Fi</SelectItem>
+                                  <SelectItem value="Thriller">Thriller</SelectItem>
+                                  <SelectItem value="Experimental">Experimental</SelectItem>
+                                  <SelectItem value="Other">Other</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                        return (
-                          <>
-                            {charactersToShow.map((character, index) => (
-                              <div key={`character-compact-${index}`} className="relative">
-                                <button
-                                  type="button"
-                                  className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
-                                  onClick={() => setEditingCharacterIndex(index)}
+                            <div className="space-y-2">
+                              <Label htmlFor="duration">Film Length</Label>
+                              <Select
+                                value={formData.filmLength || formData.duration}
+                                onValueChange={(value) =>
+                                  setFormData({
+                                    ...formData,
+                                    filmLength: value as FilmLengthOption,
+                                    duration: value,
+                                  })
+                                }
+                              >
+                                <SelectTrigger
+                                  id={durationSelectId}
+                                  className="w-full bg-background"
                                 >
-                                  {/* Edit indicator */}
-                                  <div className="pt-0.5 shrink-0">
-                                    <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                                  </div>
+                                  <SelectValue placeholder="Select film length..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {FILM_LENGTH_OPTIONS.map((option) => (
+                                    <SelectItem key={option} value={option}>
+                                      {option}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
 
-                                  {/* Character Image - Super Small - Clickable for upload */}
-                                  <div
-                                    className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleCharacterMainImageClick(index);
-                                    }}
-                                    title={
-                                      character.mainImage
-                                        ? "Click to replace image"
-                                        : "Click to add image"
-                                    }
-                                  >
-                                    {uploadingCharacterIndex === index ? (
-                                      <div className="w-full h-full flex items-center justify-center bg-muted">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
-                                      </div>
-                                    ) : character.mainImage && formData.username ? (
-                                      <>
-                                        <OptimizedImage
-                                          type="character"
-                                          filename={character.mainImage}
-                                          username={formData.username}
-                                          alt={character.name || "Character"}
-                                          fill
-                                          objectFit="cover"
-                                        />
-                                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                          <Camera className="h-3 w-3 text-white" />
-                                        </div>
-                                      </>
-                                    ) : (
-                                      <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
-                                        <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
-                                      </div>
-                                    )}
-                                  </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="filmLink">Film Link</Label>
+                            <Input
+                              id="filmLink"
+                              placeholder="YouTube or Vimeo URL (e.g., https://youtube.com/watch?v=...)"
+                              value={formData.filmLink || ""}
+                              onChange={(e) =>
+                                setFormData({ ...formData, filmLink: e.target.value })
+                              }
+                              className="bg-background"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              Add a link to your film on YouTube or Vimeo
+                            </p>
+                          </div>
+                        </div>
 
-                                  {/* Character Name */}
-                                  <span className="font-medium text-sm shrink-0">
-                                    {character.name || "Unnamed"}
-                                  </span>
-
-                                  {/* Character Appearance - Truncated */}
-                                  <span className="text-xs text-muted-foreground truncate flex-1">
-                                    {character.appearance || "No appearance description"}
-                                  </span>
-
-                                  {/* Additional Images Count */}
-                                  {(character.images?.length || 0) > 0 && (
-                                    <span className="text-xs text-muted-foreground shrink-0">
-                                      +{character.images?.length} img
+                        <div className="space-y-2">
+                          <Label htmlFor="thumbnail">Project Image</Label>
+                          <div className="space-y-4">
+                            {/* Thumbnail Preview */}
+                            <div className="relative w-full aspect-video rounded-lg overflow-hidden border border-border bg-muted/30">
+                              {previewImage ? (
+                                <ImagePreview
+                                  src={previewImage}
+                                  isUploading={isUploadingImage}
+                                  isUploaded={!!formData.thumbnail}
+                                  alt="Project image"
+                                  aspectRatio="video"
+                                  objectFit="cover"
+                                />
+                              ) : formData.thumbnail && formData.username ? (
+                                <OptimizedImage
+                                  type="thumbnail"
+                                  filename={formData.thumbnail}
+                                  username={formData.username}
+                                  alt="Project image"
+                                  fill
+                                  objectFit="cover"
+                                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                />
+                              ) : null}
+                              {/* Upload overlay */}
+                              <button
+                                type="button"
+                                onClick={handleImageClick}
+                                disabled={isUploadingImage}
+                                className="group absolute inset-0 flex items-center justify-center bg-black/60 opacity-50 hover:opacity-100 transition-all duration-300 cursor-pointer disabled:cursor-not-allowed"
+                                aria-label="Upload project image"
+                              >
+                                {isUploadingImage ? (
+                                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                ) : (
+                                  <div className="flex flex-col items-center gap-2">
+                                    <Camera className="h-8 w-8 text-white" />
+                                    <span className="text-sm text-white font-medium">
+                                      {formData.thumbnail ? "Change Image" : "Upload Image"}
                                     </span>
+                                  </div>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Upload Button */}
+                            <div className="flex items-center gap-4">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleImageClick}
+                                disabled={isUploadingImage}
+                                className="bg-transparent"
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                {isUploadingImage
+                                  ? "Uploading..."
+                                  : formData.thumbnail
+                                    ? "Change Image"
+                                    : "Upload Image"}
+                              </Button>
+                              <span className="text-sm text-muted-foreground">
+                                {formData.thumbnail ? "Image uploaded" : "No image selected"}
+                              </span>
+                            </div>
+
+                            {/* Hidden file input */}
+                            <input
+                              ref={fileInputRef}
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                              className="hidden"
+                              disabled={isUploadingImage}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Screenplay Section */}
+                  <div className="space-y-4 pt-4 border-t border-border" suppressHydrationWarning>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <File className="h-5 w-5 text-primary" />
+                        <h3 className="text-lg font-semibold">Screenplay / Script</h3>
+                      </div>
+                      {isEditing &&
+                        projectId &&
+                        (formData.screenplayText || formData.screenplay) && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() =>
+                              router.push(`/dashboard/projects/${projectId}/screenplay`)
+                            }
+                            className="bg-transparent"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Edit Screenplay
+                          </Button>
+                        )}
+                    </div>
+                    {!formData.screenplayText && (
+                      <p className="text-sm text-muted-foreground">
+                        Upload a PDF screenplay or use the editor to write your screenplay. The text
+                        will be automatically extracted from PDFs.
+                      </p>
+                    )}
+
+                    {/* Screenplay Status - One Line */}
+                    {formData.screenplayText ? (
+                      <div className="flex items-center justify-between gap-3 px-3 py-2 bg-muted/30 rounded-lg border border-border">
+                        <span className="text-sm text-muted-foreground">
+                          {formData.screenplayText.split(/\s+/).filter((w) => w.length > 0).length}{" "}
+                          words • {formData.screenplayText.match(/^(INT\.|EXT\.)/gm)?.length || 0}{" "}
+                          scenes
+                        </span>
+                        <div className="flex items-center gap-3">
+                          {showRemoveScreenplayConfirm ? (
+                            <>
+                              <span className="text-xs text-muted-foreground">
+                                Replace screenplay?
+                              </span>
+                              <button
+                                onClick={() => {
+                                  setShowRemoveScreenplayConfirm(false);
+                                  projectFileInputRef.current?.click();
+                                }}
+                                type="button"
+                                className="text-primary hover:text-primary/80 font-medium text-xs"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setShowRemoveScreenplayConfirm(false)}
+                                type="button"
+                                className="text-muted-foreground hover:text-foreground text-xs"
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={() => setShowRemoveScreenplayConfirm(true)}
+                              type="button"
+                              className="text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              Replace
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleProjectFileClick}
+                        disabled={isUploadingFile}
+                        className="bg-transparent"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        {isUploadingFile ? "Uploading..." : "Upload PDF"}
+                      </Button>
+                    )}
+
+                    {/* Hidden file input - Always rendered so ref is always available */}
+                    <input
+                      ref={projectFileInputRef}
+                      type="file"
+                      onChange={handleProjectFileChange}
+                      className="hidden"
+                      disabled={isUploadingFile}
+                      accept=".pdf,application/pdf"
+                    />
+                  </div>
+
+                  {/* Characters Section */}
+                  <div ref={charactersSectionRef} className="space-y-3 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <User className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Characters</h3>
+                    </div>
+
+                    <div className="space-y-2">
+                      {/* Character List - Compact One-Liner View */}
+                      {(formData.characters || []).length > 0 && editingCharacterIndex === null && (
+                        <div className="space-y-1.5">
+                          {(() => {
+                            const characters = formData.characters || [];
+                            const shouldShowAll = characters.length <= 10 || showAllCharacters;
+                            const charactersToShow = shouldShowAll
+                              ? characters
+                              : characters.slice(0, 5);
+
+                            return (
+                              <>
+                                {charactersToShow.map((character, index) => (
+                                  <div key={`character-compact-${index}`} className="relative">
+                                    <button
+                                      type="button"
+                                      className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
+                                      onClick={() => setEditingCharacterIndex(index)}
+                                    >
+                                      {/* Edit indicator */}
+                                      <div className="pt-0.5 shrink-0">
+                                        <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
+                                      </div>
+
+                                      {/* Character Image - Super Small - Clickable for upload */}
+                                      <div
+                                        className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleCharacterMainImageClick(index);
+                                        }}
+                                        title={
+                                          character.mainImage
+                                            ? "Click to replace image"
+                                            : "Click to add image"
+                                        }
+                                      >
+                                        {uploadingCharacterIndex === index ? (
+                                          <div className="w-full h-full flex items-center justify-center bg-muted">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                                          </div>
+                                        ) : character.mainImage && formData.username ? (
+                                          <>
+                                            <OptimizedImage
+                                              type="character"
+                                              filename={character.mainImage}
+                                              username={formData.username}
+                                              alt={character.name || "Character"}
+                                              fill
+                                              objectFit="cover"
+                                            />
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                              <Camera className="h-3 w-3 text-white" />
+                                            </div>
+                                          </>
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
+                                            <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Character Name */}
+                                      <span className="font-medium text-sm shrink-0">
+                                        {character.name || "Unnamed"}
+                                      </span>
+
+                                      {/* Character Appearance - Truncated */}
+                                      <span className="text-xs text-muted-foreground truncate flex-1">
+                                        {character.appearance || "No appearance description"}
+                                      </span>
+
+                                      {/* Additional Images Count */}
+                                      {(character.images?.length || 0) > 0 && (
+                                        <span className="text-xs text-muted-foreground shrink-0">
+                                          +{character.images?.length} img
+                                        </span>
+                                      )}
+                                    </button>
+                                    {/* Hidden file input for compact view upload */}
+                                    <input
+                                      ref={(el) => {
+                                        characterFileInputRefs.current[index] = el;
+                                      }}
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => handleCharacterMainImageChange(e, index)}
+                                      className="hidden"
+                                      disabled={uploadingCharacterIndex === index}
+                                    />
+                                  </div>
+                                ))}
+                              </>
+                            );
+                          })()}
+                        </div>
+                      )}
+
+                      {/* Character Edit Form - Expanded View */}
+                      {editingCharacterIndex !== null &&
+                        formData.characters?.[editingCharacterIndex] && (
+                          <Card className="bg-muted/30 border-border">
+                            <CardContent className="p-4 space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium">Edit Character</h4>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingCharacterIndex(null);
+                                    setConfirmingCharacterDelete(null);
+                                  }}
+                                  className="bg-transparent"
+                                >
+                                  Done
+                                </Button>
+                              </div>
+
+                              {/* Character Name */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`character-name-${editingCharacterIndex}`}>
+                                  Name
+                                </Label>
+                                <Input
+                                  id={`character-name-${editingCharacterIndex}`}
+                                  placeholder="Enter character name"
+                                  value={formData.characters[editingCharacterIndex].name}
+                                  onChange={(e) =>
+                                    updateCharacter(editingCharacterIndex, "name", e.target.value)
+                                  }
+                                  className="bg-background"
+                                />
+                              </div>
+
+                              {/* Character Main Image */}
+                              <div className="space-y-2">
+                                <Label>Main Image</Label>
+                                <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
+                                  {characterPreviewImages[editingCharacterIndex] ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={characterPreviewImages[editingCharacterIndex]}
+                                        alt={
+                                          formData.characters[editingCharacterIndex].name ||
+                                          "Character"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCharacterMainImageClick(editingCharacterIndex)
+                                        }
+                                        disabled={uploadingCharacterIndex === editingCharacterIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload character main image"
+                                      >
+                                        {uploadingCharacterIndex === editingCharacterIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : formData.characters[editingCharacterIndex].mainImage &&
+                                    formData.username ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={getImageUrl({
+                                          type: "character",
+                                          filename:
+                                            formData.characters[editingCharacterIndex].mainImage!,
+                                          username: formData.username,
+                                        })}
+                                        alt={
+                                          formData.characters[editingCharacterIndex].name ||
+                                          "Character"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCharacterMainImageClick(editingCharacterIndex)
+                                        }
+                                        disabled={uploadingCharacterIndex === editingCharacterIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload character main image"
+                                      >
+                                        {uploadingCharacterIndex === editingCharacterIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full min-h-[200px] flex items-center justify-center relative group">
+                                      <User className="h-12 w-12 text-muted-foreground" />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleCharacterMainImageClick(editingCharacterIndex)
+                                        }
+                                        disabled={uploadingCharacterIndex === editingCharacterIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload character main image"
+                                      >
+                                        {uploadingCharacterIndex === editingCharacterIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
                                   )}
-                                </button>
-                                {/* Hidden file input for compact view upload */}
+                                </div>
                                 <input
                                   ref={(el) => {
-                                    characterFileInputRefs.current[index] = el;
+                                    characterFileInputRefs.current[editingCharacterIndex] = el;
                                   }}
                                   type="file"
                                   accept="image/*"
                                   onChange={(e) =>
-                                    handleCharacterMainImageChange(e, index)
+                                    handleCharacterMainImageChange(e, editingCharacterIndex)
                                   }
                                   className="hidden"
-                                  disabled={uploadingCharacterIndex === index}
+                                  disabled={uploadingCharacterIndex === editingCharacterIndex}
                                 />
                               </div>
-                            ))}
-                          </>
-                        );
-                      })()}
-                    </div>
-                  )}
 
-                  {/* Character Edit Form - Expanded View */}
-                  {editingCharacterIndex !== null &&
-                    formData.characters?.[editingCharacterIndex] && (
-                      <Card className="bg-muted/30 border-border">
-                        <CardContent className="p-4 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Edit Character</h4>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingCharacterIndex(null);
-                                setConfirmingCharacterDelete(null);
-                              }}
-                              className="bg-transparent"
-                            >
-                              Done
-                            </Button>
-                          </div>
-
-                          {/* Character Name */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`character-name-${editingCharacterIndex}`}>Name</Label>
-                            <Input
-                              id={`character-name-${editingCharacterIndex}`}
-                              placeholder="Enter character name"
-                              value={formData.characters[editingCharacterIndex].name}
-                              onChange={(e) =>
-                                updateCharacter(editingCharacterIndex, "name", e.target.value)
-                              }
-                              className="bg-background"
-                            />
-                          </div>
-
-                          {/* Character Main Image */}
-                          <div className="space-y-2">
-                            <Label>Main Image</Label>
-                            <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
-                              {characterPreviewImages[editingCharacterIndex] ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={characterPreviewImages[editingCharacterIndex]}
-                                    alt={
-                                      formData.characters[editingCharacterIndex].name || "Character"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleCharacterMainImageClick(editingCharacterIndex)
-                                    }
-                                    disabled={uploadingCharacterIndex === editingCharacterIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload character main image"
-                                  >
-                                    {uploadingCharacterIndex === editingCharacterIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : formData.characters[editingCharacterIndex].mainImage &&
-                                formData.username ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={getImageUrl({
-                                      type: "character",
-                                      filename:
-                                        formData.characters[editingCharacterIndex].mainImage!,
-                                      username: formData.username,
-                                    })}
-                                    alt={
-                                      formData.characters[editingCharacterIndex].name || "Character"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleCharacterMainImageClick(editingCharacterIndex)
-                                    }
-                                    disabled={uploadingCharacterIndex === editingCharacterIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload character main image"
-                                  >
-                                    {uploadingCharacterIndex === editingCharacterIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="w-full min-h-[200px] flex items-center justify-center relative group">
-                                  <User className="h-12 w-12 text-muted-foreground" />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleCharacterMainImageClick(editingCharacterIndex)
-                                    }
-                                    disabled={uploadingCharacterIndex === editingCharacterIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload character main image"
-                                  >
-                                    {uploadingCharacterIndex === editingCharacterIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            <input
-                              ref={(el) => {
-                                characterFileInputRefs.current[editingCharacterIndex] = el;
-                              }}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) =>
-                                handleCharacterMainImageChange(e, editingCharacterIndex)
-                              }
-                              className="hidden"
-                              disabled={uploadingCharacterIndex === editingCharacterIndex}
-                            />
-                          </div>
-
-                          {/* Additional Character Images */}
-                          <div className="space-y-2">
-                            <Label>Additional Images (Different Angles/Attire)</Label>
-                            <div className="columns-2 md:columns-3 gap-4">
-                              {(formData.characters[editingCharacterIndex].images || []).map(
-                                (image, imageIndex) => (
-                                  <div
-                                    key={`${editingCharacterIndex}-${imageIndex}`}
-                                    className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
-                                  >
-                                    {characterAdditionalPreviewImages[editingCharacterIndex]?.[
-                                      imageIndex
-                                    ] ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={
-                                            characterAdditionalPreviewImages[editingCharacterIndex][
-                                              imageIndex
-                                            ]
-                                          }
-                                          alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleCharacterAdditionalImageClick(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingCharacterAdditionalIndex?.characterIndex ===
-                                              editingCharacterIndex &&
-                                            uploadingCharacterAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional character image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingCharacterAdditionalIndex?.characterIndex ===
-                                            editingCharacterIndex &&
-                                          uploadingCharacterAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeCharacterAdditionalImage(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : image && formData.username ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={getImageUrl({
-                                            type: "character",
-                                            filename: image,
-                                            username: formData.username,
-                                          })}
-                                          alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleCharacterAdditionalImageClick(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingCharacterAdditionalIndex?.characterIndex ===
-                                              editingCharacterIndex &&
-                                            uploadingCharacterAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional character image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingCharacterAdditionalIndex?.characterIndex ===
-                                            editingCharacterIndex &&
-                                          uploadingCharacterAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeCharacterAdditionalImage(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div className="w-full min-h-[150px] flex items-center justify-center relative group">
-                                        <Camera className="h-8 w-8 text-muted-foreground" />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleCharacterAdditionalImageClick(
-                                              editingCharacterIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingCharacterAdditionalIndex?.characterIndex ===
-                                              editingCharacterIndex &&
-                                            uploadingCharacterAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional character image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingCharacterAdditionalIndex?.characterIndex ===
-                                            editingCharacterIndex &&
-                                          uploadingCharacterAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                      </div>
-                                    )}
-                                    <input
-                                      ref={(el) => {
-                                        characterAdditionalFileInputRefs.current[
-                                          `${editingCharacterIndex}-${imageIndex}`
-                                        ] = el;
-                                      }}
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) =>
-                                        handleCharacterAdditionalImageChange(
-                                          e,
-                                          editingCharacterIndex,
+                              {/* Additional Character Images */}
+                              <div className="space-y-2">
+                                <Label>Additional Images (Different Angles/Attire)</Label>
+                                <div className="columns-2 md:columns-3 gap-4">
+                                  {(formData.characters[editingCharacterIndex].images || []).map(
+                                    (image, imageIndex) => (
+                                      <div
+                                        key={`${editingCharacterIndex}-${imageIndex}`}
+                                        className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
+                                      >
+                                        {characterAdditionalPreviewImages[editingCharacterIndex]?.[
                                           imageIndex
+                                        ] ? (
+                                          <div className="relative group">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                              src={
+                                                characterAdditionalPreviewImages[
+                                                  editingCharacterIndex
+                                                ][imageIndex]
+                                              }
+                                              alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
+                                              className="w-full h-auto"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleCharacterAdditionalImageClick(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              disabled={
+                                                uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                  editingCharacterIndex &&
+                                                uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                  imageIndex
+                                              }
+                                              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                              aria-label={`Upload additional character image ${imageIndex + 1}`}
+                                            >
+                                              {uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                editingCharacterIndex &&
+                                              uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                imageIndex ? (
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                              ) : (
+                                                <Camera className="h-6 w-6 text-white" />
+                                              )}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                removeCharacterAdditionalImage(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                              aria-label={`Remove image ${imageIndex + 1}`}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ) : image && formData.username ? (
+                                          <div className="relative group">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                              src={getImageUrl({
+                                                type: "character",
+                                                filename: image,
+                                                username: formData.username,
+                                              })}
+                                              alt={`${formData.characters?.[editingCharacterIndex]?.name || "Character"} - ${imageIndex + 1}`}
+                                              className="w-full h-auto"
+                                            />
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleCharacterAdditionalImageClick(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              disabled={
+                                                uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                  editingCharacterIndex &&
+                                                uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                  imageIndex
+                                              }
+                                              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                              aria-label={`Upload additional character image ${imageIndex + 1}`}
+                                            >
+                                              {uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                editingCharacterIndex &&
+                                              uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                imageIndex ? (
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                              ) : (
+                                                <Camera className="h-6 w-6 text-white" />
+                                              )}
+                                            </button>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                removeCharacterAdditionalImage(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                              aria-label={`Remove image ${imageIndex + 1}`}
+                                            >
+                                              <X className="h-3 w-3" />
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <div className="w-full min-h-[150px] flex items-center justify-center relative group">
+                                            <Camera className="h-8 w-8 text-muted-foreground" />
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleCharacterAdditionalImageClick(
+                                                  editingCharacterIndex,
+                                                  imageIndex
+                                                )
+                                              }
+                                              disabled={
+                                                uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                  editingCharacterIndex &&
+                                                uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                  imageIndex
+                                              }
+                                              className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                              aria-label={`Upload additional character image ${imageIndex + 1}`}
+                                            >
+                                              {uploadingCharacterAdditionalIndex?.characterIndex ===
+                                                editingCharacterIndex &&
+                                              uploadingCharacterAdditionalIndex?.imageIndex ===
+                                                imageIndex ? (
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                              ) : (
+                                                <Camera className="h-6 w-6 text-white" />
+                                              )}
+                                            </button>
+                                          </div>
+                                        )}
+                                        <input
+                                          ref={(el) => {
+                                            characterAdditionalFileInputRefs.current[
+                                              `${editingCharacterIndex}-${imageIndex}`
+                                            ] = el;
+                                          }}
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={(e) =>
+                                            handleCharacterAdditionalImageChange(
+                                              e,
+                                              editingCharacterIndex,
+                                              imageIndex
+                                            )
+                                          }
+                                          className="hidden"
+                                          disabled={
+                                            uploadingCharacterAdditionalIndex?.characterIndex ===
+                                              editingCharacterIndex &&
+                                            uploadingCharacterAdditionalIndex?.imageIndex ===
+                                              imageIndex
+                                          }
+                                        />
+                                      </div>
+                                    )
+                                  )}
+                                  <div className="relative w-full mb-4 break-inside-avoid">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddCharacterAdditionalImageClick(
+                                          editingCharacterIndex
                                         )
                                       }
-                                      className="hidden"
-                                      disabled={
-                                        uploadingCharacterAdditionalIndex?.characterIndex ===
-                                          editingCharacterIndex &&
-                                        uploadingCharacterAdditionalIndex?.imageIndex === imageIndex
-                                      }
-                                    />
+                                      className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
+                                      aria-label="Add additional character image"
+                                    >
+                                      <Plus className="h-8 w-8 text-muted-foreground" />
+                                      <input
+                                        ref={(el) => {
+                                          characterAddImageInputRefs.current[
+                                            editingCharacterIndex
+                                          ] = el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={(e) =>
+                                          handleAddCharacterAdditionalImageChange(
+                                            e,
+                                            editingCharacterIndex
+                                          )
+                                        }
+                                        className="hidden"
+                                        disabled={
+                                          uploadingCharacterAdditionalIndex?.characterIndex ===
+                                          editingCharacterIndex
+                                        }
+                                      />
+                                    </button>
                                   </div>
-                                )
-                              )}
-                              <div className="relative w-full mb-4 break-inside-avoid">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleAddCharacterAdditionalImageClick(editingCharacterIndex)
+                                </div>
+                              </div>
+
+                              {/* Character Appearance */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`character-appearance-${editingCharacterIndex}`}>
+                                  Appearance
+                                </Label>
+                                <Textarea
+                                  id={`character-appearance-${editingCharacterIndex}`}
+                                  placeholder="Describe this character's appearance..."
+                                  value={formData.characters[editingCharacterIndex].appearance}
+                                  onChange={(e) =>
+                                    updateCharacter(
+                                      editingCharacterIndex,
+                                      "appearance",
+                                      e.target.value
+                                    )
                                   }
-                                  className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
-                                  aria-label="Add additional character image"
-                                >
-                                  <Plus className="h-8 w-8 text-muted-foreground" />
-                                  <input
-                                    ref={(el) => {
-                                      characterAddImageInputRefs.current[editingCharacterIndex] =
-                                        el;
-                                    }}
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
+                                  rows={3}
+                                  className="bg-background resize-none"
+                                />
+                              </div>
+
+                              <div className="grid gap-4 md:grid-cols-2">
+                                <div className="space-y-2">
+                                  <Label htmlFor={`character-role-${editingCharacterIndex}`}>
+                                    Role
+                                  </Label>
+                                  <Input
+                                    id={`character-role-${editingCharacterIndex}`}
+                                    placeholder="Protagonist, antagonist, mentor..."
+                                    value={formData.characters[editingCharacterIndex].role || ""}
                                     onChange={(e) =>
-                                      handleAddCharacterAdditionalImageChange(
-                                        e,
-                                        editingCharacterIndex
+                                      updateCharacter(editingCharacterIndex, "role", e.target.value)
+                                    }
+                                    className="bg-background"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor={`character-motivation-${editingCharacterIndex}`}>
+                                    Motivation
+                                  </Label>
+                                  <Input
+                                    id={`character-motivation-${editingCharacterIndex}`}
+                                    placeholder="What does this character want?"
+                                    value={
+                                      formData.characters[editingCharacterIndex].motivation || ""
+                                    }
+                                    onChange={(e) =>
+                                      updateCharacter(
+                                        editingCharacterIndex,
+                                        "motivation",
+                                        e.target.value
                                       )
                                     }
-                                    className="hidden"
-                                    disabled={
-                                      uploadingCharacterAdditionalIndex?.characterIndex ===
-                                      editingCharacterIndex
-                                    }
+                                    className="bg-background"
                                   />
-                                </button>
+                                </div>
                               </div>
-                            </div>
-                          </div>
 
-                          {/* Character Appearance */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`character-appearance-${editingCharacterIndex}`}>
-                              Appearance
-                            </Label>
-                            <Textarea
-                              id={`character-appearance-${editingCharacterIndex}`}
-                              placeholder="Describe this character's appearance..."
-                              value={formData.characters[editingCharacterIndex].appearance}
-                              onChange={(e) =>
-                                updateCharacter(editingCharacterIndex, "appearance", e.target.value)
-                              }
-                              rows={3}
-                              className="bg-background resize-none"
-                            />
-                          </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`character-arc-${editingCharacterIndex}`}>
+                                  Arc
+                                </Label>
+                                <Textarea
+                                  id={`character-arc-${editingCharacterIndex}`}
+                                  placeholder="How they change over the story..."
+                                  value={formData.characters[editingCharacterIndex].arc || ""}
+                                  onChange={(e) =>
+                                    updateCharacter(editingCharacterIndex, "arc", e.target.value)
+                                  }
+                                  rows={2}
+                                  className="bg-background resize-none"
+                                />
+                              </div>
 
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label htmlFor={`character-role-${editingCharacterIndex}`}>Role</Label>
-                              <Input
-                                id={`character-role-${editingCharacterIndex}`}
-                                placeholder="Protagonist, antagonist, mentor..."
-                                value={formData.characters[editingCharacterIndex].role || ""}
-                                onChange={(e) =>
-                                  updateCharacter(editingCharacterIndex, "role", e.target.value)
-                                }
-                                className="bg-background"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor={`character-motivation-${editingCharacterIndex}`}>
-                                Motivation
-                              </Label>
-                              <Input
-                                id={`character-motivation-${editingCharacterIndex}`}
-                                placeholder="What does this character want?"
-                                value={formData.characters[editingCharacterIndex].motivation || ""}
-                                onChange={(e) =>
-                                  updateCharacter(
-                                    editingCharacterIndex,
-                                    "motivation",
-                                    e.target.value
-                                  )
-                                }
-                                className="bg-background"
-                              />
-                            </div>
-                          </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`character-visual-prompt-${editingCharacterIndex}`}>
+                                  Visual Prompt Notes
+                                </Label>
+                                <Textarea
+                                  id={`character-visual-prompt-${editingCharacterIndex}`}
+                                  placeholder="Prompt notes for consistent image generation..."
+                                  value={
+                                    formData.characters[editingCharacterIndex].visualPrompt || ""
+                                  }
+                                  onChange={(e) =>
+                                    updateCharacter(
+                                      editingCharacterIndex,
+                                      "visualPrompt",
+                                      e.target.value
+                                    )
+                                  }
+                                  rows={3}
+                                  className="bg-background resize-none"
+                                />
+                              </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor={`character-arc-${editingCharacterIndex}`}>Arc</Label>
-                            <Textarea
-                              id={`character-arc-${editingCharacterIndex}`}
-                              placeholder="How they change over the story..."
-                              value={formData.characters[editingCharacterIndex].arc || ""}
-                              onChange={(e) =>
-                                updateCharacter(editingCharacterIndex, "arc", e.target.value)
-                              }
-                              rows={2}
-                              className="bg-background resize-none"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor={`character-visual-prompt-${editingCharacterIndex}`}>
-                              Visual Prompt Notes
-                            </Label>
-                            <Textarea
-                              id={`character-visual-prompt-${editingCharacterIndex}`}
-                              placeholder="Prompt notes for consistent image generation..."
-                              value={formData.characters[editingCharacterIndex].visualPrompt || ""}
-                              onChange={(e) =>
-                                updateCharacter(
-                                  editingCharacterIndex,
-                                  "visualPrompt",
-                                  e.target.value
-                                )
-                              }
-                              rows={3}
-                              className="bg-background resize-none"
-                            />
-                          </div>
-
-                          {/* Delete Character Button */}
-                          <div className="pt-4 border-t border-border flex justify-end">
-                            {confirmingCharacterDelete === editingCharacterIndex ? (
-                              <div className="space-y-3 text-right">
-                                <p className="text-sm text-muted-foreground">
-                                  Are you sure you want to delete this character? This action cannot
-                                  be undone.
-                                </p>
-                                <div className="flex items-center justify-end gap-2">
+                              {/* Delete Character Button */}
+                              <div className="pt-4 border-t border-border flex justify-end">
+                                {confirmingCharacterDelete === editingCharacterIndex ? (
+                                  <div className="space-y-3 text-right">
+                                    <p className="text-sm text-muted-foreground">
+                                      Are you sure you want to delete this character? This action
+                                      cannot be undone.
+                                    </p>
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => {
+                                          removeCharacter(editingCharacterIndex);
+                                          setEditingCharacterIndex(null);
+                                          setConfirmingCharacterDelete(null);
+                                        }}
+                                      >
+                                        <Trash className="h-4 w-4 mr-2" />
+                                        Delete Character
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setConfirmingCharacterDelete(null)}
+                                        className="bg-transparent"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
                                   <Button
                                     type="button"
-                                    variant="destructive"
+                                    variant="ghost"
                                     size="sm"
-                                    onClick={() => {
-                                      removeCharacter(editingCharacterIndex);
-                                      setEditingCharacterIndex(null);
-                                      setConfirmingCharacterDelete(null);
-                                    }}
+                                    onClick={() =>
+                                      setConfirmingCharacterDelete(editingCharacterIndex)
+                                    }
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                   >
                                     <Trash className="h-4 w-4 mr-2" />
                                     Delete Character
                                   </Button>
-                                  <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmingCharacterDelete(null)}
-                                    className="bg-transparent"
-                                  >
-                                    Cancel
-                                  </Button>
-                                </div>
+                                )}
                               </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setConfirmingCharacterDelete(editingCharacterIndex)}
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash className="h-4 w-4 mr-2" />
-                                Delete Character
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
+                            </CardContent>
+                          </Card>
+                        )}
 
-                  <div className="flex gap-2 flex-wrap items-center">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addCharacter}
-                      className="bg-transparent"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Character
-                    </Button>
-                    {formData.screenplayText?.trim() && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExtractCharacters}
-                        disabled={isExtractingCharacters}
-                        className="bg-transparent"
-                      >
-                        {isExtractingCharacters ? (
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addCharacter}
+                          className="bg-transparent"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Character
+                        </Button>
+                        {formData.screenplayText?.trim() && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleExtractCharacters}
+                            disabled={isExtractingCharacters}
+                            className="bg-transparent"
+                          >
+                            {isExtractingCharacters ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Extracting...
+                              </>
+                            ) : (
+                              <>
+                                <Film className="h-4 w-4 mr-2" />
+                                Extract from Screenplay
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        {(formData.characters?.length || 0) > 10 && (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Extracting...
-                          </>
-                        ) : (
-                          <>
-                            <Film className="h-4 w-4 mr-2" />
-                            Extract from Screenplay
+                            <div className="flex-1" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const wasShowingAll = showAllCharacters;
+                                setShowAllCharacters(!showAllCharacters);
+                                if (wasShowingAll) {
+                                  setTimeout(() => {
+                                    charactersSectionRef.current?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  }, 0);
+                                }
+                              }}
+                              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                            >
+                              <ChevronsDown
+                                className={cn(
+                                  "h-4 w-4 transition-transform duration-300",
+                                  showAllCharacters ? "rotate-180" : ""
+                                )}
+                              />
+                              {showAllCharacters
+                                ? "Show Less"
+                                : `Show All (${formData.characters?.length})`}
+                            </button>
                           </>
                         )}
-                      </Button>
-                    )}
-                    {(formData.characters?.length || 0) > 10 && (
-                      <>
-                        <div className="flex-1" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const wasShowingAll = showAllCharacters;
-                            setShowAllCharacters(!showAllCharacters);
-                            if (wasShowingAll) {
-                              setTimeout(() => {
-                                charactersSectionRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 0);
-                            }
-                          }}
-                          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                        >
-                          <ChevronsDown
-                            className={cn(
-                              "h-4 w-4 transition-transform duration-300",
-                              showAllCharacters ? "rotate-180" : ""
-                            )}
-                          />
-                          {showAllCharacters
-                            ? "Show Less"
-                            : `Show All (${formData.characters?.length})`}
-                        </button>
-                      </>
-                    )}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Locations Section */}
-              <div ref={locationsSectionRef} className="space-y-3 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Camera className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Locations</h3>
-                </div>
+                  {/* Locations Section */}
+                  <div ref={locationsSectionRef} className="space-y-3 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Camera className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Locations</h3>
+                    </div>
 
-                <div className="space-y-2">
-                  {/* Location List - Compact One-Liner View */}
-                  {(formData.setting?.locations || []).length > 0 &&
-                    editingLocationIndex === null && (
-                      <div className="space-y-1.5">
-                        {(() => {
-                          const locations = formData.setting?.locations || [];
-                          const shouldShowAll = locations.length <= 10 || showAllLocations;
-                          const locationsToShow = shouldShowAll ? locations : locations.slice(0, 5);
+                    <div className="space-y-2">
+                      {/* Location List - Compact One-Liner View */}
+                      {(formData.setting?.locations || []).length > 0 &&
+                        editingLocationIndex === null && (
+                          <div className="space-y-1.5">
+                            {(() => {
+                              const locations = formData.setting?.locations || [];
+                              const shouldShowAll = locations.length <= 10 || showAllLocations;
+                              const locationsToShow = shouldShowAll
+                                ? locations
+                                : locations.slice(0, 5);
 
-                          return (
-                            <>
-                              {locationsToShow.map((location, index) => (
-                                <div key={`location-compact-${index}`} className="relative">
-                                  <button
-                                    type="button"
-                                    className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
-                                    onClick={() => setEditingLocationIndex(index)}
-                                  >
-                                    {/* Edit indicator */}
-                                    <div className="pt-0.5 shrink-0">
-                                      <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
-                                    </div>
-
-                                    {/* Location Image - Super Small - Clickable for upload */}
-                                    <div
-                                      className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleLocationMainImageClick(index);
-                                      }}
-                                      title={
-                                        location.image
-                                          ? "Click to replace image"
-                                          : "Click to add image"
-                                      }
-                                    >
-                                      {uploadingLocationIndex === index ? (
-                                        <div className="w-full h-full flex items-center justify-center bg-muted">
-                                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                              return (
+                                <>
+                                  {locationsToShow.map((location, index) => (
+                                    <div key={`location-compact-${index}`} className="relative">
+                                      <button
+                                        type="button"
+                                        className="flex items-center gap-2 p-1.5 bg-muted/30 rounded-lg border border-border group hover:bg-muted/50 cursor-pointer transition-colors w-full text-left"
+                                        onClick={() => setEditingLocationIndex(index)}
+                                      >
+                                        {/* Edit indicator */}
+                                        <div className="pt-0.5 shrink-0">
+                                          <Edit className="h-4 w-4 text-primary opacity-0 group-hover:opacity-100 transition-all duration-500" />
                                         </div>
-                                      ) : location.image && formData.username ? (
-                                        <>
-                                          <OptimizedImage
-                                            type="location"
-                                            filename={location.image}
-                                            username={formData.username}
-                                            alt={location.name || "Location"}
-                                            fill
-                                            objectFit="cover"
+
+                                        {/* Location Image - Super Small - Clickable for upload */}
+                                        <div
+                                          className="relative w-8 h-8 rounded overflow-hidden border border-border shrink-0 group/img cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleLocationMainImageClick(index);
+                                          }}
+                                          title={
+                                            location.image
+                                              ? "Click to replace image"
+                                              : "Click to add image"
+                                          }
+                                        >
+                                          {uploadingLocationIndex === index ? (
+                                            <div className="w-full h-full flex items-center justify-center bg-muted">
+                                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary" />
+                                            </div>
+                                          ) : location.image && formData.username ? (
+                                            <>
+                                              <OptimizedImage
+                                                type="location"
+                                                filename={location.image}
+                                                username={formData.username}
+                                                alt={location.name || "Location"}
+                                                fill
+                                                objectFit="cover"
+                                              />
+                                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                                <Camera className="h-3 w-3 text-white" />
+                                              </div>
+                                            </>
+                                          ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
+                                              <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {/* Location Name */}
+                                        <span className="font-medium text-sm shrink-0">
+                                          {location.name || "Unnamed"}
+                                        </span>
+
+                                        {/* Location Description - Truncated */}
+                                        <span className="text-xs text-muted-foreground truncate flex-1">
+                                          {location.description || "No description"}
+                                        </span>
+
+                                        {/* Additional Images Count */}
+                                        {(location.images?.length || 0) > 0 && (
+                                          <span className="text-xs text-muted-foreground shrink-0">
+                                            +{location.images?.length} img
+                                          </span>
+                                        )}
+                                      </button>
+                                      {/* Hidden file input for compact view upload */}
+                                      <input
+                                        ref={(el) => {
+                                          locationFileInputRefs.current[index] = el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) => handleLocationMainImageChange(e, index)}
+                                        className="hidden"
+                                        disabled={uploadingLocationIndex === index}
+                                      />
+                                    </div>
+                                  ))}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+
+                      {/* Location Edit Form - Expanded View */}
+                      {editingLocationIndex !== null &&
+                        formData.setting?.locations?.[editingLocationIndex] && (
+                          <Card className="bg-muted/30 border-border">
+                            <CardContent className="space-y-4">
+                              <div className="flex items-center justify-between">
+                                <h4 className="font-medium">Edit Location</h4>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingLocationIndex(null);
+                                    setConfirmingLocationDelete(null);
+                                  }}
+                                  className="bg-transparent"
+                                >
+                                  Done
+                                </Button>
+                              </div>
+
+                              {/* Location Name */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`location-name-alt-${editingLocationIndex}`}>
+                                  Name
+                                </Label>
+                                <Input
+                                  id={`location-name-alt-${editingLocationIndex}`}
+                                  placeholder="Enter location name"
+                                  value={formData.setting.locations[editingLocationIndex].name}
+                                  onChange={(e) =>
+                                    updateLocation(editingLocationIndex, "name", e.target.value)
+                                  }
+                                  className="bg-background"
+                                />
+                              </div>
+
+                              {/* Location Main Image */}
+                              <div className="space-y-2">
+                                <Label>Main Image</Label>
+                                <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
+                                  {locationPreviewImages[editingLocationIndex] ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={locationPreviewImages[editingLocationIndex]}
+                                        alt={
+                                          formData.setting.locations[editingLocationIndex].name ||
+                                          "Location"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleLocationMainImageClick(editingLocationIndex)
+                                        }
+                                        disabled={uploadingLocationIndex === editingLocationIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload location main image"
+                                      >
+                                        {uploadingLocationIndex === editingLocationIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : formData.setting.locations[editingLocationIndex].image &&
+                                    formData.username ? (
+                                    <div className="relative group">
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={getImageUrl({
+                                          type: "location",
+                                          filename:
+                                            formData.setting.locations[editingLocationIndex].image!,
+                                          username: formData.username,
+                                        })}
+                                        alt={
+                                          formData.setting.locations[editingLocationIndex].name ||
+                                          "Location"
+                                        }
+                                        className="w-full h-auto"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleLocationMainImageClick(editingLocationIndex)
+                                        }
+                                        disabled={uploadingLocationIndex === editingLocationIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload location main image"
+                                      >
+                                        {uploadingLocationIndex === editingLocationIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="w-full min-h-[200px] flex items-center justify-center relative group">
+                                      <Camera className="h-12 w-12 text-muted-foreground" />
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleLocationMainImageClick(editingLocationIndex)
+                                        }
+                                        disabled={uploadingLocationIndex === editingLocationIndex}
+                                        className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                        aria-label="Upload location main image"
+                                      >
+                                        {uploadingLocationIndex === editingLocationIndex ? (
+                                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+                                        ) : (
+                                          <Camera className="h-8 w-8 text-white" />
+                                        )}
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                                <input
+                                  ref={(el) => {
+                                    locationFileInputRefs.current[editingLocationIndex] = el;
+                                  }}
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) =>
+                                    handleLocationMainImageChange(e, editingLocationIndex)
+                                  }
+                                  className="hidden"
+                                  disabled={uploadingLocationIndex === editingLocationIndex}
+                                />
+                              </div>
+
+                              {/* Additional Location Images */}
+                              <div className="space-y-2">
+                                <Label>Additional Images (Different Angles/Variations)</Label>
+                                <div className="columns-2 md:columns-3 gap-4">
+                                  {(
+                                    formData.setting.locations[editingLocationIndex].images || []
+                                  ).map((image, imageIndex) => (
+                                    <div
+                                      key={`${editingLocationIndex}-${imageIndex}`}
+                                      className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
+                                    >
+                                      {locationAdditionalPreviewImages[editingLocationIndex]?.[
+                                        imageIndex
+                                      ] ? (
+                                        <div className="relative group">
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={
+                                              locationAdditionalPreviewImages[editingLocationIndex][
+                                                imageIndex
+                                              ]
+                                            }
+                                            alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
+                                            className="w-full h-auto"
                                           />
-                                          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                            <Camera className="h-3 w-3 text-white" />
-                                          </div>
-                                        </>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleLocationAdditionalImageClick(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            disabled={
+                                              uploadingLocationAdditionalIndex?.locationIndex ===
+                                                editingLocationIndex &&
+                                              uploadingLocationAdditionalIndex?.imageIndex ===
+                                                imageIndex
+                                            }
+                                            className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                            aria-label={`Upload additional location image ${imageIndex + 1}`}
+                                          >
+                                            {uploadingLocationAdditionalIndex?.locationIndex ===
+                                              editingLocationIndex &&
+                                            uploadingLocationAdditionalIndex?.imageIndex ===
+                                              imageIndex ? (
+                                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                            ) : (
+                                              <Camera className="h-6 w-6 text-white" />
+                                            )}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              removeLocationAdditionalImage(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                            aria-label={`Remove image ${imageIndex + 1}`}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </div>
+                                      ) : image && formData.username ? (
+                                        <div className="relative group">
+                                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                                          <img
+                                            src={getImageUrl({
+                                              type: "location",
+                                              filename: image,
+                                              username: formData.username,
+                                            })}
+                                            alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
+                                            className="w-full h-auto"
+                                          />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleLocationAdditionalImageClick(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            disabled={
+                                              uploadingLocationAdditionalIndex?.locationIndex ===
+                                                editingLocationIndex &&
+                                              uploadingLocationAdditionalIndex?.imageIndex ===
+                                                imageIndex
+                                            }
+                                            className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                            aria-label={`Upload additional location image ${imageIndex + 1}`}
+                                          >
+                                            {uploadingLocationAdditionalIndex?.locationIndex ===
+                                              editingLocationIndex &&
+                                            uploadingLocationAdditionalIndex?.imageIndex ===
+                                              imageIndex ? (
+                                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                            ) : (
+                                              <Camera className="h-6 w-6 text-white" />
+                                            )}
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              removeLocationAdditionalImage(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
+                                            aria-label={`Remove image ${imageIndex + 1}`}
+                                          >
+                                            <X className="h-3 w-3" />
+                                          </button>
+                                        </div>
                                       ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-muted group-hover/img:bg-primary/10 transition-colors">
-                                          <Camera className="h-4 w-4 text-muted-foreground group-hover/img:text-primary transition-colors" />
+                                        <div className="w-full min-h-[150px] flex items-center justify-center relative group">
+                                          <Camera className="h-8 w-8 text-muted-foreground" />
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleLocationAdditionalImageClick(
+                                                editingLocationIndex,
+                                                imageIndex
+                                              )
+                                            }
+                                            disabled={
+                                              uploadingLocationAdditionalIndex?.locationIndex ===
+                                                editingLocationIndex &&
+                                              uploadingLocationAdditionalIndex?.imageIndex ===
+                                                imageIndex
+                                            }
+                                            className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
+                                            aria-label={`Upload additional location image ${imageIndex + 1}`}
+                                          >
+                                            {uploadingLocationAdditionalIndex?.locationIndex ===
+                                              editingLocationIndex &&
+                                            uploadingLocationAdditionalIndex?.imageIndex ===
+                                              imageIndex ? (
+                                              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
+                                            ) : (
+                                              <Camera className="h-6 w-6 text-white" />
+                                            )}
+                                          </button>
                                         </div>
                                       )}
+                                      <input
+                                        ref={(el) => {
+                                          locationAdditionalFileInputRefs.current[
+                                            `${editingLocationIndex}-${imageIndex}`
+                                          ] = el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) =>
+                                          handleLocationAdditionalImageChange(
+                                            e,
+                                            editingLocationIndex,
+                                            imageIndex
+                                          )
+                                        }
+                                        className="hidden"
+                                        disabled={
+                                          uploadingLocationAdditionalIndex?.locationIndex ===
+                                            editingLocationIndex &&
+                                          uploadingLocationAdditionalIndex?.imageIndex ===
+                                            imageIndex
+                                        }
+                                      />
                                     </div>
-
-                                    {/* Location Name */}
-                                    <span className="font-medium text-sm shrink-0">
-                                      {location.name || "Unnamed"}
-                                    </span>
-
-                                    {/* Location Description - Truncated */}
-                                    <span className="text-xs text-muted-foreground truncate flex-1">
-                                      {location.description || "No description"}
-                                    </span>
-
-                                    {/* Additional Images Count */}
-                                    {(location.images?.length || 0) > 0 && (
-                                      <span className="text-xs text-muted-foreground shrink-0">
-                                        +{location.images?.length} img
-                                      </span>
-                                    )}
-                                  </button>
-                                  {/* Hidden file input for compact view upload */}
-                                  <input
-                                    ref={(el) => {
-                                      locationFileInputRefs.current[index] = el;
-                                    }}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleLocationMainImageChange(e, index)}
-                                    className="hidden"
-                                    disabled={uploadingLocationIndex === index}
-                                  />
-                                </div>
-                              ))}
-                            </>
-                          );
-                        })()}
-                      </div>
-                    )}
-
-                  {/* Location Edit Form - Expanded View */}
-                  {editingLocationIndex !== null &&
-                    formData.setting?.locations?.[editingLocationIndex] && (
-                      <Card className="bg-muted/30 border-border">
-                        <CardContent className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <h4 className="font-medium">Edit Location</h4>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                setEditingLocationIndex(null);
-                                setConfirmingLocationDelete(null);
-                              }}
-                              className="bg-transparent"
-                            >
-                              Done
-                            </Button>
-                          </div>
-
-                          {/* Location Name */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`location-name-alt-${editingLocationIndex}`}>
-                              Name
-                            </Label>
-                            <Input
-                              id={`location-name-alt-${editingLocationIndex}`}
-                              placeholder="Enter location name"
-                              value={formData.setting.locations[editingLocationIndex].name}
-                              onChange={(e) =>
-                                updateLocation(editingLocationIndex, "name", e.target.value)
-                              }
-                              className="bg-background"
-                            />
-                          </div>
-
-                          {/* Location Main Image */}
-                          <div className="space-y-2">
-                            <Label>Main Image</Label>
-                            <div className="relative w-full rounded-lg overflow-hidden border border-border bg-muted/30">
-                              {locationPreviewImages[editingLocationIndex] ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={locationPreviewImages[editingLocationIndex]}
-                                    alt={
-                                      formData.setting.locations[editingLocationIndex].name ||
-                                      "Location"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleLocationMainImageClick(editingLocationIndex)
-                                    }
-                                    disabled={uploadingLocationIndex === editingLocationIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload location main image"
-                                  >
-                                    {uploadingLocationIndex === editingLocationIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : formData.setting.locations[editingLocationIndex].image &&
-                                formData.username ? (
-                                <div className="relative group">
-                                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                                  <img
-                                    src={getImageUrl({
-                                      type: "location",
-                                      filename:
-                                        formData.setting.locations[editingLocationIndex].image!,
-                                      username: formData.username,
-                                    })}
-                                    alt={
-                                      formData.setting.locations[editingLocationIndex].name ||
-                                      "Location"
-                                    }
-                                    className="w-full h-auto"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleLocationMainImageClick(editingLocationIndex)
-                                    }
-                                    disabled={uploadingLocationIndex === editingLocationIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload location main image"
-                                  >
-                                    {uploadingLocationIndex === editingLocationIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              ) : (
-                                <div className="w-full min-h-[200px] flex items-center justify-center relative group">
-                                  <Camera className="h-12 w-12 text-muted-foreground" />
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleLocationMainImageClick(editingLocationIndex)
-                                    }
-                                    disabled={uploadingLocationIndex === editingLocationIndex}
-                                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                    aria-label="Upload location main image"
-                                  >
-                                    {uploadingLocationIndex === editingLocationIndex ? (
-                                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
-                                    ) : (
-                                      <Camera className="h-8 w-8 text-white" />
-                                    )}
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                            <input
-                              ref={(el) => {
-                                locationFileInputRefs.current[editingLocationIndex] = el;
-                              }}
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) =>
-                                handleLocationMainImageChange(e, editingLocationIndex)
-                              }
-                              className="hidden"
-                              disabled={uploadingLocationIndex === editingLocationIndex}
-                            />
-                          </div>
-
-                          {/* Additional Location Images */}
-                          <div className="space-y-2">
-                            <Label>Additional Images (Different Angles/Variations)</Label>
-                            <div className="columns-2 md:columns-3 gap-4">
-                              {(formData.setting.locations[editingLocationIndex].images || []).map(
-                                (image, imageIndex) => (
-                                  <div
-                                    key={`${editingLocationIndex}-${imageIndex}`}
-                                    className="relative w-full mb-4 break-inside-avoid rounded-lg overflow-hidden border border-border bg-muted/30"
-                                  >
-                                    {locationAdditionalPreviewImages[editingLocationIndex]?.[
-                                      imageIndex
-                                    ] ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={
-                                            locationAdditionalPreviewImages[editingLocationIndex][
-                                              imageIndex
-                                            ]
-                                          }
-                                          alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleLocationAdditionalImageClick(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingLocationAdditionalIndex?.locationIndex ===
-                                              editingLocationIndex &&
-                                            uploadingLocationAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional location image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingLocationAdditionalIndex?.locationIndex ===
-                                            editingLocationIndex &&
-                                          uploadingLocationAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeLocationAdditionalImage(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : image && formData.username ? (
-                                      <div className="relative group">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                          src={getImageUrl({
-                                            type: "location",
-                                            filename: image,
-                                            username: formData.username,
-                                          })}
-                                          alt={`${formData.setting?.locations?.[editingLocationIndex]?.name || "Location"} - ${imageIndex + 1}`}
-                                          className="w-full h-auto"
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleLocationAdditionalImageClick(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingLocationAdditionalIndex?.locationIndex ===
-                                              editingLocationIndex &&
-                                            uploadingLocationAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional location image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingLocationAdditionalIndex?.locationIndex ===
-                                            editingLocationIndex &&
-                                          uploadingLocationAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            removeLocationAdditionalImage(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 opacity-75 hover:opacity-100 transition-opacity z-10"
-                                          aria-label={`Remove image ${imageIndex + 1}`}
-                                        >
-                                          <X className="h-3 w-3" />
-                                        </button>
-                                      </div>
-                                    ) : (
-                                      <div className="w-full min-h-[150px] flex items-center justify-center relative group">
-                                        <Camera className="h-8 w-8 text-muted-foreground" />
-                                        <button
-                                          type="button"
-                                          onClick={() =>
-                                            handleLocationAdditionalImageClick(
-                                              editingLocationIndex,
-                                              imageIndex
-                                            )
-                                          }
-                                          disabled={
-                                            uploadingLocationAdditionalIndex?.locationIndex ===
-                                              editingLocationIndex &&
-                                            uploadingLocationAdditionalIndex?.imageIndex ===
-                                              imageIndex
-                                          }
-                                          className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer disabled:cursor-not-allowed"
-                                          aria-label={`Upload additional location image ${imageIndex + 1}`}
-                                        >
-                                          {uploadingLocationAdditionalIndex?.locationIndex ===
-                                            editingLocationIndex &&
-                                          uploadingLocationAdditionalIndex?.imageIndex ===
-                                            imageIndex ? (
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
-                                          ) : (
-                                            <Camera className="h-6 w-6 text-white" />
-                                          )}
-                                        </button>
-                                      </div>
-                                    )}
-                                    <input
-                                      ref={(el) => {
-                                        locationAdditionalFileInputRefs.current[
-                                          `${editingLocationIndex}-${imageIndex}`
-                                        ] = el;
-                                      }}
-                                      type="file"
-                                      accept="image/*"
-                                      onChange={(e) =>
-                                        handleLocationAdditionalImageChange(
-                                          e,
-                                          editingLocationIndex,
-                                          imageIndex
-                                        )
+                                  ))}
+                                  <div className="relative w-full mb-4 break-inside-avoid">
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleAddLocationAdditionalImageClick(editingLocationIndex)
                                       }
-                                      className="hidden"
-                                      disabled={
-                                        uploadingLocationAdditionalIndex?.locationIndex ===
-                                          editingLocationIndex &&
-                                        uploadingLocationAdditionalIndex?.imageIndex === imageIndex
-                                      }
-                                    />
+                                      className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
+                                      aria-label="Add additional location image"
+                                    >
+                                      <Plus className="h-8 w-8 text-muted-foreground" />
+                                      <input
+                                        ref={(el) => {
+                                          locationAddImageInputRefs.current[editingLocationIndex] =
+                                            el;
+                                        }}
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={(e) =>
+                                          handleAddLocationAdditionalImageChange(
+                                            e,
+                                            editingLocationIndex
+                                          )
+                                        }
+                                        className="hidden"
+                                        disabled={
+                                          uploadingLocationAdditionalIndex?.locationIndex ===
+                                          editingLocationIndex
+                                        }
+                                      />
+                                    </button>
                                   </div>
-                                )
-                              )}
-                              <div className="relative w-full mb-4 break-inside-avoid">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleAddLocationAdditionalImageClick(editingLocationIndex)
-                                  }
-                                  className="relative w-full min-h-[150px] rounded-lg border-2 border-dashed border-border bg-muted/30 hover:bg-muted/50 transition-colors flex items-center justify-center"
-                                  aria-label="Add additional location image"
-                                >
-                                  <Plus className="h-8 w-8 text-muted-foreground" />
-                                  <input
-                                    ref={(el) => {
-                                      locationAddImageInputRefs.current[editingLocationIndex] = el;
-                                    }}
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) =>
-                                      handleAddLocationAdditionalImageChange(
-                                        e,
-                                        editingLocationIndex
-                                      )
-                                    }
-                                    className="hidden"
-                                    disabled={
-                                      uploadingLocationAdditionalIndex?.locationIndex ===
-                                      editingLocationIndex
-                                    }
-                                  />
-                                </button>
+                                </div>
                               </div>
-                            </div>
-                          </div>
 
-                          {/* Location Description */}
-                          <div className="space-y-2">
-                            <Label htmlFor={`location-description-alt-${editingLocationIndex}`}>
-                              Description
-                            </Label>
-                            <Textarea
-                              id={`location-description-alt-${editingLocationIndex}`}
-                              placeholder="Describe this location..."
-                              value={formData.setting.locations[editingLocationIndex].description}
-                              onChange={(e) =>
-                                updateLocation(editingLocationIndex, "description", e.target.value)
-                              }
-                              rows={3}
-                              className="bg-background resize-none"
-                            />
-                          </div>
+                              {/* Location Description */}
+                              <div className="space-y-2">
+                                <Label htmlFor={`location-description-alt-${editingLocationIndex}`}>
+                                  Description
+                                </Label>
+                                <Textarea
+                                  id={`location-description-alt-${editingLocationIndex}`}
+                                  placeholder="Describe this location..."
+                                  value={
+                                    formData.setting.locations[editingLocationIndex].description
+                                  }
+                                  onChange={(e) =>
+                                    updateLocation(
+                                      editingLocationIndex,
+                                      "description",
+                                      e.target.value
+                                    )
+                                  }
+                                  rows={3}
+                                  className="bg-background resize-none"
+                                />
+                              </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor={`location-story-purpose-${editingLocationIndex}`}>
-                              Story Purpose
-                            </Label>
-                            <Input
-                              id={`location-story-purpose-${editingLocationIndex}`}
-                              placeholder="How this location functions in the story..."
-                              value={
-                                formData.setting.locations[editingLocationIndex].storyPurpose || ""
-                              }
-                              onChange={(e) =>
-                                updateLocation(
-                                  editingLocationIndex,
-                                  "storyPurpose",
-                                  e.target.value
-                                )
-                              }
-                              className="bg-background"
-                            />
-                          </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`location-story-purpose-${editingLocationIndex}`}>
+                                  Story Purpose
+                                </Label>
+                                <Input
+                                  id={`location-story-purpose-${editingLocationIndex}`}
+                                  placeholder="How this location functions in the story..."
+                                  value={
+                                    formData.setting.locations[editingLocationIndex].storyPurpose ||
+                                    ""
+                                  }
+                                  onChange={(e) =>
+                                    updateLocation(
+                                      editingLocationIndex,
+                                      "storyPurpose",
+                                      e.target.value
+                                    )
+                                  }
+                                  className="bg-background"
+                                />
+                              </div>
 
-                          <div className="space-y-2">
-                            <Label htmlFor={`location-visual-prompt-${editingLocationIndex}`}>
-                              Visual Prompt Notes
-                            </Label>
-                            <Textarea
-                              id={`location-visual-prompt-${editingLocationIndex}`}
-                              placeholder="Prompt notes for consistent location imagery..."
-                              value={
-                                formData.setting.locations[editingLocationIndex].visualPrompt || ""
-                              }
-                              onChange={(e) =>
-                                updateLocation(
-                                  editingLocationIndex,
-                                  "visualPrompt",
-                                  e.target.value
-                                )
-                              }
-                              rows={3}
-                              className="bg-background resize-none"
-                            />
-                          </div>
+                              <div className="space-y-2">
+                                <Label htmlFor={`location-visual-prompt-${editingLocationIndex}`}>
+                                  Visual Prompt Notes
+                                </Label>
+                                <Textarea
+                                  id={`location-visual-prompt-${editingLocationIndex}`}
+                                  placeholder="Prompt notes for consistent location imagery..."
+                                  value={
+                                    formData.setting.locations[editingLocationIndex].visualPrompt ||
+                                    ""
+                                  }
+                                  onChange={(e) =>
+                                    updateLocation(
+                                      editingLocationIndex,
+                                      "visualPrompt",
+                                      e.target.value
+                                    )
+                                  }
+                                  rows={3}
+                                  className="bg-background resize-none"
+                                />
+                              </div>
 
-                          {/* Delete Location Button */}
-                          <div className="pt-4 flex justify-end">
-                            {confirmingLocationDelete === editingLocationIndex ? (
-                              <div className="space-y-3 text-right">
-                                <p className="text-sm text-muted-foreground">
-                                  Are you sure you want to delete this location? This action cannot
-                                  be undone.
-                                </p>
-                                <div className="flex items-center justify-end gap-2">
+                              {/* Delete Location Button */}
+                              <div className="pt-4 flex justify-end">
+                                {confirmingLocationDelete === editingLocationIndex ? (
+                                  <div className="space-y-3 text-right">
+                                    <p className="text-sm text-muted-foreground">
+                                      Are you sure you want to delete this location? This action
+                                      cannot be undone.
+                                    </p>
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        type="button"
+                                        variant="destructive"
+                                        size="sm"
+                                        onClick={() => {
+                                          removeLocation(editingLocationIndex);
+                                          setEditingLocationIndex(null);
+                                          setConfirmingLocationDelete(null);
+                                        }}
+                                      >
+                                        <Trash className="h-4 w-4 mr-2" />
+                                        Delete Location
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setConfirmingLocationDelete(null)}
+                                        className="bg-transparent"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
                                   <Button
                                     type="button"
-                                    variant="destructive"
+                                    variant="ghost"
                                     size="sm"
-                                    onClick={() => {
-                                      removeLocation(editingLocationIndex);
-                                      setEditingLocationIndex(null);
-                                      setConfirmingLocationDelete(null);
-                                    }}
+                                    onClick={() =>
+                                      setConfirmingLocationDelete(editingLocationIndex)
+                                    }
+                                    className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
                                   >
-                                    <Trash className="h-4 w-4 mr-2" />
+                                    <X className="h-2 w-2 mr-2" />
                                     Delete Location
                                   </Button>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        )}
+
+                      <div className="flex gap-2 flex-wrap items-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addLocation}
+                          className="bg-transparent"
+                        >
+                          <Plus className="h-4 w-4 mr-2" />
+                          Add Location
+                        </Button>
+                        {formData.screenplayText?.trim() && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleExtractLocations}
+                            disabled={isExtractingLocations}
+                            className="bg-transparent"
+                          >
+                            {isExtractingLocations ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Extracting...
+                              </>
+                            ) : (
+                              <>
+                                <Film className="h-4 w-4 mr-2" />
+                                Extract from Screenplay
+                              </>
+                            )}
+                          </Button>
+                        )}
+                        {(formData.setting?.locations?.length || 0) > 10 && (
+                          <>
+                            <div className="flex-1" />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const wasShowingAll = showAllLocations;
+                                setShowAllLocations(!showAllLocations);
+                                if (wasShowingAll) {
+                                  setTimeout(() => {
+                                    locationsSectionRef.current?.scrollIntoView({
+                                      behavior: "smooth",
+                                      block: "start",
+                                    });
+                                  }, 0);
+                                }
+                              }}
+                              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                            >
+                              <ChevronsDown
+                                className={cn(
+                                  "h-4 w-4 transition-transform duration-300",
+                                  showAllLocations ? "rotate-180" : ""
+                                )}
+                              />
+                              {showAllLocations
+                                ? "Show Less"
+                                : `Show All (${formData.setting?.locations?.length})`}
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Scenes Section */}
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Clapperboard className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Scenes</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Add scenes to your project. Each scene can carry screenplay context,
+                      characters, reference assets, and prompt-ready shot breakdowns.
+                    </p>
+
+                    <SceneList
+                      projectId={effectiveProjectId}
+                      scenes={formData.scenes || []}
+                      characters={formData.characters || []}
+                      locations={formData.setting?.locations || []}
+                      screenplayText={formData.screenplayText}
+                      onScenesChange={(scenes) => setFormData({ ...formData, scenes })}
+                    />
+                  </div>
+
+                  {/* Full Width Sections - Links, Tools */}
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <LinkIcon className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Project Links</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Add links to your project (YouTube, Vimeo, Instagram, etc.)
+                    </p>
+
+                    <div className="space-y-3">
+                      {formData.links.links.map((link, index) => (
+                        <div
+                          key={`${link.label}-${link.url}-${index}`}
+                          className="flex items-center gap-2 p-3 bg-muted/30 rounded-md"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{link.label}</p>
+                            <p className="text-xs text-muted-foreground truncate">{link.url}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeLink(index)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Enter URL (e.g., https://youtube.com/watch?v=...)"
+                          value={newLinkUrl}
+                          onChange={(e) => setNewLinkUrl(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              addLink();
+                            }
+                          }}
+                          className="bg-background"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={addLink}
+                          className="bg-transparent"
+                        >
+                          <Plus className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-4 border-t border-border">
+                    <div className="flex items-center gap-2">
+                      <Wrench className="h-5 w-5 text-primary" />
+                      <h3 className="text-lg font-semibold">Tools</h3>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Add the tools you used, organized by category
+                    </p>
+
+                    {/* Add tools by category */}
+                    <div className="space-y-4">
+                      {(["video", "image", "sound", "other"] as ToolCategory[]).map((category) => {
+                        const toolsInCategory = getToolsByCategory(category);
+                        return (
+                          <div key={category} className="space-y-2">
+                            <Label htmlFor={`tool-${category}`}>
+                              {getCategoryLabel(category)}
+                              {category === "video" && !hasVideoTool && (
+                                <span className="text-destructive ml-1">*</span>
+                              )}
+                            </Label>
+                            {/* Display added tools for this category */}
+                            {toolsInCategory.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {toolsInCategory.map((tool, _index) => {
+                                  const globalIndex = formData.tools.indexOf(tool);
+                                  return (
+                                    <div
+                                      key={`${category}-${tool.name}-${globalIndex}`}
+                                      className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm"
+                                    >
+                                      <span>{tool.name}</span>
+                                      <button
+                                        type="button"
+                                        onClick={() => removeTool(globalIndex)}
+                                        className="hover:text-primary/70 transition-colors"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            <div className="space-y-2">
+                              <Select
+                                value={selectedTool[category]}
+                                onValueChange={(value) => {
+                                  setSelectedTool({ ...selectedTool, [category]: value });
+                                  if (value !== "Other") {
+                                    // Auto-add tool when selected (not "Other")
+                                    addTool(category, value);
+                                  } else {
+                                    setCustomToolInput({ ...customToolInput, [category]: "" });
+                                  }
+                                }}
+                                key={`tool-select-${category}`}
+                              >
+                                <SelectTrigger
+                                  id={toolSelectIds[category]}
+                                  className="w-full bg-background"
+                                >
+                                  <SelectValue
+                                    placeholder={`Add ${getCategoryLabel(category).toLowerCase()} tool...`}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {COMMON_TOOLS[category].map((tool) => (
+                                    <SelectItem key={tool} value={tool}>
+                                      {tool}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              {selectedTool[category] === "Other" && (
+                                <div className="flex gap-2">
+                                  <Input
+                                    placeholder="Enter custom tool"
+                                    value={customToolInput[category]}
+                                    onChange={(e) =>
+                                      setCustomToolInput({
+                                        ...customToolInput,
+                                        [category]: e.target.value,
+                                      })
+                                    }
+                                    onKeyPress={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        addTool(category);
+                                      }
+                                    }}
+                                    className="flex-1 bg-background"
+                                  />
                                   <Button
                                     type="button"
                                     variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmingLocationDelete(null)}
+                                    onClick={() => addTool(category)}
+                                    disabled={!customToolInput[category].trim()}
                                     className="bg-transparent"
                                   >
-                                    Cancel
+                                    <Plus className="h-4 w-4" />
                                   </Button>
                                 </div>
-                              </div>
-                            ) : (
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setConfirmingLocationDelete(editingLocationIndex)}
-                                className="text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <X className="h-2 w-2 mr-2" />
-                                Delete Location
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )}
-
-                  <div className="flex gap-2 flex-wrap items-center">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addLocation}
-                      className="bg-transparent"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Location
-                    </Button>
-                    {formData.screenplayText?.trim() && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleExtractLocations}
-                        disabled={isExtractingLocations}
-                        className="bg-transparent"
-                      >
-                        {isExtractingLocations ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Extracting...
-                          </>
-                        ) : (
-                          <>
-                            <Film className="h-4 w-4 mr-2" />
-                            Extract from Screenplay
-                          </>
-                        )}
-                      </Button>
-                    )}
-                    {(formData.setting?.locations?.length || 0) > 10 && (
-                      <>
-                        <div className="flex-1" />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const wasShowingAll = showAllLocations;
-                            setShowAllLocations(!showAllLocations);
-                            if (wasShowingAll) {
-                              setTimeout(() => {
-                                locationsSectionRef.current?.scrollIntoView({
-                                  behavior: "smooth",
-                                  block: "start",
-                                });
-                              }, 0);
-                            }
-                          }}
-                          className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                        >
-                          <ChevronsDown
-                            className={cn(
-                              "h-4 w-4 transition-transform duration-300",
-                              showAllLocations ? "rotate-180" : ""
-                            )}
-                          />
-                          {showAllLocations
-                            ? "Show Less"
-                            : `Show All (${formData.setting?.locations?.length})`}
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Scenes Section */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Clapperboard className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Scenes</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Add scenes to your project. Each scene can carry screenplay context, characters,
-                  reference assets, and prompt-ready shot breakdowns.
-                </p>
-
-                <SceneList
-                  projectId={effectiveProjectId}
-                  scenes={formData.scenes || []}
-                  characters={formData.characters || []}
-                  locations={formData.setting?.locations || []}
-                  screenplayText={formData.screenplayText}
-                  onScenesChange={(scenes) => setFormData({ ...formData, scenes })}
-                />
-              </div>
-
-              {/* Full Width Sections - Links, Tools */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <LinkIcon className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Project Links</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Add links to your project (YouTube, Vimeo, Instagram, etc.)
-                </p>
-
-                <div className="space-y-3">
-                  {formData.links.links.map((link, index) => (
-                    <div
-                      key={`${link.label}-${link.url}-${index}`}
-                      className="flex items-center gap-2 p-3 bg-muted/30 rounded-md"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{link.label}</p>
-                        <p className="text-xs text-muted-foreground truncate">{link.url}</p>
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeLink(index)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-
-                  <div className="flex gap-2">
-                    <Input
-                      placeholder="Enter URL (e.g., https://youtube.com/watch?v=...)"
-                      value={newLinkUrl}
-                      onChange={(e) => setNewLinkUrl(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          addLink();
-                        }
-                      }}
-                      className="bg-background"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addLink}
-                      className="bg-transparent"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4 pt-4 border-t border-border">
-                <div className="flex items-center gap-2">
-                  <Wrench className="h-5 w-5 text-primary" />
-                  <h3 className="text-lg font-semibold">Tools</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Add the tools you used, organized by category
-                </p>
-
-                {/* Add tools by category */}
-                <div className="space-y-4">
-                  {(["video", "image", "sound", "other"] as ToolCategory[]).map((category) => {
-                    const toolsInCategory = getToolsByCategory(category);
-                    return (
-                      <div key={category} className="space-y-2">
-                        <Label htmlFor={`tool-${category}`}>
-                          {getCategoryLabel(category)}
-                          {category === "video" && !hasVideoTool && (
-                            <span className="text-destructive ml-1">*</span>
-                          )}
-                        </Label>
-                        {/* Display added tools for this category */}
-                        {toolsInCategory.length > 0 && (
-                          <div className="flex flex-wrap gap-2">
-                            {toolsInCategory.map((tool, _index) => {
-                              const globalIndex = formData.tools.indexOf(tool);
-                              return (
-                                <div
-                                  key={`${category}-${tool.name}-${globalIndex}`}
-                                  className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 text-primary rounded-full text-sm"
-                                >
-                                  <span>{tool.name}</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeTool(globalIndex)}
-                                    className="hover:text-primary/70 transition-colors"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                        <div className="space-y-2">
-                          <Select
-                            value={selectedTool[category]}
-                            onValueChange={(value) => {
-                              setSelectedTool({ ...selectedTool, [category]: value });
-                              if (value !== "Other") {
-                                // Auto-add tool when selected (not "Other")
-                                addTool(category, value);
-                              } else {
-                                setCustomToolInput({ ...customToolInput, [category]: "" });
-                              }
-                            }}
-                            key={`tool-select-${category}`}
-                          >
-                            <SelectTrigger id={toolSelectIds[category]} className="w-full bg-background">
-                              <SelectValue
-                                placeholder={`Add ${getCategoryLabel(category).toLowerCase()} tool...`}
-                              />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {COMMON_TOOLS[category].map((tool) => (
-                                <SelectItem key={tool} value={tool}>
-                                  {tool}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {selectedTool[category] === "Other" && (
-                            <div className="flex gap-2">
-                              <Input
-                                placeholder="Enter custom tool"
-                                value={customToolInput[category]}
-                                onChange={(e) =>
-                                  setCustomToolInput({
-                                    ...customToolInput,
-                                    [category]: e.target.value,
-                                  })
-                                }
-                                onKeyPress={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    addTool(category);
-                                  }
-                                }}
-                                className="flex-1 bg-background"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => addTool(category)}
-                                disabled={!customToolInput[category].trim()}
-                                className="bg-transparent"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
+                              )}
                             </div>
-                          )}
-                        </div>
-                        {category === "video" && !hasVideoTool && (
-                          <p className="text-xs text-destructive pb-2">
-                            * At least one Video Generation tool is required
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
+                            {category === "video" && !hasVideoTool && (
+                              <p className="text-xs text-destructive pb-2">
+                                * At least one Video Generation tool is required
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
 
-          {/* Only show Create button for new projects - editing uses auto-save */}
-          {!isEditing && (
-            <div className={useGridLayout ? "col-span-3 flex gap-3 pt-4" : "flex gap-3 pt-4"}>
-              <Button
-                type="submit"
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Creating..." : "Create Project"}
-              </Button>
-              <Button
-                type="button"
-                onClick={handleCancel}
-                variant="outline"
-                className="flex-1 bg-transparent"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
+              {/* Only show Create button for new projects - editing uses auto-save */}
+              {!isEditing && (
+                <div className={useGridLayout ? "col-span-3 flex gap-3 pt-4" : "flex gap-3 pt-4"}>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? "Creating..." : "Create Project"}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={handleCancel}
+                    variant="outline"
+                    className="flex-1 bg-transparent"
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-          </div>
-        </details>
+          </details>
         )}
       </div>
     </form>

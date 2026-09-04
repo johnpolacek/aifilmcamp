@@ -1,17 +1,16 @@
 "use server";
 
-import { auth } from "@clerk/nextjs/server";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { auth } from "@clerk/nextjs/server";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 import type { ProjectFormData } from "@/components/project-form";
-import type { Scene } from "@/lib/scenes-client";
 import { getObjectFromS3 } from "@/lib/s3";
+import type { Scene } from "@/lib/scenes-client";
 import type { SourceContextPack } from "@/lib/types/development";
 
 function getTextModel() {
-  const apiKey =
-    process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const apiKey = process.env.GOOGLE_GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY;
 
   if (!apiKey) {
     throw new Error(
@@ -81,10 +80,7 @@ const sourceContextPackSchema = z.object({
   storyFacts: z.array(z.string()),
 });
 
-function normalizeEntitySeeds(
-  values: Array<{ name: string; description: string }>,
-  limit: number
-) {
+function normalizeEntitySeeds(values: Array<{ name: string; description: string }>, limit: number) {
   const seen = new Set<string>();
   const normalized: Array<{ name: string; description: string }> = [];
 
@@ -157,7 +153,9 @@ function inferSourceType(sourceText: string): "screenplay" | "outline" | "brains
   return "general";
 }
 
-function normalizeSourceContextPack(raw: z.infer<typeof sourceContextPackSchema>): SourceContextPack {
+function normalizeSourceContextPack(
+  raw: z.infer<typeof sourceContextPackSchema>
+): SourceContextPack {
   return {
     brief: normalizeBrief(raw.brief),
     conceptSeed: raw.conceptSeed.trim(),
@@ -221,14 +219,29 @@ function dedupeStrings(values: string[], limit: number): string[] {
 
 function mergeSourceContextPacks(packs: SourceContextPack[]): SourceContextPack {
   return {
-    brief: packs.map((pack) => pack.brief).filter(Boolean).join("\n"),
+    brief: packs
+      .map((pack) => pack.brief)
+      .filter(Boolean)
+      .join("\n"),
     conceptSeed: packs.map((pack) => pack.conceptSeed).find(Boolean) || "",
-    genreSuggestions: dedupeStrings(packs.flatMap((pack) => pack.genreSuggestions), 6),
-    influenceSuggestions: dedupeStrings(packs.flatMap((pack) => pack.influenceSuggestions), 8),
-    vibeKeywords: dedupeStrings(packs.flatMap((pack) => pack.vibeKeywords), 8),
+    genreSuggestions: dedupeStrings(
+      packs.flatMap((pack) => pack.genreSuggestions),
+      6
+    ),
+    influenceSuggestions: dedupeStrings(
+      packs.flatMap((pack) => pack.influenceSuggestions),
+      8
+    ),
+    vibeKeywords: dedupeStrings(
+      packs.flatMap((pack) => pack.vibeKeywords),
+      8
+    ),
     characterSeeds: packs.flatMap((pack) => pack.characterSeeds).slice(0, 8),
     locationSeeds: packs.flatMap((pack) => pack.locationSeeds).slice(0, 8),
-    storyFacts: dedupeStrings(packs.flatMap((pack) => pack.storyFacts), 12),
+    storyFacts: dedupeStrings(
+      packs.flatMap((pack) => pack.storyFacts),
+      12
+    ),
   };
 }
 
@@ -351,7 +364,10 @@ ${buildProjectContext(project)}`,
   }));
 }
 
-export async function ingestSourceDocument(project: Partial<ProjectFormData>, sourceTextKey: string) {
+export async function ingestSourceDocument(
+  project: Partial<ProjectFormData>,
+  sourceTextKey: string
+) {
   await requireAuth();
 
   const sourceText = await getObjectFromS3(sourceTextKey);
@@ -383,13 +399,13 @@ Influence: ${input.influence}
 
 Project context:
 ${buildProjectContext({
-      ...input.project,
-      genre: input.genre,
-      development: {
-        ...input.project?.development,
-        influences: [input.influence],
-      },
-    })}`,
+  ...input.project,
+  genre: input.genre,
+  development: {
+    ...input.project?.development,
+    influences: [input.influence],
+  },
+})}`,
   });
 
   return output.concept;
@@ -503,7 +519,10 @@ ${buildProjectContext(project)}`,
   return output.screenplay;
 }
 
-export async function generateShotPrompts(project: Partial<ProjectFormData>, scene: Partial<Scene>) {
+export async function generateShotPrompts(
+  project: Partial<ProjectFormData>,
+  scene: Partial<Scene>
+) {
   await requireAuth();
 
   const { output } = await generateText({

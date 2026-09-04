@@ -32,15 +32,18 @@ export async function generateWaveformFromUrl(
       mode: "cors",
       credentials: "omit",
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
-    
+
     const arrayBuffer = await response.arrayBuffer();
 
     // Decode audio data
-    const audioContext = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const audioContext = new (
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+    )();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
     // Get the audio data from the first channel
@@ -75,7 +78,10 @@ export async function generateWaveformFromUrl(
       duration: audioBuffer.duration,
     };
   } catch (error) {
-    console.error("[generateWaveformFromUrl] Error:", error instanceof Error ? error.message : String(error));
+    console.error(
+      "[generateWaveformFromUrl] Error:",
+      error instanceof Error ? error.message : String(error)
+    );
     // Return a flat waveform as fallback
     return {
       peaks: Array(numSamples).fill(0.3),
@@ -95,7 +101,7 @@ export async function getWaveformData(
   numSamples: number = 100
 ): Promise<WaveformData> {
   const cacheKey = `${audioUrl}-${numSamples}`;
-  
+
   if (waveformCache.has(cacheKey)) {
     return waveformCache.get(cacheKey)!;
   }
@@ -120,4 +126,3 @@ export function clearWaveformCache(audioUrl?: string): void {
     waveformCache.clear();
   }
 }
-

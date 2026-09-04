@@ -1,6 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { v4 as uuid } from "uuid";
 import { getScene, saveScene } from "@/lib/scenes";
 
 const COMPOSER_URL = process.env.VIDEO_COMPOSER_URL;
@@ -10,10 +9,7 @@ const COMPOSER_SECRET = process.env.VIDEO_COMPOSER_SECRET;
  * POST /api/scenes/[sceneId]/compose
  * Start a video composition job for a scene
  */
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ sceneId: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ sceneId: string }> }) {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -27,10 +23,7 @@ export async function POST(
     const { projectId } = body;
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: "projectId is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "projectId is required" }, { status: 400 });
     }
 
     // Check if composer is configured
@@ -39,10 +32,7 @@ export async function POST(
         "[compose] Video composer not configured:",
         JSON.stringify({ hasUrl: !!COMPOSER_URL, hasSecret: !!COMPOSER_SECRET }, null, 2)
       );
-      return NextResponse.json(
-        { error: "Video composer service not configured" },
-        { status: 503 }
-      );
+      return NextResponse.json({ error: "Video composer service not configured" }, { status: 503 });
     }
 
     const scene = await getScene(projectId, sceneId);
@@ -57,14 +47,11 @@ export async function POST(
     );
 
     if (completedShots.length === 0) {
-      return NextResponse.json(
-        { error: "No completed shots to render" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "No completed shots to render" }, { status: 400 });
     }
 
     // Generate job ID
-    const jobId = uuid();
+    const jobId = crypto.randomUUID();
 
     // Build webhook URL
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -81,8 +68,8 @@ export async function POST(
         const shotData = {
           id: s.id,
           order: s.order,
-          videoUrl: s.video!.url,
-          durationMs: s.video!.durationMs || 5000,
+          videoUrl: s.video?.url,
+          durationMs: s.video?.durationMs || 5000,
           // If originalVideo exists, trim is already baked in
           trimStartMs: s.originalVideo ? 0 : s.trimStartMs || 0,
           trimEndMs: s.originalVideo ? 0 : s.trimEndMs || 0,
@@ -93,18 +80,22 @@ export async function POST(
         };
         console.log(
           "[compose] Shot data:",
-          JSON.stringify({
-            shotId: s.id,
-            hasOriginalVideo: !!s.originalVideo,
-            videoDurationMs: s.video!.durationMs,
-            originalVideoDurationMs: s.originalVideo?.durationMs,
-            shotTrimStartMs: s.trimStartMs,
-            shotTrimEndMs: s.trimEndMs,
-            fadeInType: s.fadeInType,
-            fadeOutType: s.fadeOutType,
-            fadeDurationMs: s.fadeDurationMs,
-            sentData: shotData,
-          }, null, 2)
+          JSON.stringify(
+            {
+              shotId: s.id,
+              hasOriginalVideo: !!s.originalVideo,
+              videoDurationMs: s.video?.durationMs,
+              originalVideoDurationMs: s.originalVideo?.durationMs,
+              shotTrimStartMs: s.trimStartMs,
+              shotTrimEndMs: s.trimEndMs,
+              fadeInType: s.fadeInType,
+              fadeOutType: s.fadeOutType,
+              fadeDurationMs: s.fadeDurationMs,
+              sentData: shotData,
+            },
+            null,
+            2
+          )
         );
         return shotData;
       }),
@@ -178,16 +169,9 @@ export async function POST(
   } catch (error) {
     console.error(
       "[compose] Error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
-    return NextResponse.json(
-      { error: "Failed to start composition" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to start composition" }, { status: 500 });
   }
 }
 
@@ -195,10 +179,7 @@ export async function POST(
  * GET /api/scenes/[sceneId]/compose
  * Get the composition status for a scene, including live progress from the worker
  */
-export async function GET(
-  request: Request,
-  { params }: { params: Promise<{ sceneId: string }> }
-) {
+export async function GET(request: Request, { params }: { params: Promise<{ sceneId: string }> }) {
   try {
     const { userId } = await auth();
     if (!userId) {
@@ -210,10 +191,7 @@ export async function GET(
     const projectId = searchParams.get("projectId");
 
     if (!projectId) {
-      return NextResponse.json(
-        { error: "projectId query param is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "projectId query param is required" }, { status: 400 });
     }
 
     const scene = await getScene(projectId, sceneId);
@@ -231,14 +209,11 @@ export async function GET(
       COMPOSER_SECRET
     ) {
       try {
-        const statusResponse = await fetch(
-          `${COMPOSER_URL}/status/${scene.compositeVideo.jobId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${COMPOSER_SECRET}`,
-            },
-          }
-        );
+        const statusResponse = await fetch(`${COMPOSER_URL}/status/${scene.compositeVideo.jobId}`, {
+          headers: {
+            Authorization: `Bearer ${COMPOSER_SECRET}`,
+          },
+        });
         if (statusResponse.ok) {
           liveProgress = await statusResponse.json();
         }
@@ -261,16 +236,8 @@ export async function GET(
   } catch (error) {
     console.error(
       "[compose-status] Error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
-    return NextResponse.json(
-      { error: "Failed to get composition status" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to get composition status" }, { status: 500 });
   }
 }
-

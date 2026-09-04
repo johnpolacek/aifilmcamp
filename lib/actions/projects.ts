@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ProjectFormData } from "@/components/project-form";
 import { deleteProject as deleteProjectFromS3, getProject, saveProject } from "@/lib/projects";
-import { deleteObjectFromS3, getFileBufferFromS3, putObjectToS3, uploadFileFromBuffer } from "@/lib/s3";
+import {
+  deleteObjectFromS3,
+  getFileBufferFromS3,
+  putObjectToS3,
+  uploadFileFromBuffer,
+} from "@/lib/s3";
 import type { SourceDocumentKind } from "@/lib/types/development";
 
 const MAX_PROJECT_FILE_SIZE = 50 * 1024 * 1024;
@@ -15,7 +20,10 @@ function sanitizeFilename(value: string) {
 }
 
 function normalizeExtractedText(value: string) {
-  return value.replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+  return value
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function getSourceDocumentKey(projectId: string, filename: string) {
@@ -563,7 +571,10 @@ export async function uploadProjectFile(
     // Extract text from PDF if requested and file is a PDF
     let extractedText: string | undefined;
     let extractionError: string | undefined;
-    if (extractText && (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"))) {
+    if (
+      extractText &&
+      (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"))
+    ) {
       const extractResult = await extractPdfText(buffer);
       if (extractResult.success) {
         extractedText = extractResult.text;
@@ -607,17 +618,14 @@ async function extractTextFromPdfBuffer(
   options?: { stripToFirstSceneHeading?: boolean; filename?: string }
 ): Promise<{ success: true; text: string } | { success: false; error: string }> {
   try {
-    const pdfParseModule = await import("pdf-parse/lib/pdf-parse.js");
-    const pdfParse = pdfParseModule.default || pdfParseModule;
+    const { PDFParse } = await import("pdf-parse");
 
-    if (typeof pdfParse !== "function") {
-      return {
-        success: false,
-        error: "PDF parsing library failed to load. Please try again.",
-      };
-    }
+    const parser = new PDFParse({
+      data: new Uint8Array(pdfBuffer.buffer, pdfBuffer.byteOffset, pdfBuffer.byteLength),
+    });
 
-    const pdfData = await pdfParse(pdfBuffer);
+    const pdfData = await parser.getText().finally(() => parser.destroy());
+
     if (!pdfData?.text) {
       return {
         success: false,
@@ -629,7 +637,8 @@ async function extractTextFromPdfBuffer(
     if (!extractedText) {
       return {
         success: false,
-        error: "PDF appears to be empty or contains only images. Text extraction requires a text-based PDF.",
+        error:
+          "PDF appears to be empty or contains only images. Text extraction requires a text-based PDF.",
       };
     }
 
@@ -645,7 +654,7 @@ async function extractTextFromPdfBuffer(
       JSON.stringify(
         {
           textLength: extractedText.length,
-          pageCount: pdfData.numpages || 0,
+          pageCount: pdfData.total || 0,
           filename: options?.filename || "from buffer",
         },
         null,
@@ -704,7 +713,9 @@ async function extractTextFromDocxBuffer(
 async function extractTextFromSourceFile(
   buffer: Buffer,
   file: { name: string; type?: string }
-): Promise<{ success: true; text: string; kind: SourceDocumentKind } | { success: false; error: string }> {
+): Promise<
+  { success: true; text: string; kind: SourceDocumentKind } | { success: false; error: string }
+> {
   const lowerName = file.name.toLowerCase();
   if (file.type === "application/pdf" || lowerName.endsWith(".pdf")) {
     const result = await extractTextFromPdfBuffer(buffer, { filename: file.name });
@@ -712,8 +723,7 @@ async function extractTextFromSourceFile(
   }
 
   if (
-    file.type ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     lowerName.endsWith(".docx")
   ) {
     const result = await extractTextFromDocxBuffer(buffer);
@@ -856,13 +866,16 @@ export async function extractPdfText(
     } else if (filename && username) {
       const key = `projects/${username}/files/${filename}`;
       const buffer = await getFileBufferFromS3(key);
-      
+
       if (!buffer) {
         return { success: false, error: "PDF file not found in storage" };
       }
       pdfBuffer = buffer;
     } else {
-      return { success: false, error: "Either file buffer or filename with username must be provided" };
+      return {
+        success: false,
+        error: "Either file buffer or filename with username must be provided",
+      };
     }
     return extractTextFromPdfBuffer(pdfBuffer, {
       stripToFirstSceneHeading: true,
@@ -884,10 +897,16 @@ export async function extractPdfText(
     // Provide helpful error messages
     if (error instanceof Error) {
       if (error.message.includes("Invalid PDF")) {
-        return { success: false, error: "Invalid PDF file. Please ensure the file is a valid PDF." };
+        return {
+          success: false,
+          error: "Invalid PDF file. Please ensure the file is a valid PDF.",
+        };
       }
       if (error.message.includes("password")) {
-        return { success: false, error: "PDF is password-protected. Please remove the password and try again." };
+        return {
+          success: false,
+          error: "PDF is password-protected. Please remove the password and try again.",
+        };
       }
     }
 

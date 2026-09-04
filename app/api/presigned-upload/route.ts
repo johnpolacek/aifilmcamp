@@ -13,7 +13,15 @@ const ALLOWED_TYPES = {
     maxSize: 500 * 1024 * 1024, // 500MB
   },
   audio: {
-    mimeTypes: ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/aac", "audio/x-m4a", "audio/mp4"],
+    mimeTypes: [
+      "audio/mpeg",
+      "audio/mp3",
+      "audio/wav",
+      "audio/ogg",
+      "audio/aac",
+      "audio/x-m4a",
+      "audio/mp4",
+    ],
     maxSize: 50 * 1024 * 1024, // 50MB
   },
 } as const;
@@ -58,7 +66,10 @@ export async function POST(request: Request) {
     // Validate content type
     if (!(typeConfig.mimeTypes as readonly string[]).includes(contentType)) {
       return NextResponse.json(
-        { success: false, error: `Invalid ${mediaType} type. Allowed: ${typeConfig.mimeTypes.join(", ")}` },
+        {
+          success: false,
+          error: `Invalid ${mediaType} type. Allowed: ${typeConfig.mimeTypes.join(", ")}`,
+        },
         { status: 400 }
       );
     }
@@ -67,7 +78,10 @@ export async function POST(request: Request) {
     if (fileSize && fileSize > typeConfig.maxSize) {
       const maxSizeMB = Math.round(typeConfig.maxSize / (1024 * 1024));
       return NextResponse.json(
-        { success: false, error: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} must be less than ${maxSizeMB}MB` },
+        {
+          success: false,
+          error: `${mediaType.charAt(0).toUpperCase() + mediaType.slice(1)} must be less than ${maxSizeMB}MB`,
+        },
         { status: 400 }
       );
     }
@@ -119,4 +133,3 @@ function getDefaultExtension(mediaType: string): string {
       return "bin";
   }
 }
-

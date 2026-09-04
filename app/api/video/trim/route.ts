@@ -4,7 +4,7 @@ import { uploadFileFromBuffer } from "@/lib/s3";
 
 /**
  * POST /api/video/trim
- * 
+ *
  * Trim a video file to specified in/out points.
  * Creates a new trimmed video file and returns its URL.
  */
@@ -13,10 +13,7 @@ export async function POST(request: Request) {
     // Check authentication
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body
@@ -31,10 +28,7 @@ export async function POST(request: Request) {
     }
 
     if (!videoUrl) {
-      return NextResponse.json(
-        { success: false, error: "Video URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Video URL is required" }, { status: 400 });
     }
 
     if (trimStartMs === undefined && trimEndMs === undefined) {
@@ -51,45 +45,49 @@ export async function POST(request: Request) {
 
     if (effectiveDuration <= 0) {
       return NextResponse.json(
-        { success: false, error: "Invalid trim values - resulting duration would be zero or negative" },
+        {
+          success: false,
+          error: "Invalid trim values - resulting duration would be zero or negative",
+        },
         { status: 400 }
       );
     }
 
     console.log(
       "[video-trim] Starting trim:",
-      JSON.stringify({ 
-        projectId, 
-        sceneId, 
-        shotId, 
-        trimStartMs: trimStart, 
-        trimEndMs: trimEnd,
-        fullDuration,
-        effectiveDuration,
-        videoUrl: videoUrl.substring(0, 100) 
-      }, null, 2)
+      JSON.stringify(
+        {
+          projectId,
+          sceneId,
+          shotId,
+          trimStartMs: trimStart,
+          trimEndMs: trimEnd,
+          fullDuration,
+          effectiveDuration,
+          videoUrl: videoUrl.substring(0, 100),
+        },
+        null,
+        2
+      )
     );
 
     // Download the video
     const videoResponse = await fetch(videoUrl);
     if (!videoResponse.ok) {
-      return NextResponse.json(
-        { success: false, error: "Failed to fetch video" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Failed to fetch video" }, { status: 400 });
     }
 
     const videoBuffer = Buffer.from(await videoResponse.arrayBuffer());
 
     // Try to use ffmpeg for video trimming
     let trimmedBuffer: Buffer;
-    
+
     try {
       const ffmpeg = await import("fluent-ffmpeg").catch(() => null);
-      
+
       if (ffmpeg) {
         trimmedBuffer = await trimVideoWithFfmpeg(
-          videoBuffer, 
+          videoBuffer,
           ffmpeg.default,
           trimStart / 1000, // Convert to seconds
           effectiveDuration / 1000 // Convert to seconds
@@ -97,8 +95,8 @@ export async function POST(request: Request) {
       } else {
         console.log("[video-trim] ffmpeg not available");
         return NextResponse.json(
-          { 
-            success: false, 
+          {
+            success: false,
             error: "Video trimming requires ffmpeg which is not available in this environment.",
           },
           { status: 501 }
@@ -107,13 +105,19 @@ export async function POST(request: Request) {
     } catch (ffmpegError) {
       console.error(
         "[video-trim] ffmpeg error:",
-        JSON.stringify({ error: ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError) }, null, 2)
+        JSON.stringify(
+          { error: ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError) },
+          null,
+          2
+        )
       );
-      
+
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Failed to trim video. " + (ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError))
+        {
+          success: false,
+          error:
+            "Failed to trim video. " +
+            (ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError)),
         },
         { status: 500 }
       );
@@ -130,9 +134,9 @@ export async function POST(request: Request) {
       const ffmpeg = await import("fluent-ffmpeg").catch(() => null);
       if (ffmpeg) {
         const thumbnailBuffer = await extractThumbnailWithFfmpeg(
-          trimmedBuffer, 
+          trimmedBuffer,
           ffmpeg.default,
-          (effectiveDuration / 1000) / 2 // Middle of trimmed video
+          effectiveDuration / 1000 / 2 // Middle of trimmed video
         );
         const thumbnailKey = `projects/${projectId}/scenes/${sceneId}/thumbnails/trimmed-${shotId}-${timestamp}.jpg`;
         thumbnailUrl = await uploadFileFromBuffer(thumbnailBuffer, thumbnailKey, "image/jpeg");
@@ -156,17 +160,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(
       "[video-trim] Error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
 
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -179,10 +176,10 @@ async function trimVideoWithFfmpeg(
   startSeconds: number,
   durationSeconds: number
 ): Promise<Buffer> {
-  const { tmpdir } = await import("os");
-  const { join } = await import("path");
-  const { writeFile, unlink, readFile } = await import("fs/promises");
-  const { randomUUID } = await import("crypto");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { writeFile, unlink, readFile } = await import("node:fs/promises");
+  const { randomUUID } = await import("node:crypto");
 
   // Write video to temp file
   const tempDir = tmpdir();
@@ -197,11 +194,7 @@ async function trimVideoWithFfmpeg(
       .setDuration(durationSeconds)
       .videoCodec("libx264")
       .audioCodec("aac")
-      .outputOptions([
-        "-preset fast",
-        "-crf 23",
-        "-movflags +faststart"
-      ])
+      .outputOptions(["-preset fast", "-crf 23", "-movflags +faststart"])
       .output(outputPath)
       .on("end", async () => {
         try {
@@ -232,10 +225,10 @@ async function extractThumbnailWithFfmpeg(
   ffmpeg: typeof import("fluent-ffmpeg"),
   seekSeconds: number
 ): Promise<Buffer> {
-  const { tmpdir } = await import("os");
-  const { join } = await import("path");
-  const { writeFile, unlink, readFile } = await import("fs/promises");
-  const { randomUUID } = await import("crypto");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { writeFile, unlink, readFile } = await import("node:fs/promises");
+  const { randomUUID } = await import("node:crypto");
 
   const tempDir = tmpdir();
   const inputPath = join(tempDir, `thumb-input-${randomUUID()}.mp4`);
@@ -267,4 +260,3 @@ async function extractThumbnailWithFfmpeg(
       .run();
   });
 }
-

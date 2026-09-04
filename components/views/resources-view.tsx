@@ -1,21 +1,17 @@
 import {
   BookOpen,
-  Calendar,
   ExternalLink,
-  FileText,
   Film,
   GraduationCap,
-  Headphones,
-  Image,
   MessageSquare,
   Mic,
   Music,
   Palette,
   Radio,
   Scissors,
+  SquarePlay,
   Trophy,
   Users,
-  Youtube,
 } from "lucide-react";
 import { Header } from "@/components/header";
 import { Card } from "@/components/ui/card";
@@ -212,7 +208,7 @@ export function ResourcesView() {
       ],
     },
     {
-      icon: Youtube,
+      icon: SquarePlay,
       title: "YouTube Channels",
       description: "Learn from top AI filmmaking creators",
       resources: [

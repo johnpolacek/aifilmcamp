@@ -1,21 +1,21 @@
 interface Clip {
-  id: string
-  name: string
-  thumbnail: string
-  label: string
-  duration: number
+  id: string;
+  name: string;
+  thumbnail: string;
+  label: string;
+  duration: number;
 }
 
 interface LeftPanelProps {
-  clips: Clip[]
-  selectedClip: Clip | null
-  activeTab: 'media' | 'properties'
-  onTabChange: (tab: 'media' | 'properties') => void
-  onUploadClick: () => void
-  onDragStart: (clip: Clip) => (e: React.DragEvent) => void
-  onUpdateLabel: (label: string) => void
-  fileInputRef: React.RefObject<HTMLInputElement>
-  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
+  clips: Clip[];
+  selectedClip: Clip | null;
+  activeTab: "media" | "properties";
+  onTabChange: (tab: "media" | "properties") => void;
+  onUploadClick: () => void;
+  onDragStart: (clip: Clip) => (e: React.DragEvent) => void;
+  onUpdateLabel: (label: string) => void;
+  fileInputRef: React.RefObject<HTMLInputElement>;
+  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export default function LeftPanel({
@@ -32,21 +32,21 @@ export default function LeftPanel({
       {/* Tabs */}
       <div className="flex border-b border-border">
         <button
-          onClick={() => onTabChange('media')}
+          onClick={() => onTabChange("media")}
           className={`flex-1 py-3 px-4 text-sm font-medium transition ${
-            activeTab === 'media'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground'
+            activeTab === "media"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Media Bin
         </button>
         <button
-          onClick={() => onTabChange('properties')}
+          onClick={() => onTabChange("properties")}
           className={`flex-1 py-3 px-4 text-sm font-medium transition ${
-            activeTab === 'properties'
-              ? 'bg-primary text-primary-foreground'
-              : 'text-muted-foreground hover:text-foreground'
+            activeTab === "properties"
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           Properties
@@ -55,7 +55,7 @@ export default function LeftPanel({
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4">
-        {activeTab === 'media' ? (
+        {activeTab === "media" ? (
           <div className="space-y-4">
             <button
               onClick={onUploadClick}
@@ -88,9 +88,7 @@ export default function LeftPanel({
               <div>
                 <h3 className="font-semibold mb-4">Edit Clip</h3>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Platform Label
-                  </label>
+                  <label className="block text-sm font-medium mb-2">Platform Label</label>
                   <input
                     type="text"
                     value={selectedClip.label}
@@ -109,5 +107,5 @@ export default function LeftPanel({
         )}
       </div>
     </div>
-  )
+  );
 }

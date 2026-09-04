@@ -16,9 +16,7 @@ const LEGACY_FILM_LENGTH_MAP: Record<string, FilmLengthOption> = {
   "20+ minutes": "Long (20-60 minutes)",
 };
 
-export function normalizeFilmLengthOption(
-  value?: string | null
-): FilmLengthOption | undefined {
+export function normalizeFilmLengthOption(value?: string | null): FilmLengthOption | undefined {
   if (!value) {
     return undefined;
   }

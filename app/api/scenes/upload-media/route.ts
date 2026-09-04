@@ -37,7 +37,15 @@ export async function POST(request: Request) {
     // Validate file type
     const allowedImageTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
     const allowedVideoTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"];
-    const allowedAudioTypes = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg", "audio/aac", "audio/x-m4a", "audio/mp4"];
+    const allowedAudioTypes = [
+      "audio/mpeg",
+      "audio/mp3",
+      "audio/wav",
+      "audio/ogg",
+      "audio/aac",
+      "audio/x-m4a",
+      "audio/mp4",
+    ];
 
     if (mediaType === "image" && !allowedImageTypes.includes(file.type)) {
       return NextResponse.json(
@@ -129,10 +137,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[upload-media] Error:", JSON.stringify({ error }, null, 2));
-    return NextResponse.json(
-      { success: false, error: "Failed to upload media" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Failed to upload media" }, { status: 500 });
   }
 }
-

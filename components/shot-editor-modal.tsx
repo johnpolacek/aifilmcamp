@@ -20,7 +20,7 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AudioWaveform } from "@/components/audio-waveform";
-import { generateThumbnailFromFile } from "@/lib/video-thumbnail";
+import type { Character, Location } from "@/components/project-form";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,14 +38,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Slider } from "@/components/ui/slider";
 import { Textarea } from "@/components/ui/textarea";
 import { getImageUrl } from "@/lib/image-utils";
-import { createNewAudioTrack, getEffectiveDuration } from "@/lib/scenes-client";
-import type { AudioTrack, GenerationMode, ReferenceImage, ReferenceImageType, Shot } from "@/lib/scenes-client";
+import type {
+  AudioTrack,
+  GenerationMode,
+  ReferenceImage,
+  ReferenceImageType,
+  Shot,
+} from "@/lib/scenes-client";
+import { createNewAudioTrack } from "@/lib/scenes-client";
 import { uploadFile } from "@/lib/upload-utils";
-import type { Character, Location } from "@/components/project-form";
 import { isVideoGenerationEnabled } from "@/lib/utils/video-generation";
+import { generateThumbnailFromFile } from "@/lib/video-thumbnail";
 
 // ============================================================================
 // TYPES
@@ -231,7 +236,7 @@ export function ShotEditorDialog({
   const [startFrameReferenceImages, setStartFrameReferenceImages] = useState<ReferenceImage[]>([]);
   const [isGeneratingStartFrame, setIsGeneratingStartFrame] = useState(false);
 
-  // End frame generation state  
+  // End frame generation state
   const [endFrameInputMode, setEndFrameInputMode] = useState<"upload" | "generate">("upload");
   const [endFramePrompt, setEndFramePrompt] = useState("");
   const [endFrameReferenceImages, setEndFrameReferenceImages] = useState<ReferenceImage[]>([]);
@@ -245,7 +250,7 @@ export function ShotEditorDialog({
   const [trimStartMs, setTrimStartMs] = useState<number>(shot?.trimStartMs || 0);
   const [trimEndMs, setTrimEndMs] = useState<number>(shot?.trimEndMs || 0);
   const [isTrimmerPlaying, setIsTrimmerPlaying] = useState(false);
-  const [trimmerCurrentTime, setTrimmerCurrentTime] = useState(0);
+  const [_trimmerCurrentTime, setTrimmerCurrentTime] = useState(0);
   const [isTrimmingVideo, setIsTrimmingVideo] = useState(false);
   const trimmerVideoRef = useRef<HTMLVideoElement>(null);
 
@@ -254,8 +259,12 @@ export function ShotEditorDialog({
 
   // Effects mode state
   const [isEffectsMode, setIsEffectsMode] = useState(false);
-  const [fadeInType, setFadeInType] = useState<"none" | "black" | "white">(shot?.fadeInType || "none");
-  const [fadeOutType, setFadeOutType] = useState<"none" | "black" | "white">(shot?.fadeOutType || "none");
+  const [fadeInType, setFadeInType] = useState<"none" | "black" | "white">(
+    shot?.fadeInType || "none"
+  );
+  const [fadeOutType, setFadeOutType] = useState<"none" | "black" | "white">(
+    shot?.fadeOutType || "none"
+  );
   const [fadeDurationMs, setFadeDurationMs] = useState<number>(shot?.fadeDurationMs || 500);
   const [effectsPreviewTime, setEffectsPreviewTime] = useState(0); // Current time for fade preview in effects mode
   const [normalPreviewTime, setNormalPreviewTime] = useState(0); // Current time for fade preview in normal view
@@ -277,7 +286,10 @@ export function ShotEditorDialog({
   useEffect(() => {
     if (open && shot) {
       setPrompt(shot.prompt || "");
-      setSourceType(shot.sourceType || (isVideoGenerationEnabled() && onGenerateVideo ? "generated" : "uploaded"));
+      setSourceType(
+        shot.sourceType ||
+          (isVideoGenerationEnabled() && onGenerateVideo ? "generated" : "uploaded")
+      );
       setGenerationMode(shot.generationMode || "text-only");
       setStartFrameImage(shot.startFrameImage);
       setEndFrameImage(shot.endFrameImage);
@@ -314,7 +326,7 @@ export function ShotEditorDialog({
       setEffectsPreviewTime(0);
       setNormalPreviewTime(0);
     }
-  }, [open, shot]);
+  }, [open, shot, onGenerateVideo]);
 
   // Handle image upload for a specific slot
   // Uses presigned URLs for large images (>5MB), otherwise uses server-side processing for optimization
@@ -381,8 +393,10 @@ export function ShotEditorDialog({
   // Generate a frame image using AI
   const handleGenerateFrameImage = async (frameType: "start" | "end") => {
     const framePrompt = frameType === "start" ? startFramePrompt : endFramePrompt;
-    const frameReferenceImages = frameType === "start" ? startFrameReferenceImages : endFrameReferenceImages;
-    const setIsGeneratingFrame = frameType === "start" ? setIsGeneratingStartFrame : setIsGeneratingEndFrame;
+    const frameReferenceImages =
+      frameType === "start" ? startFrameReferenceImages : endFrameReferenceImages;
+    const setIsGeneratingFrame =
+      frameType === "start" ? setIsGeneratingStartFrame : setIsGeneratingEndFrame;
     const setFrameImage = frameType === "start" ? setStartFrameImage : setEndFrameImage;
 
     if (!framePrompt.trim()) {
@@ -401,9 +415,10 @@ export function ShotEditorDialog({
           projectId,
           sceneId,
           aspectRatio: "16:9",
-          referenceImages: frameReferenceImages.length > 0 
-            ? frameReferenceImages.map((ref) => ref.url) 
-            : undefined,
+          referenceImages:
+            frameReferenceImages.length > 0
+              ? frameReferenceImages.map((ref) => ref.url)
+              : undefined,
         }),
       });
 
@@ -433,12 +448,9 @@ export function ShotEditorDialog({
     type: ReferenceImageType,
     name?: string
   ) => {
-    const setFrameReferenceImages = frameType === "start" 
-      ? setStartFrameReferenceImages 
-      : setEndFrameReferenceImages;
-    const currentRefs = frameType === "start" 
-      ? startFrameReferenceImages 
-      : endFrameReferenceImages;
+    const setFrameReferenceImages =
+      frameType === "start" ? setStartFrameReferenceImages : setEndFrameReferenceImages;
+    const currentRefs = frameType === "start" ? startFrameReferenceImages : endFrameReferenceImages;
 
     if (currentRefs.length >= 3) {
       toast.error("Maximum 3 reference images allowed");
@@ -453,9 +465,8 @@ export function ShotEditorDialog({
 
   // Remove a reference image for frame generation
   const removeFrameReferenceImage = (frameType: "start" | "end", index: number) => {
-    const setFrameReferenceImages = frameType === "start" 
-      ? setStartFrameReferenceImages 
-      : setEndFrameReferenceImages;
+    const setFrameReferenceImages =
+      frameType === "start" ? setStartFrameReferenceImages : setEndFrameReferenceImages;
     setFrameReferenceImages((prev) => prev.filter((_, i) => i !== index));
   };
 
@@ -478,17 +489,26 @@ export function ShotEditorDialog({
         if (result.success && shot && result.url) {
           console.log(
             "[ShotEditorDialog] Video uploaded successfully:",
-            JSON.stringify({ 
-              shotId: shot.id, 
-              videoUrl: result.url,
-              projectId,
-              sceneId,
-              isReplaceMode 
-            }, null, 2)
+            JSON.stringify(
+              {
+                shotId: shot.id,
+                videoUrl: result.url,
+                projectId,
+                sceneId,
+                isReplaceMode,
+              },
+              null,
+              2
+            )
           );
 
           // If replacing, save old video to media library (without removing the shot)
-          if (isReplaceMode && shot.video?.url && shot.video?.status === "completed" && onSaveVideoToMediaLibrary) {
+          if (
+            isReplaceMode &&
+            shot.video?.url &&
+            shot.video?.status === "completed" &&
+            onSaveVideoToMediaLibrary
+          ) {
             console.log(
               "[ShotEditorDialog] Saving old video to media library before upload replacement:",
               JSON.stringify({ shotId: shot.id, oldVideoUrl: shot.video.url }, null, 2)
@@ -502,23 +522,23 @@ export function ShotEditorDialog({
           try {
             console.log("[ShotEditorDialog] Generating thumbnail client-side");
             const thumbnailResult = await generateThumbnailFromFile(file);
-            
+
             if (thumbnailResult.success && thumbnailResult.thumbnailBlob) {
               durationMs = thumbnailResult.durationMs || 5000;
-              
+
               // Upload thumbnail to S3
               const thumbnailFile = new File(
                 [thumbnailResult.thumbnailBlob],
                 `thumbnail-${shot.id}.jpg`,
                 { type: "image/jpeg" }
               );
-              
+
               const thumbnailUploadResult = await uploadFile(thumbnailFile, {
                 projectId,
                 sceneId,
                 mediaType: "image",
               });
-              
+
               if (thumbnailUploadResult.success && thumbnailUploadResult.url) {
                 thumbnailUrl = thumbnailUploadResult.url;
                 console.log(
@@ -574,7 +594,7 @@ export function ShotEditorDialog({
         setUploadProgress(0);
       }
     },
-    [shot, projectId, sceneId, prompt, onSave, onOpenChange, isReplaceMode, onSaveVideoToMediaLibrary]
+    [shot, projectId, sceneId, onSave, onOpenChange, isReplaceMode, onSaveVideoToMediaLibrary]
   );
 
   // Handle video upload from file input
@@ -625,12 +645,11 @@ export function ShotEditorDialog({
       endFrameImage,
       typedReferenceImages: typedReferenceImages.length > 0 ? typedReferenceImages : undefined,
       // Also keep referenceImages for backwards compatibility
-      referenceImages: typedReferenceImages.length > 0 
-        ? typedReferenceImages.map((ref) => ref.url) 
-        : undefined,
+      referenceImages:
+        typedReferenceImages.length > 0 ? typedReferenceImages.map((ref) => ref.url) : undefined,
       fadeInType: fadeInType !== "none" ? fadeInType : undefined,
       fadeOutType: fadeOutType !== "none" ? fadeOutType : undefined,
-      fadeDurationMs: (fadeInType !== "none" || fadeOutType !== "none") ? fadeDurationMs : undefined,
+      fadeDurationMs: fadeInType !== "none" || fadeOutType !== "none" ? fadeDurationMs : undefined,
       updatedAt: new Date().toISOString(),
     };
 
@@ -668,7 +687,12 @@ export function ShotEditorDialog({
     }
 
     // If replacing, save old video to media library (without removing the shot)
-    if (isReplaceMode && shot.video?.url && shot.video?.status === "completed" && onSaveVideoToMediaLibrary) {
+    if (
+      isReplaceMode &&
+      shot.video?.url &&
+      shot.video?.status === "completed" &&
+      onSaveVideoToMediaLibrary
+    ) {
       console.log(
         "[ShotEditorDialog] Saving old video to media library before replacing:",
         JSON.stringify({ shotId: shot.id, oldVideoUrl: shot.video.url }, null, 2)
@@ -686,9 +710,8 @@ export function ShotEditorDialog({
       endFrameImage,
       typedReferenceImages: typedReferenceImages.length > 0 ? typedReferenceImages : undefined,
       // Also keep referenceImages for backwards compatibility
-      referenceImages: typedReferenceImages.length > 0 
-        ? typedReferenceImages.map((ref) => ref.url) 
-        : undefined,
+      referenceImages:
+        typedReferenceImages.length > 0 ? typedReferenceImages.map((ref) => ref.url) : undefined,
       video: {
         url: "",
         status: "processing",
@@ -719,7 +742,7 @@ export function ShotEditorDialog({
     try {
       // Use original video for audio extraction if available (full duration audio)
       const sourceVideo = shot.originalVideo || shot.video;
-      
+
       const response = await fetch("/api/audio/extract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -738,7 +761,7 @@ export function ShotEditorDialog({
         const shotStartMs = shot.startTimeMs || 0;
         const shotDurationMs = sourceVideo.durationMs || 5000;
         const shotEndMs = shotStartMs + shotDurationMs;
-        
+
         // Create a new audio track positioned at the shot's end (for overlap workflow)
         const audioTrack = createNewAudioTrack(
           "", // No name needed
@@ -778,7 +801,9 @@ export function ShotEditorDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-h-[90vh] overflow-y-auto ${isNew ? "sm:max-w-2xl" : "sm:max-w-6xl"}`}>
+      <DialogContent
+        className={`max-h-[90vh] overflow-y-auto ${isNew ? "sm:max-w-2xl" : "sm:max-w-6xl"}`}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {isTrimMode ? (
@@ -802,12 +827,12 @@ export function ShotEditorDialog({
             {isTrimMode
               ? "Drag the handles to set in and out points. Click play to preview the trimmed segment."
               : isEffectsMode
-              ? "Configure fade effects for this shot. Effects will be applied when the scene is rendered."
-              : isReplaceMode
-              ? "Upload a new video or generate one to replace this shot. The current shot will be moved to the media library."
-              : hasCompletedVideo 
-              ? "View and manage this shot."
-              : "Configure how this shot will be generated or upload a video directly."}
+                ? "Configure fade effects for this shot. Effects will be applied when the scene is rendered."
+                : isReplaceMode
+                  ? "Upload a new video or generate one to replace this shot. The current shot will be moved to the media library."
+                  : hasCompletedVideo
+                    ? "View and manage this shot."
+                    : "Configure how this shot will be generated or upload a video directly."}
           </DialogDescription>
         </DialogHeader>
 
@@ -834,15 +859,15 @@ export function ShotEditorDialog({
                         // Initialize effects preview time
                         const trimStart = shot.trimStartMs || 0;
                         const videoTime = trimmerVideoRef.current?.currentTime || 0;
-                        setEffectsPreviewTime(Math.max(0, (videoTime * 1000) - trimStart));
+                        setEffectsPreviewTime(Math.max(0, videoTime * 1000 - trimStart));
                       }}
                       onTimeUpdate={(e) => {
                         const video = e.currentTarget;
                         // Store effective time (relative to trim start) in milliseconds
                         const trimStart = shot.trimStartMs || 0;
-                        const effectiveTime = Math.max(0, (video.currentTime * 1000) - trimStart);
+                        const effectiveTime = Math.max(0, video.currentTime * 1000 - trimStart);
                         setEffectsPreviewTime(effectiveTime);
-                        
+
                         // Stop at trim end point
                         if (shot.trimEndMs) {
                           const fullDuration = shot.video?.durationMs || 5000;
@@ -861,55 +886,59 @@ export function ShotEditorDialog({
                       }}
                       controls
                     />
-                    
+
                     {/* Fade In Overlay */}
-                    {fadeInType !== "none" && (() => {
-                      const fadeDuration = fadeDurationMs;
-                      const effectiveTime = effectsPreviewTime; // Already accounts for trim start
-                      const fadeProgress = Math.min(1, Math.max(0, effectiveTime / fadeDuration));
-                      const opacity = fadeInType === "black" || fadeInType === "white" 
-                        ? 1 - fadeProgress 
-                        : 0;
-                      const bgColor = fadeInType === "white" ? "bg-white" : "bg-black";
-                      
-                      if (fadeProgress < 1 && effectiveTime >= 0) {
-                        return (
-                          <div
-                            className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none`}
-                            style={{ opacity }}
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
-                    
+                    {fadeInType !== "none" &&
+                      (() => {
+                        const fadeDuration = fadeDurationMs;
+                        const effectiveTime = effectsPreviewTime; // Already accounts for trim start
+                        const fadeProgress = Math.min(1, Math.max(0, effectiveTime / fadeDuration));
+                        const opacity =
+                          fadeInType === "black" || fadeInType === "white" ? 1 - fadeProgress : 0;
+                        const bgColor = fadeInType === "white" ? "bg-white" : "bg-black";
+
+                        if (fadeProgress < 1 && effectiveTime >= 0) {
+                          return (
+                            <div
+                              className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none`}
+                              style={{ opacity }}
+                            />
+                          );
+                        }
+                        return null;
+                      })()}
+
                     {/* Fade Out Overlay */}
-                    {fadeOutType !== "none" && (() => {
-                      const videoDuration = shot.video?.durationMs || 5000;
-                      const fadeDuration = fadeDurationMs;
-                      const trimStart = shot.trimStartMs || 0;
-                      const trimEnd = shot.trimEndMs || 0;
-                      const effectiveDuration = videoDuration - trimStart - trimEnd;
-                      const fadeOutStart = effectiveDuration - fadeDuration;
-                      const effectiveTime = effectsPreviewTime; // Already accounts for trim start
-                      const fadeProgress = effectiveTime >= fadeOutStart
-                        ? Math.min(1, Math.max(0, (effectiveTime - fadeOutStart) / fadeDuration))
-                        : 0;
-                      const opacity = fadeOutType === "black" || fadeOutType === "white"
-                        ? fadeProgress
-                        : 0;
-                      const bgColor = fadeOutType === "white" ? "bg-white" : "bg-black";
-                      
-                      if (fadeProgress > 0 && fadeProgress <= 1) {
-                        return (
-                          <div
-                            className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none`}
-                            style={{ opacity }}
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
+                    {fadeOutType !== "none" &&
+                      (() => {
+                        const videoDuration = shot.video?.durationMs || 5000;
+                        const fadeDuration = fadeDurationMs;
+                        const trimStart = shot.trimStartMs || 0;
+                        const trimEnd = shot.trimEndMs || 0;
+                        const effectiveDuration = videoDuration - trimStart - trimEnd;
+                        const fadeOutStart = effectiveDuration - fadeDuration;
+                        const effectiveTime = effectsPreviewTime; // Already accounts for trim start
+                        const fadeProgress =
+                          effectiveTime >= fadeOutStart
+                            ? Math.min(
+                                1,
+                                Math.max(0, (effectiveTime - fadeOutStart) / fadeDuration)
+                              )
+                            : 0;
+                        const opacity =
+                          fadeOutType === "black" || fadeOutType === "white" ? fadeProgress : 0;
+                        const bgColor = fadeOutType === "white" ? "bg-white" : "bg-black";
+
+                        if (fadeProgress > 0 && fadeProgress <= 1) {
+                          return (
+                            <div
+                              className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none`}
+                              style={{ opacity }}
+                            />
+                          );
+                        }
+                        return null;
+                      })()}
                   </div>
                   {/* Duration info */}
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -918,7 +947,8 @@ export function ShotEditorDialog({
                         <>
                           Duration: {((shot.video.durationMs || 5000) / 1000).toFixed(2)}s
                           <span className="text-xs ml-1">
-                            (original: {((shot.originalVideo.durationMs || 5000) / 1000).toFixed(1)}s)
+                            (original: {((shot.originalVideo.durationMs || 5000) / 1000).toFixed(1)}
+                            s)
                           </span>
                         </>
                       ) : (
@@ -930,13 +960,17 @@ export function ShotEditorDialog({
 
                 {/* Fade Effects */}
                 <div className="space-y-4">
-                  <div className={`grid gap-6 ${(fadeInType !== "none" || fadeOutType !== "none") ? "grid-cols-3" : "grid-cols-2"}`}>
+                  <div
+                    className={`grid gap-6 ${fadeInType !== "none" || fadeOutType !== "none" ? "grid-cols-3" : "grid-cols-2"}`}
+                  >
                     {/* Fade In */}
                     <div className="w-full flex gap-4 items-center">
                       <Label className="text-sm py-2">Fade In</Label>
                       <Select
                         value={fadeInType}
-                        onValueChange={(value) => setFadeInType(value as "none" | "black" | "white")}
+                        onValueChange={(value) =>
+                          setFadeInType(value as "none" | "black" | "white")
+                        }
                       >
                         <SelectTrigger className="grow">
                           <SelectValue />
@@ -954,7 +988,9 @@ export function ShotEditorDialog({
                       <Label className="text-sm py-2">Fade Out</Label>
                       <Select
                         value={fadeOutType}
-                        onValueChange={(value) => setFadeOutType(value as "none" | "black" | "white")}
+                        onValueChange={(value) =>
+                          setFadeOutType(value as "none" | "black" | "white")
+                        }
                       >
                         <SelectTrigger className="grow">
                           <SelectValue />
@@ -1000,189 +1036,206 @@ export function ShotEditorDialog({
                 // Use original video for trimming if available
                 const sourceVideo = shot.originalVideo || shot.video;
                 const sourceDuration = sourceVideo?.durationMs || 8000;
-                
-                return (
-              <div className="space-y-4">
-                {/* Large Video Player for Trimming */}
-                <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-black">
-                  <video
-                    ref={trimmerVideoRef}
-                    src={sourceVideo?.url}
-                    className="w-full h-full object-contain"
-                    poster={sourceVideo?.thumbnailUrl}
-                    onLoadedMetadata={() => {
-                      // Seek to trim start position when video loads (so user sees the trimmed region)
-                      if (trimmerVideoRef.current && trimStartMs > 0) {
-                        trimmerVideoRef.current.currentTime = trimStartMs / 1000;
-                      }
-                    }}
-                    onTimeUpdate={(e) => {
-                      const video = e.currentTarget;
-                      setTrimmerCurrentTime(video.currentTime * 1000);
-                      // Stop at trim end point
-                      const trimEndPoint = sourceDuration - trimEndMs;
-                      if (video.currentTime * 1000 >= trimEndPoint) {
-                        video.pause();
-                        setIsTrimmerPlaying(false);
-                      }
-                    }}
-                    onPlay={() => setIsTrimmerPlaying(true)}
-                    onPause={() => setIsTrimmerPlaying(false)}
-                    onEnded={() => setIsTrimmerPlaying(false)}
-                  />
-                  
-                  {/* Play/Pause Overlay */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const video = trimmerVideoRef.current;
-                      if (!video) return;
-                      
-                      if (isTrimmerPlaying) {
-                        video.pause();
-                      } else {
-                        // Start from trim start if before it or at end
-                        const trimEndPoint = sourceDuration - trimEndMs;
-                        if (video.currentTime * 1000 < trimStartMs || video.currentTime * 1000 >= trimEndPoint) {
-                          video.currentTime = trimStartMs / 1000;
-                        }
-                        video.play();
-                      }
-                    }}
-                    className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity"
-                  >
-                    <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
-                      {isTrimmerPlaying ? (
-                        <Pause className="h-7 w-7 text-black" />
-                      ) : (
-                        <Play className="h-7 w-7 text-black ml-1" />
-                      )}
-                    </div>
-                  </button>
-                </div>
 
-                {/* Trim Timeline Bar */}
-                <div className="space-y-3 px-1">
-                  {/* Custom trim bar with draggable handles */}
-                  <div className="relative h-12 bg-muted border border-border rounded overflow-visible">
-                    {/* Audio Waveform Background - show waveform for any video (even if audio is muted/detached) */}
-                    {sourceVideo?.url && (
-                      <div className="absolute inset-0 z-0 overflow-hidden rounded">
-                        <AudioWaveform
-                          audioUrl={sourceVideo.url}
-                          width={600}
-                          height={48}
-                          color="hsl(var(--primary) / 0.4)"
-                          className="w-full h-full"
+                return (
+                  <div className="space-y-4">
+                    {/* Large Video Player for Trimming */}
+                    <div className="relative aspect-video rounded-lg overflow-hidden border border-border bg-black">
+                      <video
+                        ref={trimmerVideoRef}
+                        src={sourceVideo?.url}
+                        className="w-full h-full object-contain"
+                        poster={sourceVideo?.thumbnailUrl}
+                        onLoadedMetadata={() => {
+                          // Seek to trim start position when video loads (so user sees the trimmed region)
+                          if (trimmerVideoRef.current && trimStartMs > 0) {
+                            trimmerVideoRef.current.currentTime = trimStartMs / 1000;
+                          }
+                        }}
+                        onTimeUpdate={(e) => {
+                          const video = e.currentTarget;
+                          setTrimmerCurrentTime(video.currentTime * 1000);
+                          // Stop at trim end point
+                          const trimEndPoint = sourceDuration - trimEndMs;
+                          if (video.currentTime * 1000 >= trimEndPoint) {
+                            video.pause();
+                            setIsTrimmerPlaying(false);
+                          }
+                        }}
+                        onPlay={() => setIsTrimmerPlaying(true)}
+                        onPause={() => setIsTrimmerPlaying(false)}
+                        onEnded={() => setIsTrimmerPlaying(false)}
+                      />
+
+                      {/* Play/Pause Overlay */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const video = trimmerVideoRef.current;
+                          if (!video) return;
+
+                          if (isTrimmerPlaying) {
+                            video.pause();
+                          } else {
+                            // Start from trim start if before it or at end
+                            const trimEndPoint = sourceDuration - trimEndMs;
+                            if (
+                              video.currentTime * 1000 < trimStartMs ||
+                              video.currentTime * 1000 >= trimEndPoint
+                            ) {
+                              video.currentTime = trimStartMs / 1000;
+                            }
+                            video.play();
+                          }
+                        }}
+                        className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 hover:opacity-100 transition-opacity"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-white/90 flex items-center justify-center">
+                          {isTrimmerPlaying ? (
+                            <Pause className="h-7 w-7 text-black" />
+                          ) : (
+                            <Play className="h-7 w-7 text-black ml-1" />
+                          )}
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Trim Timeline Bar */}
+                    <div className="space-y-3 px-1">
+                      {/* Custom trim bar with draggable handles */}
+                      <div className="relative h-12 bg-muted border border-border rounded overflow-visible">
+                        {/* Audio Waveform Background - show waveform for any video (even if audio is muted/detached) */}
+                        {sourceVideo?.url && (
+                          <div className="absolute inset-0 z-0 overflow-hidden rounded">
+                            <AudioWaveform
+                              audioUrl={sourceVideo.url}
+                              width={600}
+                              height={48}
+                              color="hsl(var(--primary) / 0.4)"
+                              className="w-full h-full"
+                            />
+                          </div>
+                        )}
+
+                        {/* Active region highlight (between handles) */}
+                        <div
+                          className="absolute inset-y-0 bg-primary/15 z-10"
+                          style={{
+                            left: `${(trimStartMs / sourceDuration) * 100}%`,
+                            right: `${(trimEndMs / sourceDuration) * 100}%`,
+                          }}
+                        />
+                        {/* Trimmed out regions (dark overlay) */}
+                        <div
+                          className="absolute inset-y-0 left-0 bg-black/60 rounded-l z-10"
+                          style={{ width: `${(trimStartMs / sourceDuration) * 100}%` }}
+                        />
+                        <div
+                          className="absolute inset-y-0 right-0 bg-black/60 rounded-r z-10"
+                          style={{ width: `${(trimEndMs / sourceDuration) * 100}%` }}
+                        />
+
+                        {/* Left trim handle (In point) - vertical line */}
+                        {/* NOTE: During dragging, we only update local state. The trimmed video is NOT saved until "Apply Trim" is clicked. */}
+                        <div
+                          className="absolute top-0 bottom-0 w-1 bg-primary cursor-ew-resize z-30"
+                          style={{
+                            left: `${(trimStartMs / sourceDuration) * 100}%`,
+                            transform: "translateX(-50%)",
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            const startX = e.clientX;
+                            const startValue = trimStartMs;
+                            const containerWidth = e.currentTarget.parentElement?.offsetWidth || 1;
+
+                            const handleMouseMove = (moveEvent: MouseEvent) => {
+                              const deltaX = moveEvent.clientX - startX;
+                              const deltaMs = (deltaX / containerWidth) * sourceDuration;
+                              const newValue = Math.max(
+                                0,
+                                Math.min(sourceDuration - trimEndMs - 100, startValue + deltaMs)
+                              );
+                              // Only update local state during dragging - no API calls or saves
+                              setTrimStartMs(newValue);
+                              if (trimmerVideoRef.current) {
+                                trimmerVideoRef.current.currentTime = newValue / 1000;
+                                setTrimmerCurrentTime(newValue);
+                              }
+                            };
+
+                            const handleMouseUp = () => {
+                              document.removeEventListener("mousemove", handleMouseMove);
+                              document.removeEventListener("mouseup", handleMouseUp);
+                            };
+
+                            document.addEventListener("mousemove", handleMouseMove);
+                            document.addEventListener("mouseup", handleMouseUp);
+                          }}
+                        />
+
+                        {/* Right trim handle (Out point) - vertical line */}
+                        {/* NOTE: During dragging, we only update local state. The trimmed video is NOT saved until "Apply Trim" is clicked. */}
+                        <div
+                          className="absolute top-0 bottom-0 w-1 bg-primary cursor-ew-resize z-30"
+                          style={{
+                            left: `${((sourceDuration - trimEndMs) / sourceDuration) * 100}%`,
+                            transform: "translateX(-50%)",
+                          }}
+                          onMouseDown={(e) => {
+                            e.stopPropagation();
+                            const startX = e.clientX;
+                            const startValue = trimEndMs;
+                            const containerWidth = e.currentTarget.parentElement?.offsetWidth || 1;
+
+                            const handleMouseMove = (moveEvent: MouseEvent) => {
+                              const deltaX = moveEvent.clientX - startX;
+                              const deltaMs = (deltaX / containerWidth) * sourceDuration;
+                              const newValue = Math.max(
+                                0,
+                                Math.min(sourceDuration - trimStartMs - 100, startValue - deltaMs)
+                              );
+                              // Only update local state during dragging - no API calls or saves
+                              setTrimEndMs(newValue);
+                              if (trimmerVideoRef.current) {
+                                const outPoint = (sourceDuration - newValue) / 1000;
+                                trimmerVideoRef.current.currentTime = outPoint;
+                                setTrimmerCurrentTime(sourceDuration - newValue);
+                              }
+                            };
+
+                            const handleMouseUp = () => {
+                              document.removeEventListener("mousemove", handleMouseMove);
+                              document.removeEventListener("mouseup", handleMouseUp);
+                            };
+
+                            document.addEventListener("mousemove", handleMouseMove);
+                            document.addEventListener("mouseup", handleMouseUp);
+                          }}
                         />
                       </div>
-                    )}
-                    
-                    {/* Active region highlight (between handles) */}
-                    <div 
-                      className="absolute inset-y-0 bg-primary/15 z-10"
-                      style={{ 
-                        left: `${(trimStartMs / sourceDuration) * 100}%`,
-                        right: `${(trimEndMs / sourceDuration) * 100}%`
-                      }}
-                    />
-                    {/* Trimmed out regions (dark overlay) */}
-                    <div 
-                      className="absolute inset-y-0 left-0 bg-black/60 rounded-l z-10"
-                      style={{ width: `${(trimStartMs / sourceDuration) * 100}%` }}
-                    />
-                    <div 
-                      className="absolute inset-y-0 right-0 bg-black/60 rounded-r z-10"
-                      style={{ width: `${(trimEndMs / sourceDuration) * 100}%` }}
-                    />
 
-                    {/* Left trim handle (In point) - vertical line */}
-                    {/* NOTE: During dragging, we only update local state. The trimmed video is NOT saved until "Apply Trim" is clicked. */}
-                    <div
-                      className="absolute top-0 bottom-0 w-1 bg-primary cursor-ew-resize z-30"
-                      style={{ left: `${(trimStartMs / sourceDuration) * 100}%`, transform: 'translateX(-50%)' }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        const startX = e.clientX;
-                        const startValue = trimStartMs;
-                        const containerWidth = e.currentTarget.parentElement?.offsetWidth || 1;
-                        
-                        const handleMouseMove = (moveEvent: MouseEvent) => {
-                          const deltaX = moveEvent.clientX - startX;
-                          const deltaMs = (deltaX / containerWidth) * sourceDuration;
-                          const newValue = Math.max(0, Math.min(sourceDuration - trimEndMs - 100, startValue + deltaMs));
-                          // Only update local state during dragging - no API calls or saves
-                          setTrimStartMs(newValue);
-                          if (trimmerVideoRef.current) {
-                            trimmerVideoRef.current.currentTime = newValue / 1000;
-                            setTrimmerCurrentTime(newValue);
-                          }
-                        };
-                        
-                        const handleMouseUp = () => {
-                          document.removeEventListener("mousemove", handleMouseMove);
-                          document.removeEventListener("mouseup", handleMouseUp);
-                        };
-                        
-                        document.addEventListener("mousemove", handleMouseMove);
-                        document.addEventListener("mouseup", handleMouseUp);
-                      }}
-                    />
-
-                    {/* Right trim handle (Out point) - vertical line */}
-                    {/* NOTE: During dragging, we only update local state. The trimmed video is NOT saved until "Apply Trim" is clicked. */}
-                    <div
-                      className="absolute top-0 bottom-0 w-1 bg-primary cursor-ew-resize z-30"
-                      style={{ left: `${(sourceDuration - trimEndMs) / sourceDuration * 100}%`, transform: 'translateX(-50%)' }}
-                      onMouseDown={(e) => {
-                        e.stopPropagation();
-                        const startX = e.clientX;
-                        const startValue = trimEndMs;
-                        const containerWidth = e.currentTarget.parentElement?.offsetWidth || 1;
-                        
-                        const handleMouseMove = (moveEvent: MouseEvent) => {
-                          const deltaX = moveEvent.clientX - startX;
-                          const deltaMs = (deltaX / containerWidth) * sourceDuration;
-                          const newValue = Math.max(0, Math.min(sourceDuration - trimStartMs - 100, startValue - deltaMs));
-                          // Only update local state during dragging - no API calls or saves
-                          setTrimEndMs(newValue);
-                          if (trimmerVideoRef.current) {
-                            const outPoint = (sourceDuration - newValue) / 1000;
-                            trimmerVideoRef.current.currentTime = outPoint;
-                            setTrimmerCurrentTime(sourceDuration - newValue);
-                          }
-                        };
-                        
-                        const handleMouseUp = () => {
-                          document.removeEventListener("mousemove", handleMouseMove);
-                          document.removeEventListener("mouseup", handleMouseUp);
-                        };
-                        
-                        document.addEventListener("mousemove", handleMouseMove);
-                        document.addEventListener("mouseup", handleMouseUp);
-                      }}
-                    />
-                  </div>
-
-                  {/* Time labels */}
-                  <div className="flex justify-between items-center text-sm">
-                    <div className="text-muted-foreground">
-                      <span className="text-xs">In:</span>{" "}
-                      <span className="font-mono">{(trimStartMs / 1000).toFixed(2)}s</span>
-                    </div>
-                    <div className="text-center">
-                      <span className="text-xs text-muted-foreground">Duration:</span>{" "}
-                      <span className="font-mono font-medium text-foreground">
-                        {((sourceDuration - trimStartMs - trimEndMs) / 1000).toFixed(2)}s
-                      </span>
-                    </div>
-                    <div className="text-muted-foreground">
-                      <span className="text-xs">Out:</span>{" "}
-                      <span className="font-mono">{((sourceDuration - trimEndMs) / 1000).toFixed(2)}s</span>
+                      {/* Time labels */}
+                      <div className="flex justify-between items-center text-sm">
+                        <div className="text-muted-foreground">
+                          <span className="text-xs">In:</span>{" "}
+                          <span className="font-mono">{(trimStartMs / 1000).toFixed(2)}s</span>
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs text-muted-foreground">Duration:</span>{" "}
+                          <span className="font-mono font-medium text-foreground">
+                            {((sourceDuration - trimStartMs - trimEndMs) / 1000).toFixed(2)}s
+                          </span>
+                        </div>
+                        <div className="text-muted-foreground">
+                          <span className="text-xs">Out:</span>{" "}
+                          <span className="font-mono">
+                            {((sourceDuration - trimEndMs) / 1000).toFixed(2)}s
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </div>
                 );
               })()
             ) : (
@@ -1205,15 +1258,15 @@ export function ShotEditorDialog({
                         // Initialize normal preview time
                         const trimStart = shot.trimStartMs || 0;
                         const videoTime = trimmerVideoRef.current?.currentTime || 0;
-                        setNormalPreviewTime(Math.max(0, (videoTime * 1000) - trimStart));
+                        setNormalPreviewTime(Math.max(0, videoTime * 1000 - trimStart));
                       }}
                       onTimeUpdate={(e) => {
                         const video = e.currentTarget;
                         // Store effective time (relative to trim start) in milliseconds
                         const trimStart = shot.trimStartMs || 0;
-                        const effectiveTime = Math.max(0, (video.currentTime * 1000) - trimStart);
+                        const effectiveTime = Math.max(0, video.currentTime * 1000 - trimStart);
                         setNormalPreviewTime(effectiveTime);
-                        
+
                         // Stop at trim end point
                         if (shot.trimEndMs) {
                           const fullDuration = shot.video?.durationMs || 5000;
@@ -1232,55 +1285,65 @@ export function ShotEditorDialog({
                       }}
                       controls
                     />
-                    
+
                     {/* Fade In Overlay */}
-                    {shot.fadeInType && shot.fadeInType !== "none" && (() => {
-                      const fadeDuration = shot.fadeDurationMs || 500;
-                      const effectiveTime = normalPreviewTime; // Already accounts for trim start
-                      const fadeProgress = Math.min(1, Math.max(0, effectiveTime / fadeDuration));
-                      const opacity = shot.fadeInType === "black" || shot.fadeInType === "white" 
-                        ? 1 - fadeProgress 
-                        : 0;
-                      const bgColor = shot.fadeInType === "white" ? "bg-white" : "bg-black";
-                      
-                      if (fadeProgress < 1 && effectiveTime >= 0) {
-                        return (
-                          <div
-                            className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
-                            style={{ opacity }}
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
-                    
+                    {shot.fadeInType &&
+                      shot.fadeInType !== "none" &&
+                      (() => {
+                        const fadeDuration = shot.fadeDurationMs || 500;
+                        const effectiveTime = normalPreviewTime; // Already accounts for trim start
+                        const fadeProgress = Math.min(1, Math.max(0, effectiveTime / fadeDuration));
+                        const opacity =
+                          shot.fadeInType === "black" || shot.fadeInType === "white"
+                            ? 1 - fadeProgress
+                            : 0;
+                        const bgColor = shot.fadeInType === "white" ? "bg-white" : "bg-black";
+
+                        if (fadeProgress < 1 && effectiveTime >= 0) {
+                          return (
+                            <div
+                              className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
+                              style={{ opacity }}
+                            />
+                          );
+                        }
+                        return null;
+                      })()}
+
                     {/* Fade Out Overlay */}
-                    {shot.fadeOutType && shot.fadeOutType !== "none" && (() => {
-                      const videoDuration = shot.video?.durationMs || 5000;
-                      const fadeDuration = shot.fadeDurationMs || 500;
-                      const trimStart = shot.trimStartMs || 0;
-                      const trimEnd = shot.trimEndMs || 0;
-                      const effectiveDuration = videoDuration - trimStart - trimEnd;
-                      const fadeOutStart = effectiveDuration - fadeDuration;
-                      const effectiveTime = normalPreviewTime; // Already accounts for trim start
-                      const fadeProgress = effectiveTime >= fadeOutStart
-                        ? Math.min(1, Math.max(0, (effectiveTime - fadeOutStart) / fadeDuration))
-                        : 0;
-                      const opacity = shot.fadeOutType === "black" || shot.fadeOutType === "white"
-                        ? fadeProgress
-                        : 0;
-                      const bgColor = shot.fadeOutType === "white" ? "bg-white" : "bg-black";
-                      
-                      if (fadeProgress > 0 && fadeProgress <= 1) {
-                        return (
-                          <div
-                            className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
-                            style={{ opacity }}
-                          />
-                        );
-                      }
-                      return null;
-                    })()}
+                    {shot.fadeOutType &&
+                      shot.fadeOutType !== "none" &&
+                      (() => {
+                        const videoDuration = shot.video?.durationMs || 5000;
+                        const fadeDuration = shot.fadeDurationMs || 500;
+                        const trimStart = shot.trimStartMs || 0;
+                        const trimEnd = shot.trimEndMs || 0;
+                        const effectiveDuration = videoDuration - trimStart - trimEnd;
+                        const fadeOutStart = effectiveDuration - fadeDuration;
+                        const effectiveTime = normalPreviewTime; // Already accounts for trim start
+                        const fadeProgress =
+                          effectiveTime >= fadeOutStart
+                            ? Math.min(
+                                1,
+                                Math.max(0, (effectiveTime - fadeOutStart) / fadeDuration)
+                              )
+                            : 0;
+                        const opacity =
+                          shot.fadeOutType === "black" || shot.fadeOutType === "white"
+                            ? fadeProgress
+                            : 0;
+                        const bgColor = shot.fadeOutType === "white" ? "bg-white" : "bg-black";
+
+                        if (fadeProgress > 0 && fadeProgress <= 1) {
+                          return (
+                            <div
+                              className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
+                              style={{ opacity }}
+                            />
+                          );
+                        }
+                        return null;
+                      })()}
                   </div>
                   {/* Duration info */}
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
@@ -1289,7 +1352,8 @@ export function ShotEditorDialog({
                         <>
                           Duration: {((shot.video.durationMs || 5000) / 1000).toFixed(2)}s
                           <span className="text-xs ml-1">
-                            (original: {((shot.originalVideo.durationMs || 5000) / 1000).toFixed(1)}s)
+                            (original: {((shot.originalVideo.durationMs || 5000) / 1000).toFixed(1)}
+                            s)
                           </span>
                         </>
                       ) : (
@@ -1343,7 +1407,12 @@ export function ShotEditorDialog({
                           key={`ref-${idx}`}
                           className="relative aspect-video rounded-lg overflow-hidden border border-border group h-20"
                         >
-                          <Image src={ref.url} alt={ref.name || `Reference ${idx + 1}`} fill className="object-cover" />
+                          <Image
+                            src={ref.url}
+                            alt={ref.name || `Reference ${idx + 1}`}
+                            fill
+                            className="object-cover"
+                          />
                           <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
                             <div className="flex items-center gap-1 text-[9px] text-white">
                               {ref.type === "location" ? (
@@ -1356,23 +1425,35 @@ export function ShotEditorDialog({
                           </div>
                         </div>
                       ))}
-                      
+
                       {/* Legacy reference images (URLs only) */}
                       {shot.referenceImages
-                        ?.filter((url) => !shot.typedReferenceImages?.some((ref) => ref.url === url))
+                        ?.filter(
+                          (url) => !shot.typedReferenceImages?.some((ref) => ref.url === url)
+                        )
                         .map((url, idx) => (
                           <div
                             key={`legacy-ref-${idx}`}
                             className="relative aspect-video rounded-lg overflow-hidden border border-border h-20"
                           >
-                            <Image src={url} alt={`Reference ${idx + 1}`} fill className="object-cover" />
+                            <Image
+                              src={url}
+                              alt={`Reference ${idx + 1}`}
+                              fill
+                              className="object-cover"
+                            />
                           </div>
                         ))}
 
                       {/* Start frame */}
                       {shot.startFrameImage && (
                         <div className="relative aspect-video rounded-lg overflow-hidden border border-border h-20">
-                          <Image src={shot.startFrameImage} alt="Start frame" fill className="object-cover" />
+                          <Image
+                            src={shot.startFrameImage}
+                            alt="Start frame"
+                            fill
+                            className="object-cover"
+                          />
                           <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
                             <span className="text-[9px] text-white">Start Frame</span>
                           </div>
@@ -1382,7 +1463,12 @@ export function ShotEditorDialog({
                       {/* End frame */}
                       {shot.endFrameImage && (
                         <div className="relative aspect-video rounded-lg overflow-hidden border border-border h-20">
-                          <Image src={shot.endFrameImage} alt="End frame" fill className="object-cover" />
+                          <Image
+                            src={shot.endFrameImage}
+                            alt="End frame"
+                            fill
+                            className="object-cover"
+                          />
                           <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-1 py-0.5">
                             <span className="text-[9px] text-white">End Frame</span>
                           </div>
@@ -1396,267 +1482,102 @@ export function ShotEditorDialog({
           </div>
         ) : (
           <div className="space-y-6 py-4">
-          {/* Source Type Toggle */}
-          <div className="space-y-2">
-            <Label>Source</Label>
-            <div className="flex gap-2">
-              {isVideoGenerationEnabled() && onGenerateVideo && (
+            {/* Source Type Toggle */}
+            <div className="space-y-2">
+              <Label>Source</Label>
+              <div className="flex gap-2">
+                {isVideoGenerationEnabled() && onGenerateVideo && (
+                  <Button
+                    type="button"
+                    variant={sourceType === "generated" ? "default" : "outline"}
+                    onClick={() => setSourceType("generated")}
+                    className="flex-1"
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate with AI
+                  </Button>
+                )}
                 <Button
                   type="button"
-                  variant={sourceType === "generated" ? "default" : "outline"}
-                  onClick={() => setSourceType("generated")}
-                  className="flex-1"
-                >
-                  <Sparkles className="h-4 w-4 mr-2" />
-                  Generate with AI
-                </Button>
-              )}
-              <Button
-                type="button"
-                variant={sourceType === "uploaded" ? "default" : "outline"}
-                onClick={() => {
-                  setSourceType("uploaded");
-                  // Trigger file picker after re-render when input is available
-                  setShouldOpenFilePicker(true);
-                }}
-                className={isVideoGenerationEnabled() && onGenerateVideo ? "flex-1" : "w-full"}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Video
-              </Button>
-            </div>
-            {!isVideoGenerationEnabled() && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Video generation is only available in development mode. Please upload a video file instead.
-              </p>
-            )}
-          </div>
-
-          {sourceType === "generated" ? (
-            <>
-              {/* Generation Mode */}
-              <div className="space-y-2 w-full">
-                <Label>Generation Mode</Label>
-                <Select
-                  value={generationMode}
-                  onValueChange={(v) => {
-                    setGenerationMode(v as GenerationMode);
-                    // Reference images mode requires 8 seconds duration
-                    if (v === "reference-images") {
-                      setDurationSeconds(8);
-                    }
+                  variant={sourceType === "uploaded" ? "default" : "outline"}
+                  onClick={() => {
+                    setSourceType("uploaded");
+                    // Trigger file picker after re-render when input is available
+                    setShouldOpenFilePicker(true);
                   }}
+                  className={isVideoGenerationEnabled() && onGenerateVideo ? "flex-1" : "w-full"}
                 >
-                  <SelectTrigger className="w-full h-auto! py-3 [&>span]:flex-1 [&>span]:text-center">
-                    <SelectValue>
-                      <div className="flex flex-col items-center w-full">
-                        <div className="font-medium">
-                          {GENERATION_MODES.find((m) => m.value === generationMode)?.label}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {GENERATION_MODES.find((m) => m.value === generationMode)?.description}
-                        </div>
-                      </div>
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GENERATION_MODES.map((mode) => (
-                      <SelectItem
-                        key={mode.value}
-                        value={mode.value}
-                        className="h-auto! py-3 justify-center pl-8"
-                      >
-                        <div className="flex flex-col items-center text-center">
-                          <div className="font-medium">{mode.label}</div>
-                          <div className="text-xs">{mode.description}</div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Video
+                </Button>
               </div>
-
-              {/* Image inputs based on mode */}
-              {/* Start Frame Mode */}
-              {generationMode === "start-frame" && (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <Label>Start Frame Image</Label>
-                    <div className="flex gap-1">
-                      <Button
-                        type="button"
-                        variant={startFrameInputMode === "upload" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setStartFrameInputMode("upload")}
-                        className="text-xs"
-                      >
-                        <Upload className="h-3 w-3 mr-1" />
-                        Upload
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={startFrameInputMode === "generate" ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setStartFrameInputMode("generate")}
-                        className="text-xs"
-                      >
-                        <Sparkles className="h-3 w-3 mr-1" />
-                        Generate AI
-                      </Button>
-                    </div>
-                  </div>
-
-                  {startFrameInputMode === "upload" ? (
-                    <ImageDropZone
-                      label=""
-                      imageUrl={startFrameImage}
-                      onImageSelect={(file) => handleImageUpload(file, "start")}
-                      onImageRemove={() => setStartFrameImage(undefined)}
-                      disabled={isUploading}
-                    />
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* Left: Generation Controls */}
-                      <div className="space-y-3">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Describe the image</Label>
-                          <Textarea
-                            value={startFramePrompt}
-                            onChange={(e) => setStartFramePrompt(e.target.value)}
-                            placeholder="A futuristic office with holographic displays, a man in a suit standing at his desk..."
-                            rows={3}
-                            className="text-sm"
-                          />
-                        </div>
-
-                        {/* Reference Images for Generation */}
-                        <div className="space-y-2">
-                          <Label className="text-xs">Reference Images (optional, {startFrameReferenceImages.length}/3)</Label>
-                          {startFrameReferenceImages.length > 0 && (
-                            <div className="flex gap-1 flex-wrap">
-                              {startFrameReferenceImages.map((ref, idx) => (
-                                <div key={idx} className="relative w-12 h-12 rounded overflow-hidden group">
-                                  <Image src={ref.url} alt={ref.name || ""} fill className="object-cover" />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeFrameReferenceImage("start", idx)}
-                                    className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <X className="h-3 w-3 text-white" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* Quick add from project assets */}
-                          {startFrameReferenceImages.length < 3 && (
-                            <div className="flex flex-wrap gap-1">
-                              {/* Scene Location */}
-                              {sceneLocationId && locations.find(l => l.name === sceneLocationId)?.image && (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const loc = locations.find(l => l.name === sceneLocationId);
-                                    if (loc?.image) {
-                                      addFrameReferenceImage("start", getImageUrl({ type: "location", filename: loc.image, username }), "location", loc.name);
-                                    }
-                                  }}
-                                  disabled={startFrameReferenceImages.some(r => r.name === sceneLocationId)}
-                                  className="text-[10px] px-2 py-1 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 disabled:opacity-50 flex items-center gap-1"
-                                >
-                                  <MapPin className="h-2.5 w-2.5" />
-                                  {sceneLocationId}
-                                </button>
-                              )}
-                              {/* Scene Characters */}
-                              {sceneCharacters.map((charName) => {
-                                const char = characters.find(c => c.name === charName);
-                                if (!char?.mainImage) return null;
-                                return (
-                                  <button
-                                    key={charName}
-                                    type="button"
-                                    onClick={() => {
-                                      addFrameReferenceImage("start", getImageUrl({ type: "character", filename: char.mainImage!, username }), "character", charName);
-                                    }}
-                                    disabled={startFrameReferenceImages.some(r => r.name === charName)}
-                                    className="text-[10px] px-2 py-1 rounded bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 disabled:opacity-50 flex items-center gap-1"
-                                  >
-                                    <User className="h-2.5 w-2.5" />
-                                    {charName}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-
-                        <Button
-                          type="button"
-                          onClick={() => handleGenerateFrameImage("start")}
-                          disabled={isGeneratingStartFrame || !startFramePrompt.trim()}
-                          className="w-full"
-                          size="sm"
-                        >
-                          {isGeneratingStartFrame ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Generating...
-                            </>
-                          ) : (
-                            <>
-                              <Sparkles className="h-4 w-4 mr-2" />
-                              Generate Start Frame
-                            </>
-                          )}
-                        </Button>
-                      </div>
-
-                      {/* Right: Preview */}
-                      <div className="space-y-2">
-                        <Label className="text-xs">Preview</Label>
-                        {startFrameImage ? (
-                          <div className="relative aspect-video rounded-lg overflow-hidden border border-border group">
-                            <Image src={startFrameImage} alt="Start frame" fill className="object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setStartFrameImage(undefined)}
-                              className="absolute top-2 right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
-                            <div className="text-center text-muted-foreground">
-                              <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                              <p className="text-xs">Generated image will appear here</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
+              {!isVideoGenerationEnabled() && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Video generation is only available in development mode. Please upload a video file
+                  instead.
+                </p>
               )}
+            </div>
 
-              {/* Start + End Frame Mode */}
-              {generationMode === "start-end-frame" && (
-                <div className="grid grid-cols-2 gap-6">
-                  {/* Start Frame */}
-                  <div className="space-y-3">
+            {sourceType === "generated" ? (
+              <>
+                {/* Generation Mode */}
+                <div className="space-y-2 w-full">
+                  <Label>Generation Mode</Label>
+                  <Select
+                    value={generationMode}
+                    onValueChange={(v) => {
+                      setGenerationMode(v as GenerationMode);
+                      // Reference images mode requires 8 seconds duration
+                      if (v === "reference-images") {
+                        setDurationSeconds(8);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="w-full h-auto! py-3 [&>span]:flex-1 [&>span]:text-center">
+                      <SelectValue>
+                        <div className="flex flex-col items-center w-full">
+                          <div className="font-medium">
+                            {GENERATION_MODES.find((m) => m.value === generationMode)?.label}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {GENERATION_MODES.find((m) => m.value === generationMode)?.description}
+                          </div>
+                        </div>
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {GENERATION_MODES.map((mode) => (
+                        <SelectItem
+                          key={mode.value}
+                          value={mode.value}
+                          className="h-auto! py-3 justify-center pl-8"
+                        >
+                          <div className="flex flex-col items-center text-center">
+                            <div className="font-medium">{mode.label}</div>
+                            <div className="text-xs">{mode.description}</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Image inputs based on mode */}
+                {/* Start Frame Mode */}
+                {generationMode === "start-frame" && (
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">Start Frame</Label>
+                      <Label>Start Frame Image</Label>
                       <div className="flex gap-1">
                         <Button
                           type="button"
                           variant={startFrameInputMode === "upload" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setStartFrameInputMode("upload")}
-                          className="text-[10px] h-6 px-2"
+                          className="text-xs"
                         >
-                          <Upload className="h-2.5 w-2.5 mr-1" />
+                          <Upload className="h-3 w-3 mr-1" />
                           Upload
                         </Button>
                         <Button
@@ -1664,10 +1585,10 @@ export function ShotEditorDialog({
                           variant={startFrameInputMode === "generate" ? "default" : "outline"}
                           size="sm"
                           onClick={() => setStartFrameInputMode("generate")}
-                          className="text-[10px] h-6 px-2"
+                          className="text-xs"
                         >
-                          <Sparkles className="h-2.5 w-2.5 mr-1" />
-                          AI
+                          <Sparkles className="h-3 w-3 mr-1" />
+                          Generate AI
                         </Button>
                       </div>
                     </div>
@@ -1681,26 +1602,118 @@ export function ShotEditorDialog({
                         disabled={isUploading}
                       />
                     ) : (
-                      <div className="space-y-2">
-                        <Textarea
-                          value={startFramePrompt}
-                          onChange={(e) => setStartFramePrompt(e.target.value)}
-                          placeholder="Describe the starting image..."
-                          rows={2}
-                          className="text-xs"
-                        />
-                        {startFrameImage ? (
-                          <div className="relative aspect-video rounded-lg overflow-hidden border border-border group">
-                            <Image src={startFrameImage} alt="Start frame" fill className="object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setStartFrameImage(undefined)}
-                              className="absolute top-1 right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Left: Generation Controls */}
+                        <div className="space-y-3">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Describe the image</Label>
+                            <Textarea
+                              value={startFramePrompt}
+                              onChange={(e) => setStartFramePrompt(e.target.value)}
+                              placeholder="A futuristic office with holographic displays, a man in a suit standing at his desk..."
+                              rows={3}
+                              className="text-sm"
+                            />
                           </div>
-                        ) : (
+
+                          {/* Reference Images for Generation */}
+                          <div className="space-y-2">
+                            <Label className="text-xs">
+                              Reference Images (optional, {startFrameReferenceImages.length}/3)
+                            </Label>
+                            {startFrameReferenceImages.length > 0 && (
+                              <div className="flex gap-1 flex-wrap">
+                                {startFrameReferenceImages.map((ref, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="relative w-12 h-12 rounded overflow-hidden group"
+                                  >
+                                    <Image
+                                      src={ref.url}
+                                      alt={ref.name || ""}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeFrameReferenceImage("start", idx)}
+                                      className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X className="h-3 w-3 text-white" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Quick add from project assets */}
+                            {startFrameReferenceImages.length < 3 && (
+                              <div className="flex flex-wrap gap-1">
+                                {/* Scene Location */}
+                                {sceneLocationId &&
+                                  locations.find((l) => l.name === sceneLocationId)?.image && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const loc = locations.find(
+                                          (l) => l.name === sceneLocationId
+                                        );
+                                        if (loc?.image) {
+                                          addFrameReferenceImage(
+                                            "start",
+                                            getImageUrl({
+                                              type: "location",
+                                              filename: loc.image,
+                                              username,
+                                            }),
+                                            "location",
+                                            loc.name
+                                          );
+                                        }
+                                      }}
+                                      disabled={startFrameReferenceImages.some(
+                                        (r) => r.name === sceneLocationId
+                                      )}
+                                      className="text-[10px] px-2 py-1 rounded bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                      <MapPin className="h-2.5 w-2.5" />
+                                      {sceneLocationId}
+                                    </button>
+                                  )}
+                                {/* Scene Characters */}
+                                {sceneCharacters.map((charName) => {
+                                  const char = characters.find((c) => c.name === charName);
+                                  if (!char?.mainImage) return null;
+                                  return (
+                                    <button
+                                      key={charName}
+                                      type="button"
+                                      onClick={() => {
+                                        addFrameReferenceImage(
+                                          "start",
+                                          getImageUrl({
+                                            type: "character",
+                                            filename: char.mainImage!,
+                                            username,
+                                          }),
+                                          "character",
+                                          charName
+                                        );
+                                      }}
+                                      disabled={startFrameReferenceImages.some(
+                                        (r) => r.name === charName
+                                      )}
+                                      className="text-[10px] px-2 py-1 rounded bg-purple-500/10 text-purple-600 hover:bg-purple-500/20 disabled:opacity-50 flex items-center gap-1"
+                                    >
+                                      <User className="h-2.5 w-2.5" />
+                                      {charName}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+
                           <Button
                             type="button"
                             onClick={() => handleGenerateFrameImage("start")}
@@ -1709,404 +1722,546 @@ export function ShotEditorDialog({
                             size="sm"
                           >
                             {isGeneratingStartFrame ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Generating...
+                              </>
                             ) : (
                               <>
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                Generate
+                                <Sparkles className="h-4 w-4 mr-2" />
+                                Generate Start Frame
                               </>
                             )}
                           </Button>
-                        )}
+                        </div>
+
+                        {/* Right: Preview */}
+                        <div className="space-y-2">
+                          <Label className="text-xs">Preview</Label>
+                          {startFrameImage ? (
+                            <div className="relative aspect-video rounded-lg overflow-hidden border border-border group">
+                              <Image
+                                src={startFrameImage}
+                                alt="Start frame"
+                                fill
+                                className="object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setStartFrameImage(undefined)}
+                                className="absolute top-2 right-2 p-1 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-4 w-4" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="aspect-video rounded-lg border-2 border-dashed border-muted-foreground/30 flex items-center justify-center">
+                              <div className="text-center text-muted-foreground">
+                                <ImageIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                <p className="text-xs">Generated image will appear here</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
+                )}
 
-                  {/* End Frame */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-sm font-medium">End Frame</Label>
-                      <div className="flex gap-1">
-                        <Button
-                          type="button"
-                          variant={endFrameInputMode === "upload" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setEndFrameInputMode("upload")}
-                          className="text-[10px] h-6 px-2"
-                        >
-                          <Upload className="h-2.5 w-2.5 mr-1" />
-                          Upload
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={endFrameInputMode === "generate" ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => setEndFrameInputMode("generate")}
-                          className="text-[10px] h-6 px-2"
-                        >
-                          <Sparkles className="h-2.5 w-2.5 mr-1" />
-                          AI
-                        </Button>
-                      </div>
-                    </div>
-
-                    {endFrameInputMode === "upload" ? (
-                      <ImageDropZone
-                        label=""
-                        imageUrl={endFrameImage}
-                        onImageSelect={(file) => handleImageUpload(file, "end")}
-                        onImageRemove={() => setEndFrameImage(undefined)}
-                        disabled={isUploading}
-                      />
-                    ) : (
-                      <div className="space-y-2">
-                        <Textarea
-                          value={endFramePrompt}
-                          onChange={(e) => setEndFramePrompt(e.target.value)}
-                          placeholder="Describe the ending image..."
-                          rows={2}
-                          className="text-xs"
-                        />
-                        {endFrameImage ? (
-                          <div className="relative aspect-video rounded-lg overflow-hidden border border-border group">
-                            <Image src={endFrameImage} alt="End frame" fill className="object-cover" />
-                            <button
-                              type="button"
-                              onClick={() => setEndFrameImage(undefined)}
-                              className="absolute top-1 right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ) : (
+                {/* Start + End Frame Mode */}
+                {generationMode === "start-end-frame" && (
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Start Frame */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Start Frame</Label>
+                        <div className="flex gap-1">
                           <Button
                             type="button"
-                            onClick={() => handleGenerateFrameImage("end")}
-                            disabled={isGeneratingEndFrame || !endFramePrompt.trim()}
-                            className="w-full"
+                            variant={startFrameInputMode === "upload" ? "default" : "outline"}
                             size="sm"
+                            onClick={() => setStartFrameInputMode("upload")}
+                            className="text-[10px] h-6 px-2"
                           >
-                            {isGeneratingEndFrame ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <>
-                                <Sparkles className="h-3 w-3 mr-1" />
-                                Generate
-                              </>
-                            )}
+                            <Upload className="h-2.5 w-2.5 mr-1" />
+                            Upload
                           </Button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {generationMode === "reference-images" && (
-                <div className="space-y-4">
-                  {/* Selected Reference Images */}
-                  <div className="space-y-2">
-                    <Label>Selected Reference Images ({typedReferenceImages.length}/3)</Label>
-                    {typedReferenceImages.length > 0 ? (
-                      <div className="grid grid-cols-3 gap-2">
-                        {typedReferenceImages.map((ref, index) => (
-                          <div
-                            key={index}
-                            className="relative aspect-video rounded-lg overflow-hidden border border-border group"
+                          <Button
+                            type="button"
+                            variant={startFrameInputMode === "generate" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setStartFrameInputMode("generate")}
+                            className="text-[10px] h-6 px-2"
                           >
-                            <Image
-                              src={ref.url}
-                              alt={ref.name || `Reference ${index + 1}`}
-                              fill
-                              className="object-cover"
-                            />
-                            {/* Type badge */}
-                            <div
-                              className={`absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 ${
-                                ref.type === "location"
-                                  ? "bg-blue-500/90 text-white"
-                                  : "bg-purple-500/90 text-white"
-                              }`}
-                            >
-                              {ref.type === "location" ? (
-                                <MapPin className="h-2.5 w-2.5" />
-                              ) : (
-                                <User className="h-2.5 w-2.5" />
-                              )}
-                              {ref.name || ref.type}
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => removeTypedReferenceImage(index)}
-                              className="absolute top-1 right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
+                            <Sparkles className="h-2.5 w-2.5 mr-1" />
+                            AI
+                          </Button>
+                        </div>
                       </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Select location or character images below to add as references
-                      </p>
-                    )}
-                  </div>
 
-                  {/* Scene Location and Character Images */}
-                  {typedReferenceImages.length < 3 && (
-                    <div className="space-y-4">
-                      {/* Scene Location Images */}
-                      {(() => {
-                        const sceneLocation = sceneLocationId
-                          ? locations.find((loc) => loc.name === sceneLocationId && (loc.image || (loc.images && loc.images.length > 0)))
-                          : null;
-                        
-                        if (!sceneLocation) return null;
-
-                        // Collect all location images (main + additional)
-                        const allLocationImages: string[] = [];
-                        if (sceneLocation.image) {
-                          allLocationImages.push(sceneLocation.image);
-                        }
-                        if (sceneLocation.images) {
-                          allLocationImages.push(...sceneLocation.images.filter(Boolean));
-                        }
-
-                        if (allLocationImages.length === 0) return null;
-
-                        return (
-                          <div className="space-y-2">
-                            <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                              <MapPin className="h-3 w-3 text-blue-500" />
-                              Location: {sceneLocation.name}
-                            </Label>
-                            <div className="flex flex-wrap gap-2">
-                              {allLocationImages.map((filename, index) => {
-                                const imageUrl = getImageUrl({
-                                  type: "location",
-                                  filename,
-                                  username,
-                                });
-                                const isSelected = typedReferenceImages.some((ref) => ref.url === imageUrl);
-                                return (
-                                  <button
-                                    key={`${sceneLocation.name}-${index}`}
-                                    type="button"
-                                    onClick={() =>
-                                      addReferenceImage(imageUrl, "location", sceneLocation.name)
-                                    }
-                                    disabled={isSelected || isUploading}
-                                    className={`relative w-28 aspect-video rounded-lg overflow-hidden border-2 transition-all ${
-                                      isSelected
-                                        ? "border-blue-500 opacity-50 cursor-not-allowed"
-                                        : "border-blue-500/50 hover:border-blue-500 cursor-pointer"
-                                    }`}
-                                  >
-                                    <Image
-                                      src={imageUrl}
-                                      alt={`${sceneLocation.name} ${index + 1}`}
-                                      fill
-                                      className="object-cover"
-                                    />
-                                    {isSelected && (
-                                      <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                        <span className="text-white text-xs font-medium">Added</span>
-                                      </div>
-                                    )}
-                                  </button>
-                                );
-                              })}
+                      {startFrameInputMode === "upload" ? (
+                        <ImageDropZone
+                          label=""
+                          imageUrl={startFrameImage}
+                          onImageSelect={(file) => handleImageUpload(file, "start")}
+                          onImageRemove={() => setStartFrameImage(undefined)}
+                          disabled={isUploading}
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={startFramePrompt}
+                            onChange={(e) => setStartFramePrompt(e.target.value)}
+                            placeholder="Describe the starting image..."
+                            rows={2}
+                            className="text-xs"
+                          />
+                          {startFrameImage ? (
+                            <div className="relative aspect-video rounded-lg overflow-hidden border border-border group">
+                              <Image
+                                src={startFrameImage}
+                                alt="Start frame"
+                                fill
+                                className="object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setStartFrameImage(undefined)}
+                                className="absolute top-1 right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
                             </div>
-                          </div>
-                        );
-                      })()}
+                          ) : (
+                            <Button
+                              type="button"
+                              onClick={() => handleGenerateFrameImage("start")}
+                              disabled={isGeneratingStartFrame || !startFramePrompt.trim()}
+                              className="w-full"
+                              size="sm"
+                            >
+                              {isGeneratingStartFrame ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  Generate
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-                      {/* Scene Characters Images */}
-                      {(() => {
-                        const sceneChars = characters.filter(
-                          (char) => sceneCharacters.includes(char.name) && (char.mainImage || (char.images && char.images.length > 0))
-                        );
-                        
-                        if (sceneChars.length === 0) return null;
+                    {/* End Frame */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">End Frame</Label>
+                        <div className="flex gap-1">
+                          <Button
+                            type="button"
+                            variant={endFrameInputMode === "upload" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setEndFrameInputMode("upload")}
+                            className="text-[10px] h-6 px-2"
+                          >
+                            <Upload className="h-2.5 w-2.5 mr-1" />
+                            Upload
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={endFrameInputMode === "generate" ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setEndFrameInputMode("generate")}
+                            className="text-[10px] h-6 px-2"
+                          >
+                            <Sparkles className="h-2.5 w-2.5 mr-1" />
+                            AI
+                          </Button>
+                        </div>
+                      </div>
 
-                        return (
-                          <div className="space-y-2">
-                            <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
-                              <User className="h-3 w-3 text-purple-500" />
-                              Characters
-                            </Label>
-                            <div className="flex flex-wrap gap-2">
-                              {sceneChars.flatMap((character) => {
-                                // Collect all character images (main + additional)
-                                const allCharImages: string[] = [];
-                                if (character.mainImage) {
-                                  allCharImages.push(character.mainImage);
-                                }
-                                if (character.images) {
-                                  allCharImages.push(...character.images.filter(Boolean));
-                                }
+                      {endFrameInputMode === "upload" ? (
+                        <ImageDropZone
+                          label=""
+                          imageUrl={endFrameImage}
+                          onImageSelect={(file) => handleImageUpload(file, "end")}
+                          onImageRemove={() => setEndFrameImage(undefined)}
+                          disabled={isUploading}
+                        />
+                      ) : (
+                        <div className="space-y-2">
+                          <Textarea
+                            value={endFramePrompt}
+                            onChange={(e) => setEndFramePrompt(e.target.value)}
+                            placeholder="Describe the ending image..."
+                            rows={2}
+                            className="text-xs"
+                          />
+                          {endFrameImage ? (
+                            <div className="relative aspect-video rounded-lg overflow-hidden border border-border group">
+                              <Image
+                                src={endFrameImage}
+                                alt="End frame"
+                                fill
+                                className="object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setEndFrameImage(undefined)}
+                                className="absolute top-1 right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ) : (
+                            <Button
+                              type="button"
+                              onClick={() => handleGenerateFrameImage("end")}
+                              disabled={isGeneratingEndFrame || !endFramePrompt.trim()}
+                              className="w-full"
+                              size="sm"
+                            >
+                              {isGeneratingEndFrame ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <>
+                                  <Sparkles className="h-3 w-3 mr-1" />
+                                  Generate
+                                </>
+                              )}
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
-                                return allCharImages.map((filename, index) => {
+                {generationMode === "reference-images" && (
+                  <div className="space-y-4">
+                    {/* Selected Reference Images */}
+                    <div className="space-y-2">
+                      <Label>Selected Reference Images ({typedReferenceImages.length}/3)</Label>
+                      {typedReferenceImages.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                          {typedReferenceImages.map((ref, index) => (
+                            <div
+                              key={index}
+                              className="relative aspect-video rounded-lg overflow-hidden border border-border group"
+                            >
+                              <Image
+                                src={ref.url}
+                                alt={ref.name || `Reference ${index + 1}`}
+                                fill
+                                className="object-cover"
+                              />
+                              {/* Type badge */}
+                              <div
+                                className={`absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 ${
+                                  ref.type === "location"
+                                    ? "bg-blue-500/90 text-white"
+                                    : "bg-purple-500/90 text-white"
+                                }`}
+                              >
+                                {ref.type === "location" ? (
+                                  <MapPin className="h-2.5 w-2.5" />
+                                ) : (
+                                  <User className="h-2.5 w-2.5" />
+                                )}
+                                {ref.name || ref.type}
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeTypedReferenceImage(index)}
+                                className="absolute top-1 right-1 p-0.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          Select location or character images below to add as references
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Scene Location and Character Images */}
+                    {typedReferenceImages.length < 3 && (
+                      <div className="space-y-4">
+                        {/* Scene Location Images */}
+                        {(() => {
+                          const sceneLocation = sceneLocationId
+                            ? locations.find(
+                                (loc) =>
+                                  loc.name === sceneLocationId &&
+                                  (loc.image || (loc.images && loc.images.length > 0))
+                              )
+                            : null;
+
+                          if (!sceneLocation) return null;
+
+                          // Collect all location images (main + additional)
+                          const allLocationImages: string[] = [];
+                          if (sceneLocation.image) {
+                            allLocationImages.push(sceneLocation.image);
+                          }
+                          if (sceneLocation.images) {
+                            allLocationImages.push(...sceneLocation.images.filter(Boolean));
+                          }
+
+                          if (allLocationImages.length === 0) return null;
+
+                          return (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                <MapPin className="h-3 w-3 text-blue-500" />
+                                Location: {sceneLocation.name}
+                              </Label>
+                              <div className="flex flex-wrap gap-2">
+                                {allLocationImages.map((filename, index) => {
                                   const imageUrl = getImageUrl({
-                                    type: "character",
+                                    type: "location",
                                     filename,
                                     username,
                                   });
-                                  const isSelected = typedReferenceImages.some((ref) => ref.url === imageUrl);
+                                  const isSelected = typedReferenceImages.some(
+                                    (ref) => ref.url === imageUrl
+                                  );
                                   return (
                                     <button
-                                      key={`${character.name}-${index}`}
+                                      key={`${sceneLocation.name}-${index}`}
                                       type="button"
                                       onClick={() =>
-                                        addReferenceImage(imageUrl, "character", character.name)
+                                        addReferenceImage(imageUrl, "location", sceneLocation.name)
                                       }
                                       disabled={isSelected || isUploading}
                                       className={`relative w-28 aspect-video rounded-lg overflow-hidden border-2 transition-all ${
                                         isSelected
-                                          ? "border-purple-500 opacity-50 cursor-not-allowed"
-                                          : "border-purple-500/50 hover:border-purple-500 cursor-pointer"
+                                          ? "border-blue-500 opacity-50 cursor-not-allowed"
+                                          : "border-blue-500/50 hover:border-blue-500 cursor-pointer"
                                       }`}
                                     >
                                       <Image
                                         src={imageUrl}
-                                        alt={`${character.name} ${index + 1}`}
+                                        alt={`${sceneLocation.name} ${index + 1}`}
                                         fill
                                         className="object-cover"
                                       />
-                                      <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-1">
-                                        <span className="text-[10px] text-white truncate block">
-                                          {character.name}
-                                        </span>
-                                      </div>
                                       {isSelected && (
                                         <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                                          <span className="text-white text-xs font-medium">Added</span>
+                                          <span className="text-white text-xs font-medium">
+                                            Added
+                                          </span>
                                         </div>
                                       )}
                                     </button>
                                   );
-                                });
-                              })}
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        );
-                      })()}
+                          );
+                        })()}
+
+                        {/* Scene Characters Images */}
+                        {(() => {
+                          const sceneChars = characters.filter(
+                            (char) =>
+                              sceneCharacters.includes(char.name) &&
+                              (char.mainImage || (char.images && char.images.length > 0))
+                          );
+
+                          if (sceneChars.length === 0) return null;
+
+                          return (
+                            <div className="space-y-2">
+                              <Label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                                <User className="h-3 w-3 text-purple-500" />
+                                Characters
+                              </Label>
+                              <div className="flex flex-wrap gap-2">
+                                {sceneChars.flatMap((character) => {
+                                  // Collect all character images (main + additional)
+                                  const allCharImages: string[] = [];
+                                  if (character.mainImage) {
+                                    allCharImages.push(character.mainImage);
+                                  }
+                                  if (character.images) {
+                                    allCharImages.push(...character.images.filter(Boolean));
+                                  }
+
+                                  return allCharImages.map((filename, index) => {
+                                    const imageUrl = getImageUrl({
+                                      type: "character",
+                                      filename,
+                                      username,
+                                    });
+                                    const isSelected = typedReferenceImages.some(
+                                      (ref) => ref.url === imageUrl
+                                    );
+                                    return (
+                                      <button
+                                        key={`${character.name}-${index}`}
+                                        type="button"
+                                        onClick={() =>
+                                          addReferenceImage(imageUrl, "character", character.name)
+                                        }
+                                        disabled={isSelected || isUploading}
+                                        className={`relative w-28 aspect-video rounded-lg overflow-hidden border-2 transition-all ${
+                                          isSelected
+                                            ? "border-purple-500 opacity-50 cursor-not-allowed"
+                                            : "border-purple-500/50 hover:border-purple-500 cursor-pointer"
+                                        }`}
+                                      >
+                                        <Image
+                                          src={imageUrl}
+                                          alt={`${character.name} ${index + 1}`}
+                                          fill
+                                          className="object-cover"
+                                        />
+                                        <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-black/80 to-transparent p-1">
+                                          <span className="text-[10px] text-white truncate block">
+                                            {character.name}
+                                          </span>
+                                        </div>
+                                        {isSelected && (
+                                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                                            <span className="text-white text-xs font-medium">
+                                              Added
+                                            </span>
+                                          </div>
+                                        )}
+                                      </button>
+                                    );
+                                  });
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Prompt */}
+                <div className="space-y-2">
+                  <Label htmlFor="shot-prompt">
+                    {generationMode === "text-only" ? "Video Description" : "Prompt"}
+                  </Label>
+                  <Textarea
+                    id="shot-prompt"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder={
+                      generationMode === "text-only"
+                        ? "Describe the video you want to generate..."
+                        : "Describe how the scene should play out..."
+                    }
+                    rows={3}
+                  />
+                </div>
+
+                {/* Duration - Note: Reference images mode requires 8 seconds */}
+                <div className="space-y-2">
+                  <Label>Duration</Label>
+                  {generationMode === "reference-images" ? (
+                    <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
+                      Duration is fixed to <strong>8 seconds</strong> when using reference images.
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        variant={durationSeconds === 4 ? "default" : "outline"}
+                        onClick={() => setDurationSeconds(4)}
+                        className="flex-1"
+                      >
+                        4 seconds
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={durationSeconds === 6 ? "default" : "outline"}
+                        onClick={() => setDurationSeconds(6)}
+                        className="flex-1"
+                      >
+                        6 seconds
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={durationSeconds === 8 ? "default" : "outline"}
+                        onClick={() => setDurationSeconds(8)}
+                        className="flex-1"
+                      >
+                        8 seconds
+                      </Button>
                     </div>
                   )}
                 </div>
-              )}
-
-              {/* Prompt */}
+              </>
+            ) : (
+              /* Upload Video */
               <div className="space-y-2">
-                <Label htmlFor="shot-prompt">
-                  {generationMode === "text-only" ? "Video Description" : "Prompt"}
-                </Label>
-                <Textarea
-                  id="shot-prompt"
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder={
-                    generationMode === "text-only"
-                      ? "Describe the video you want to generate..."
-                      : "Describe how the scene should play out..."
-                  }
-                  rows={3}
+                <Label>Upload Video</Label>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime"
+                  onChange={handleVideoUpload}
+                  className="hidden"
                 />
-              </div>
-
-              {/* Duration - Note: Reference images mode requires 8 seconds */}
-              <div className="space-y-2">
-                <Label>Duration</Label>
-                {generationMode === "reference-images" ? (
-                  <div className="text-sm text-muted-foreground p-2 bg-muted rounded-md">
-                    Duration is fixed to <strong>8 seconds</strong> when using reference images.
+                {/* Show existing video only if not in replace mode */}
+                {shot.video?.url && !isReplaceMode ? (
+                  <div className="relative aspect-video rounded-lg overflow-hidden border border-border">
+                    <video src={shot.video.url} controls className="w-full h-full object-cover" />
                   </div>
                 ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant={durationSeconds === 4 ? "default" : "outline"}
-                      onClick={() => setDurationSeconds(4)}
-                      className="flex-1"
-                    >
-                      4 seconds
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={durationSeconds === 6 ? "default" : "outline"}
-                      onClick={() => setDurationSeconds(6)}
-                      className="flex-1"
-                    >
-                      6 seconds
-                    </Button>
-                    <Button
-                      type="button"
-                      variant={durationSeconds === 8 ? "default" : "outline"}
-                      onClick={() => setDurationSeconds(8)}
-                      className="flex-1"
-                    >
-                      8 seconds
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            /* Upload Video */
-            <div className="space-y-2">
-              <Label>Upload Video</Label>
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/mp4,video/webm,video/quicktime"
-                onChange={handleVideoUpload}
-                className="hidden"
-              />
-              {/* Show existing video only if not in replace mode */}
-              {shot.video?.url && !isReplaceMode ? (
-                <div className="relative aspect-video rounded-lg overflow-hidden border border-border">
-                  <video src={shot.video.url} controls className="w-full h-full object-cover" />
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => videoInputRef.current?.click()}
-                  onDragOver={handleVideoDragOver}
-                  onDragLeave={handleVideoDragLeave}
-                  onDrop={handleVideoDrop}
-                  disabled={isUploading}
-                  className={`
+                  <button
+                    type="button"
+                    onClick={() => videoInputRef.current?.click()}
+                    onDragOver={handleVideoDragOver}
+                    onDragLeave={handleVideoDragLeave}
+                    onDrop={handleVideoDrop}
+                    disabled={isUploading}
+                    className={`
                     w-full aspect-video rounded-lg border-2 border-dashed flex flex-col items-center justify-center gap-2 transition-colors relative overflow-hidden cursor-pointer
                     ${isVideoDragOver ? "border-primary bg-primary/5" : "border-muted-foreground/30 hover:border-primary/50"}
                     ${isUploading ? "opacity-50 cursor-not-allowed" : ""}
                   `}
-                >
-                  {isUploading ? (
-                    <>
-                      {/* Progress bar background */}
-                      <div
-                        className="absolute inset-0 bg-primary/10 transition-all duration-300"
-                        style={{ width: `${uploadProgress}%` }}
-                      />
-                      <div className="relative z-10 flex flex-col items-center gap-2">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                        <span className="text-sm font-medium text-primary">
-                          Uploading... {uploadProgress}%
+                  >
+                    {isUploading ? (
+                      <>
+                        {/* Progress bar background */}
+                        <div
+                          className="absolute inset-0 bg-primary/10 transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                        <div className="relative z-10 flex flex-col items-center gap-2">
+                          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                          <span className="text-sm font-medium text-primary">
+                            Uploading... {uploadProgress}%
+                          </span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <Video className="h-8 w-8 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                          Drop video or click to upload
                         </span>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <Video className="h-8 w-8 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Drop video or click to upload</span>
-                      <span className="text-xs text-muted-foreground">Supports files up to 500MB</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
+                        <span className="text-xs text-muted-foreground">
+                          Supports files up to 500MB
+                        </span>
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         )}
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
@@ -2132,8 +2287,8 @@ export function ShotEditorDialog({
                   </Button>
                 )}
                 <div className="flex-1" />
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={() => {
                     // Cancel - reset trim values and exit trim mode
@@ -2146,26 +2301,26 @@ export function ShotEditorDialog({
                   Cancel
                 </Button>
                 {/* Apply Trim button - This is the ONLY place where the trimmed video is created and saved */}
-                <Button 
+                <Button
                   type="button"
                   disabled={isTrimmingVideo || (trimStartMs === 0 && trimEndMs === 0)}
                   onClick={async () => {
                     if (!shot || !shot.video) return;
-                    
+
                     // If no trim values, just close
                     if (trimStartMs === 0 && trimEndMs === 0) {
                       setIsTrimMode(false);
                       return;
                     }
-                    
+
                     setIsTrimmingVideo(true);
-                    
+
                     try {
                       // Use original video if available, otherwise use current video
                       const sourceVideo = shot.originalVideo || shot.video;
                       const sourceVideoUrl = sourceVideo.url;
                       const sourceDuration = sourceVideo.durationMs || 8000;
-                      
+
                       // Create trimmed video file via API (this is the ONLY place this happens)
                       const response = await fetch("/api/video/trim", {
                         method: "POST",
@@ -2180,16 +2335,16 @@ export function ShotEditorDialog({
                           durationMs: sourceDuration,
                         }),
                       });
-                      
+
                       const result = await response.json();
-                      
+
                       if (!result.success) {
                         throw new Error(result.error || "Failed to trim video");
                       }
-                      
+
                       // Calculate effective duration
                       const effectiveDuration = sourceDuration - trimStartMs - trimEndMs;
-                      
+
                       // Create updated shot with trimmed video and save it
                       const updatedShot: Shot = {
                         ...shot,
@@ -2207,7 +2362,7 @@ export function ShotEditorDialog({
                         trimEndMs,
                         updatedAt: new Date().toISOString(),
                       };
-                      
+
                       // Save the updated shot (this triggers the scene save in the parent component)
                       onSave(updatedShot);
                       setIsTrimMode(false);
@@ -2234,8 +2389,8 @@ export function ShotEditorDialog({
               /* ============ EFFECTS MODE FOOTER ============ */
               <>
                 <div className="flex-1" />
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   variant="outline"
                   onClick={() => {
                     // Cancel - reset fade values and exit effects mode
@@ -2247,7 +2402,7 @@ export function ShotEditorDialog({
                 >
                   Cancel
                 </Button>
-                <Button 
+                <Button
                   type="button"
                   onClick={() => {
                     if (!shot) return;
@@ -2256,7 +2411,10 @@ export function ShotEditorDialog({
                       ...shot,
                       fadeInType: fadeInType !== "none" ? fadeInType : undefined,
                       fadeOutType: fadeOutType !== "none" ? fadeOutType : undefined,
-                      fadeDurationMs: (fadeInType !== "none" || fadeOutType !== "none") ? fadeDurationMs : undefined,
+                      fadeDurationMs:
+                        fadeInType !== "none" || fadeOutType !== "none"
+                          ? fadeDurationMs
+                          : undefined,
                       updatedAt: new Date().toISOString(),
                     };
                     onSave(updatedShot);
@@ -2324,21 +2482,23 @@ export function ShotEditorDialog({
                     <VolumeX className="h-3.5 w-3.5 mr-1.5" />
                     Unmute Video
                   </Button>
-                ) : onDetachAudio && (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={handleDetachAudio}
-                    disabled={isDetachingAudio}
-                  >
-                    {isDetachingAudio ? (
-                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                    ) : (
-                      <Music className="h-3.5 w-3.5 mr-1.5" />
-                    )}
-                    {isDetachingAudio ? "Detaching..." : "Detach Audio"}
-                  </Button>
+                ) : (
+                  onDetachAudio && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDetachAudio}
+                      disabled={isDetachingAudio}
+                    >
+                      {isDetachingAudio ? (
+                        <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                      ) : (
+                        <Music className="h-3.5 w-3.5 mr-1.5" />
+                      )}
+                      {isDetachingAudio ? "Detaching..." : "Detach Audio"}
+                    </Button>
+                  )
                 )}
                 <Button
                   type="button"
@@ -2376,9 +2536,9 @@ export function ShotEditorDialog({
                 </Button>
               )}
               <div className="flex-1" />
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 onClick={() => {
                   if (isReplaceMode) {
                     setIsReplaceMode(false);

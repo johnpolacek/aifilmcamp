@@ -4,7 +4,7 @@ import { uploadFileFromBuffer } from "@/lib/s3";
 
 /**
  * POST /api/audio/trim
- * 
+ *
  * Trim an audio file to specified in/out points.
  * Creates a new trimmed audio file and returns its URL.
  */
@@ -13,10 +13,7 @@ export async function POST(request: Request) {
     // Check authentication
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body
@@ -31,10 +28,7 @@ export async function POST(request: Request) {
     }
 
     if (!audioUrl) {
-      return NextResponse.json(
-        { success: false, error: "Audio URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Audio URL is required" }, { status: 400 });
     }
 
     if (trimStartMs === undefined && trimEndMs === undefined) {
@@ -51,45 +45,49 @@ export async function POST(request: Request) {
 
     if (effectiveDuration <= 0) {
       return NextResponse.json(
-        { success: false, error: "Invalid trim values - resulting duration would be zero or negative" },
+        {
+          success: false,
+          error: "Invalid trim values - resulting duration would be zero or negative",
+        },
         { status: 400 }
       );
     }
 
     console.log(
       "[audio-trim] Starting trim:",
-      JSON.stringify({ 
-        projectId, 
-        sceneId, 
-        trackId, 
-        trimStartMs: trimStart, 
-        trimEndMs: trimEnd,
-        fullDuration,
-        effectiveDuration,
-        audioUrl: audioUrl.substring(0, 100) 
-      }, null, 2)
+      JSON.stringify(
+        {
+          projectId,
+          sceneId,
+          trackId,
+          trimStartMs: trimStart,
+          trimEndMs: trimEnd,
+          fullDuration,
+          effectiveDuration,
+          audioUrl: audioUrl.substring(0, 100),
+        },
+        null,
+        2
+      )
     );
 
     // Download the audio
     const audioResponse = await fetch(audioUrl);
     if (!audioResponse.ok) {
-      return NextResponse.json(
-        { success: false, error: "Failed to fetch audio" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Failed to fetch audio" }, { status: 400 });
     }
 
     const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
 
     // Try to use ffmpeg for audio trimming
     let trimmedBuffer: Buffer;
-    
+
     try {
       const ffmpeg = await import("fluent-ffmpeg").catch(() => null);
-      
+
       if (ffmpeg) {
         trimmedBuffer = await trimAudioWithFfmpeg(
-          audioBuffer, 
+          audioBuffer,
           ffmpeg.default,
           trimStart / 1000, // Convert to seconds
           effectiveDuration / 1000 // Convert to seconds
@@ -97,8 +95,8 @@ export async function POST(request: Request) {
       } else {
         console.log("[audio-trim] ffmpeg not available");
         return NextResponse.json(
-          { 
-            success: false, 
+          {
+            success: false,
             error: "Audio trimming requires ffmpeg which is not available in this environment.",
           },
           { status: 501 }
@@ -107,13 +105,19 @@ export async function POST(request: Request) {
     } catch (ffmpegError) {
       console.error(
         "[audio-trim] ffmpeg error:",
-        JSON.stringify({ error: ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError) }, null, 2)
+        JSON.stringify(
+          { error: ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError) },
+          null,
+          2
+        )
       );
-      
+
       return NextResponse.json(
-        { 
-          success: false, 
-          error: "Failed to trim audio. " + (ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError))
+        {
+          success: false,
+          error:
+            "Failed to trim audio. " +
+            (ffmpegError instanceof Error ? ffmpegError.message : String(ffmpegError)),
         },
         { status: 500 }
       );
@@ -137,17 +141,10 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(
       "[audio-trim] Error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
 
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
 
@@ -160,14 +157,14 @@ async function trimAudioWithFfmpeg(
   startSeconds: number,
   durationSeconds: number
 ): Promise<Buffer> {
-  const { tmpdir } = await import("os");
-  const { join } = await import("path");
-  const { writeFile, unlink, readFile } = await import("fs/promises");
-  const { randomUUID } = await import("crypto");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const { writeFile, unlink, readFile } = await import("node:fs/promises");
+  const { randomUUID } = await import("node:crypto");
 
   // Determine input format from buffer magic bytes
   const isWav = audioBuffer[0] === 0x52 && audioBuffer[1] === 0x49; // "RI" for RIFF
-  const isOgg = audioBuffer[0] === 0x4F && audioBuffer[1] === 0x67; // "Og" for Ogg
+  const isOgg = audioBuffer[0] === 0x4f && audioBuffer[1] === 0x67; // "Og" for Ogg
   const inputExt = isWav ? "wav" : isOgg ? "ogg" : "mp3";
 
   // Write audio to temp file
@@ -185,7 +182,7 @@ async function trimAudioWithFfmpeg(
       .audioBitrate(192)
       .outputOptions([
         "-ar 44100", // Sample rate
-        "-ac 2"      // Stereo
+        "-ac 2", // Stereo
       ])
       .output(outputPath)
       .on("end", async () => {
@@ -208,4 +205,3 @@ async function trimAudioWithFfmpeg(
       .run();
   });
 }
-

@@ -1,14 +1,10 @@
 interface ExportModalProps {
-  isComplete: boolean
-  progress: number
-  onDownload: () => void
+  isComplete: boolean;
+  progress: number;
+  onDownload: () => void;
 }
 
-export default function ExportModal({
-  isComplete,
-  progress,
-  onDownload,
-}: ExportModalProps) {
+export default function ExportModal({ isComplete, progress, onDownload }: ExportModalProps) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-card rounded-lg p-8 w-96 shadow-2xl border border-border">
@@ -38,5 +34,5 @@ export default function ExportModal({
         )}
       </div>
     </div>
-  )
+  );
 }

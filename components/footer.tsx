@@ -1,5 +1,5 @@
-import { Flame } from "lucide-react";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 export function Footer() {
   return (
@@ -8,7 +8,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-2 text-xl font-bold mb-4">
-              <Flame className="h-6 w-6 text-primary" />
+              <Logo className="h-7 w-7" />
               <span>AI Film Camp</span>
             </Link>
             <p className="text-sm text-muted-foreground max-w-md leading-relaxed">

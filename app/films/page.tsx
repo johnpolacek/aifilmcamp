@@ -11,7 +11,7 @@ export const revalidate = 300; // Revalidate every 5 minutes
 
 export default async function FilmsPage() {
   const allProjects = await getAllProjects();
-  
+
   const publishedFilms = Object.entries(allProjects)
     .filter(([_, project]) => project.isPublished)
     .map(([id, project]) => ({ id, ...project }))
@@ -32,7 +32,8 @@ export default async function FilmsPage() {
             <h1 className="text-4xl md:text-5xl font-bold">Published Development Packages</h1>
           </div>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Explore publicly shared AI film projects, from story concept through prompt-ready scene plans.
+            Explore publicly shared AI film projects, from story concept through prompt-ready scene
+            plans.
           </p>
         </div>
 
@@ -40,18 +41,15 @@ export default async function FilmsPage() {
         {publishedFilms.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {publishedFilms.map((film) => {
-              const thumbnailUrl = film.thumbnail && film.username
-                ? getThumbnailUrl(film.thumbnail, film.username)
-                : null;
-              
+              const thumbnailUrl =
+                film.thumbnail && film.username
+                  ? getThumbnailUrl(film.thumbnail, film.username)
+                  : null;
+
               const promptShotCount = getPromptShotCount(film.scenes);
 
               return (
-                <Link
-                  key={film.id}
-                  href={`/${film.username}/${film.slug}`}
-                  className="group"
-                >
+                <Link key={film.id} href={`/${film.username}/${film.slug}`} className="group">
                   <Card className="bg-card border-border overflow-hidden hover:border-primary/50 transition-colors">
                     {/* Thumbnail */}
                     <div className="relative aspect-video bg-muted">
@@ -80,7 +78,7 @@ export default async function FilmsPage() {
                       <h3 className="font-semibold text-lg mb-1 group-hover:text-primary transition-colors line-clamp-1">
                         {film.title}
                       </h3>
-                      
+
                       {film.logline && (
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                           {film.logline}
@@ -92,7 +90,7 @@ export default async function FilmsPage() {
                           <User className="h-3 w-3" />
                           <span>{film.username}</span>
                         </div>
-                        
+
                         {film.publishedAt && (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -105,16 +103,19 @@ export default async function FilmsPage() {
                       {film.scenes && film.scenes.length > 0 && (
                         <div className="flex items-center gap-3 mt-3 pt-3 border-t border-border text-xs text-muted-foreground">
                           <span>{film.scenes.length} scenes</span>
-                          {film.scenes.reduce((sum, s) => sum + (s.generatedImages?.length || 0), 0) > 0 && (
+                          {film.scenes.reduce(
+                            (sum, s) => sum + (s.generatedImages?.length || 0),
+                            0
+                          ) > 0 && (
                             <span>
-                              {film.scenes.reduce((sum, s) => sum + (s.generatedImages?.length || 0), 0)} assets
+                              {film.scenes.reduce(
+                                (sum, s) => sum + (s.generatedImages?.length || 0),
+                                0
+                              )}{" "}
+                              assets
                             </span>
                           )}
-                          {promptShotCount > 0 && (
-                            <span>
-                              {promptShotCount} prompts
-                            </span>
-                          )}
+                          {promptShotCount > 0 && <span>{promptShotCount} prompts</span>}
                         </div>
                       )}
                     </CardContent>
@@ -143,4 +144,3 @@ export default async function FilmsPage() {
     </div>
   );
 }
-

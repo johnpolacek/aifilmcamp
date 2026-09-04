@@ -14,15 +14,16 @@ export async function POST(request: Request) {
     const { videoUrl, thumbnailUrl } = body;
 
     if (!videoUrl) {
-      return NextResponse.json(
-        { success: false, error: "Video URL is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Video URL is required" }, { status: 400 });
     }
 
     console.log(
       "[delete-video] Deleting video:",
-      JSON.stringify({ videoUrl: videoUrl.substring(0, 100), thumbnailUrl: thumbnailUrl?.substring(0, 100) }, null, 2)
+      JSON.stringify(
+        { videoUrl: videoUrl.substring(0, 100), thumbnailUrl: thumbnailUrl?.substring(0, 100) },
+        null,
+        2
+      )
     );
 
     // Extract S3 key from video URL
@@ -59,7 +60,15 @@ export async function POST(request: Request) {
           // Log but don't fail if thumbnail deletion fails
           console.error(
             "[delete-video] Failed to delete thumbnail (non-critical):",
-            JSON.stringify({ thumbnailKey, error: thumbnailError instanceof Error ? thumbnailError.message : String(thumbnailError) }, null, 2)
+            JSON.stringify(
+              {
+                thumbnailKey,
+                error:
+                  thumbnailError instanceof Error ? thumbnailError.message : String(thumbnailError),
+              },
+              null,
+              2
+            )
           );
         }
       }
@@ -71,11 +80,6 @@ export async function POST(request: Request) {
       "[delete-video] Error deleting video:",
       JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
-    return NextResponse.json(
-      { success: false, error: "Failed to delete video" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Failed to delete video" }, { status: 500 });
   }
 }
-
-

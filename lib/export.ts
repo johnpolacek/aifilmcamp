@@ -42,52 +42,85 @@ ${project.logline ? `> ${project.logline}` : ""}
 - **Film Length**: ${project.filmLength || project.duration || "Not specified"}
 ${project.publishedAt ? `- **Published**: ${new Date(project.publishedAt).toLocaleDateString()}` : ""}
 
-${project.development?.conceptStatement ? `## Concept
+${
+  project.development?.conceptStatement
+    ? `## Concept
 
 ${project.development.conceptStatement}
-` : ""}
+`
+    : ""
+}
 
-${project.development?.outline && project.development.outline.length > 0 ? `## Plot Outline
+${
+  project.development?.outline && project.development.outline.length > 0
+    ? `## Plot Outline
 
 ${project.development.outline
-  .map((beat) => `### Beat ${beat.order}: ${beat.title}
-${beat.summary}`)
+  .map(
+    (beat) => `### Beat ${beat.order}: ${beat.title}
+${beat.summary}`
+  )
   .join("\n\n")}
-` : ""}
+`
+    : ""
+}
 
-${project.development?.scriptBreakdown && project.development.scriptBreakdown.length > 0 ? `## Script Breakdown
+${
+  project.development?.scriptBreakdown && project.development.scriptBreakdown.length > 0
+    ? `## Script Breakdown
 
 ${project.development.scriptBreakdown
-  .map((scene) => `### Scene ${scene.order}: ${scene.title}
+  .map(
+    (scene) => `### Scene ${scene.order}: ${scene.title}
 ${scene.summary}
 Location: ${scene.locationName || "Not specified"}
-Purpose: ${scene.dramaticPurpose}`)
+Purpose: ${scene.dramaticPurpose}`
+  )
   .join("\n\n")}
-` : ""}
+`
+    : ""
+}
 
-${project.characters && project.characters.length > 0 ? `## Characters
+${
+  project.characters && project.characters.length > 0
+    ? `## Characters
 
-${project.characters.map((c) => `### ${c.name}
+${project.characters
+  .map(
+    (c) => `### ${c.name}
 ${c.role ? `Role: ${c.role}\n` : ""}${c.appearance || ""}
-`).join("\n")}` : ""}
+`
+  )
+  .join("\n")}`
+    : ""
+}
 
-${project.scenes && project.scenes.length > 0 ? `## Scenes
+${
+  project.scenes && project.scenes.length > 0
+    ? `## Scenes
 
 ${project.scenes
   .sort((a, b) => a.sceneNumber - b.sceneNumber)
-  .map((s) => `### Scene ${s.sceneNumber}: ${s.title}
+  .map(
+    (s) => `### Scene ${s.sceneNumber}: ${s.title}
 
 ${s.summary || "No summary"}
 
 ${s.generatedImages && s.generatedImages.length > 0 ? `- ${s.generatedImages.length} generated image(s)` : ""}
 ${s.promptShots && s.promptShots.length > 0 ? `- ${s.promptShots.length} prompt shot(s)` : ""}
-`).join("\n")}` : ""}
+`
+  )
+  .join("\n")}`
+    : ""
+}
 
 ## Tools Used
 
-${project.tools && project.tools.length > 0 
-  ? project.tools.map((t) => `- ${t.name} (${t.category})`).join("\n")
-  : "No tools specified"}
+${
+  project.tools && project.tools.length > 0
+    ? project.tools.map((t) => `- ${t.name} (${t.category})`).join("\n")
+    : "No tools specified"
+}
 
 ---
 

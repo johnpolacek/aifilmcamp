@@ -46,7 +46,7 @@ export default async function PublicScreenplayPage({
 
   // Get screenplay elements - prefer structured elements, fall back to parsing text
   let elements = project.screenplayElements;
-  
+
   if (!elements || elements.length === 0) {
     if (project.screenplayText) {
       elements = parseScreenplayToElements(project.screenplayText);
@@ -58,7 +58,7 @@ export default async function PublicScreenplayPage({
   // Check if current user is the owner
   const { userId } = await auth();
   let isOwner = false;
-  
+
   if (userId) {
     // Get current user's username to compare
     const { currentUser } = await import("@clerk/nextjs/server");

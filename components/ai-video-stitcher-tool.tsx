@@ -212,7 +212,6 @@ export default function AIVideoStitcherTool() {
               <h3 className="font-medium text-sm">Clips</h3>
               <div className="space-y-2">
                 {clips.map((clip, index) => (
-                  // biome-ignore lint/a11y/noStaticElementInteractions: div is required for drag and drop functionality
                   <div
                     key={clip.id}
                     draggable

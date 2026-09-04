@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  Edit,
-  Film,
-  Loader2,
-  Plus,
-} from "lucide-react";
+import { Edit, Film, Loader2, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";

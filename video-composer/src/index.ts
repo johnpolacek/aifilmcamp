@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express, { type Request, type Response } from "express";
+import express, { type NextFunction, type Request, type Response } from "express";
 import { processComposition } from "./composer.js";
 import { getJob } from "./job-store.js";
 import type { CompositionRequest } from "./types.js";
@@ -15,21 +15,23 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 // Job status endpoint
-app.get("/status/:jobId", (req: Request, res: Response) => {
+app.get("/status/:jobId", (req: Request<{ jobId: string }>, res: Response) => {
   // Verify shared secret
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${API_SECRET}`) {
-    return res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
   const { jobId } = req.params;
   const job = getJob(jobId);
 
   if (!job) {
-    return res.status(404).json({ error: "Job not found" });
+    res.status(404).json({ error: "Job not found" });
+    return;
   }
 
-  return res.json(job);
+  res.json(job);
 });
 
 // Composition endpoint
@@ -41,18 +43,21 @@ app.post("/compose", async (req: Request, res: Response) => {
       "[compose] Unauthorized request:",
       JSON.stringify({ authHeader: authHeader?.substring(0, 20) }, null, 2)
     );
-    return res.status(401).json({ error: "Unauthorized" });
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
 
   const request: CompositionRequest = req.body;
 
   // Validate request
   if (!request.jobId || !request.projectId || !request.sceneId) {
-    return res.status(400).json({ error: "Missing required fields" });
+    res.status(400).json({ error: "Missing required fields" });
+    return;
   }
 
   if (!request.shots || request.shots.length === 0) {
-    return res.status(400).json({ error: "No shots provided" });
+    res.status(400).json({ error: "No shots provided" });
+    return;
   }
 
   console.log(
@@ -80,13 +85,24 @@ app.post("/compose", async (req: Request, res: Response) => {
   processComposition(request).catch((error) => {
     console.error(
       "[compose] Unhandled error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
   });
+});
+
+// Error handler. Express 5 forwards rejected promises from async route handlers
+// here, so this is the single place unexpected failures surface.
+app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+  console.error(
+    "[error] Unhandled request error:",
+    JSON.stringify({ error: err instanceof Error ? err.message : String(err) }, null, 2)
+  );
+
+  if (res.headersSent) {
+    return;
+  }
+
+  res.status(500).json({ error: "Internal server error" });
 });
 
 const PORT = process.env.PORT || 3001;
@@ -94,4 +110,3 @@ app.listen(PORT, () => {
   console.log(`Video composer listening on port ${PORT}`);
   console.log(`Health check: http://localhost:${PORT}/health`);
 });
-

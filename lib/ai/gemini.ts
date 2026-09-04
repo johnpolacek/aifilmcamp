@@ -1,7 +1,6 @@
 import { google } from "@ai-sdk/google";
-import { experimental_generateImage } from "ai";
+import { generateImage as aiGenerateImage } from "ai";
 import { GoogleAuth } from "google-auth-library";
-import { GoogleGenAI } from "@google/genai";
 import type { GenerationMode } from "@/lib/scenes";
 import { isVideoGenerationEnabled } from "@/lib/utils/video-generation";
 
@@ -14,47 +13,36 @@ import { isVideoGenerationEnabled } from "@/lib/utils/video-generation";
 // Initialize Google Auth client (lazy initialization)
 let authClient: GoogleAuth | null = null;
 
-// Initialize Google GenAI client (uses API key - for simple SDK operations)
-let genAIClient: GoogleGenAI | null = null;
-
-function getGenAIClient(): GoogleGenAI {
-  if (!genAIClient) {
-    const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GOOGLE_GEMINI_API_KEY;
-    if (!apiKey) {
-      throw new Error("Google API key not configured");
-    }
-    genAIClient = new GoogleGenAI({ apiKey });
-  }
-  return genAIClient;
-}
-
 function getAuthClient(): GoogleAuth {
   if (!authClient) {
     // Check if we have service account key as JSON string (works for both local and production)
     const serviceAccountKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY;
-    
+
     if (serviceAccountKey) {
       // Parse JSON string and use it directly
       try {
         const keyData = JSON.parse(serviceAccountKey);
         authClient = new GoogleAuth({
           credentials: keyData,
-          scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+          scopes: ["https://www.googleapis.com/auth/cloud-platform"],
         });
       } catch (error) {
-        console.error("[getAuthClient] Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY:", JSON.stringify({ error }, null, 2));
+        console.error(
+          "[getAuthClient] Failed to parse GOOGLE_SERVICE_ACCOUNT_KEY:",
+          JSON.stringify({ error }, null, 2)
+        );
         throw new Error("Invalid GOOGLE_SERVICE_ACCOUNT_KEY format");
       }
     } else if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       // Fallback: Use file path (local development only)
       authClient = new GoogleAuth({
         keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
       });
     } else {
       // Fallback: Try Application Default Credentials (if running on GCP)
       authClient = new GoogleAuth({
-        scopes: ['https://www.googleapis.com/auth/cloud-platform'],
+        scopes: ["https://www.googleapis.com/auth/cloud-platform"],
       });
     }
   }
@@ -178,11 +166,11 @@ export async function analyzeReferenceImages(
 
     // Call Gemini via Vertex AI to analyze the images
     const endpoint = `https://${location}-aiplatform.googleapis.com/v1/projects/${projectId}/locations/${location}/publishers/google/models/gemini-2.0-flash:generateContent`;
-    
+
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${accessToken.token}`,
+        Authorization: `Bearer ${accessToken.token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -244,7 +232,7 @@ Format your response as a brief style guide that could be used to generate a sim
 
 /**
  * Generate an image using Google Gemini (Imagen 3 / Nano Banana Pro)
- * Uses Vercel AI SDK's experimental_generateImage
+ * Uses Vercel AI SDK's generateImage
  */
 export async function generateImage(
   options: ImageGenerationOptions
@@ -258,7 +246,7 @@ export async function generateImage(
   try {
     // Use Vercel AI SDK with Google provider
     // Note: Using imagen-3.0-generate-002 for image generation
-    const result = await experimental_generateImage({
+    const result = await aiGenerateImage({
       model: google.image("imagen-3.0-generate-002"),
       prompt,
       n: numberOfImages,
@@ -353,7 +341,7 @@ async function prepareImageForVeo(
  * Generate a video using Google Veo 3.1 via Vertex AI REST API
  * Uses v1beta1 endpoint for predictLongRunning (async generation)
  * Returns operation name for status polling
- * 
+ *
  * Supports multiple generation modes:
  * - text-only: Generate from text prompt only
  * - start-frame: Generate from start frame image + prompt
@@ -425,7 +413,9 @@ export async function generateVideo(
         };
       }
       if (endFrameImage) {
-        console.log("[generateVideo] Warning: End frame support may require different parameter format");
+        console.log(
+          "[generateVideo] Warning: End frame support may require different parameter format"
+        );
       }
     } else if (
       generationMode === "reference-images" &&
@@ -436,9 +426,13 @@ export async function generateVideo(
       const maxReferenceImages = Math.min(referenceImages.length, 3);
       console.log(
         "[generateVideo] Reference images mode - preparing images:",
-        JSON.stringify({ referenceCount: referenceImages.length, usingCount: maxReferenceImages }, null, 2)
+        JSON.stringify(
+          { referenceCount: referenceImages.length, usingCount: maxReferenceImages },
+          null,
+          2
+        )
       );
-      
+
       const preparedReferenceImages = await Promise.all(
         referenceImages.slice(0, maxReferenceImages).map(async (img) => {
           const prepared = await prepareImageForVeo(img);
@@ -490,7 +484,7 @@ export async function generateVideo(
     const response = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${accessToken.token}`,
+        Authorization: `Bearer ${accessToken.token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(requestBody),
@@ -512,14 +506,20 @@ export async function generateVideo(
     const operationName = data.name;
 
     if (!operationName) {
-      console.error("[generateVideo] No operation name in response:", JSON.stringify(data, null, 2));
+      console.error(
+        "[generateVideo] No operation name in response:",
+        JSON.stringify(data, null, 2)
+      );
       return {
         success: false,
         error: "No operation name returned from Vertex AI",
       };
     }
 
-    console.log("[generateVideo] Video generation started:", JSON.stringify({ operationName }, null, 2));
+    console.log(
+      "[generateVideo] Video generation started:",
+      JSON.stringify({ operationName }, null, 2)
+    );
 
     return {
       success: true,
@@ -576,15 +576,22 @@ export async function checkVideoStatus(videoId: string): Promise<VideoGeneration
     // This is required for Publisher Models (like Veo) which use UUID-based operation IDs
     const endpoint = `https://${location}-aiplatform.googleapis.com/v1beta1/projects/${projectId}/locations/${location}/publishers/google/models/veo-3.1-generate-preview:fetchPredictOperation`;
 
-    console.log("[checkVideoStatus] Polling operation:", JSON.stringify({
-      endpoint,
-      operationName: videoId,
-    }, null, 2));
+    console.log(
+      "[checkVideoStatus] Polling operation:",
+      JSON.stringify(
+        {
+          endpoint,
+          operationName: videoId,
+        },
+        null,
+        2
+      )
+    );
 
     const response = await fetch(endpoint, {
       method: "POST", // Must be POST, not GET
       headers: {
-        "Authorization": `Bearer ${accessToken.token}`,
+        Authorization: `Bearer ${accessToken.token}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ operationName: videoId }), // Full operation name in body
@@ -594,11 +601,15 @@ export async function checkVideoStatus(videoId: string): Promise<VideoGeneration
       const errorText = await response.text();
       console.error(
         "[checkVideoStatus] API error:",
-        JSON.stringify({
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText.substring(0, 500),
-        }, null, 2)
+        JSON.stringify(
+          {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText.substring(0, 500),
+          },
+          null,
+          2
+        )
       );
       return {
         success: false,
@@ -609,11 +620,18 @@ export async function checkVideoStatus(videoId: string): Promise<VideoGeneration
 
     const data = await response.json();
 
-    console.log("[checkVideoStatus] Operation response:", JSON.stringify({
-      done: data.done,
-      hasError: !!data.error,
-      hasResponse: !!data.response,
-    }, null, 2));
+    console.log(
+      "[checkVideoStatus] Operation response:",
+      JSON.stringify(
+        {
+          done: data.done,
+          hasError: !!data.error,
+          hasResponse: !!data.response,
+        },
+        null,
+        2
+      )
+    );
 
     // Check if operation is done
     if (data.done) {
@@ -643,7 +661,7 @@ export async function checkVideoStatus(videoId: string): Promise<VideoGeneration
       // Veo 3.1 returns bytesBase64Encoded by default unless outputStorageUri is configured
       let videoUrl: string | undefined;
       let videoBase64: string | undefined;
-      
+
       // Try to find video in various response formats
       const videoSources = [
         data.response?.predictions?.[0],
@@ -654,13 +672,13 @@ export async function checkVideoStatus(videoId: string): Promise<VideoGeneration
 
       for (const source of videoSources) {
         if (!source) continue;
-        
+
         // Check for URL first
         if (source.uri || source.videoUri) {
           videoUrl = source.uri || source.videoUri;
           break;
         }
-        
+
         // Check for base64-encoded video (Veo 3.1 default)
         if (source.bytesBase64Encoded) {
           videoBase64 = source.bytesBase64Encoded;
@@ -669,10 +687,17 @@ export async function checkVideoStatus(videoId: string): Promise<VideoGeneration
       }
 
       if (!videoUrl && !videoBase64) {
-        console.error("[checkVideoStatus] No video data in response:", JSON.stringify({
-          responseKeys: Object.keys(data.response || {}),
-          fullResponse: data.response,
-        }, null, 2));
+        console.error(
+          "[checkVideoStatus] No video data in response:",
+          JSON.stringify(
+            {
+              responseKeys: Object.keys(data.response || {}),
+              fullResponse: data.response,
+            },
+            null,
+            2
+          )
+        );
         return {
           success: false,
           videoId,
@@ -682,13 +707,27 @@ export async function checkVideoStatus(videoId: string): Promise<VideoGeneration
       }
 
       if (videoUrl) {
-        console.log("[checkVideoStatus] Video ready (URL):", JSON.stringify({ 
-          videoUrl: videoUrl.substring(0, 100) 
-        }, null, 2));
+        console.log(
+          "[checkVideoStatus] Video ready (URL):",
+          JSON.stringify(
+            {
+              videoUrl: videoUrl.substring(0, 100),
+            },
+            null,
+            2
+          )
+        );
       } else {
-        console.log("[checkVideoStatus] Video ready (base64):", JSON.stringify({ 
-          base64Length: videoBase64?.length 
-        }, null, 2));
+        console.log(
+          "[checkVideoStatus] Video ready (base64):",
+          JSON.stringify(
+            {
+              base64Length: videoBase64?.length,
+            },
+            null,
+            2
+          )
+        );
       }
 
       return {

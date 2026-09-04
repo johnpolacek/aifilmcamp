@@ -16,7 +16,6 @@ declare module "fluent-ffmpeg" {
   }
 
   function ffmpeg(input: string): FfmpegCommand;
-  
+
   export = ffmpeg;
 }
-

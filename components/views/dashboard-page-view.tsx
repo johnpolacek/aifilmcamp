@@ -100,7 +100,8 @@ export function DashboardPageView({
                       My Projects
                     </CardTitle>
                     <CardDescription>
-                      Manage concept-to-prompt development packages and publish finished phases when ready
+                      Manage concept-to-prompt development packages and publish finished phases when
+                      ready
                     </CardDescription>
                   </div>
                   <Link href="/dashboard/projects/new">

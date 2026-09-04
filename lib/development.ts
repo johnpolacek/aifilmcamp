@@ -5,8 +5,8 @@ import {
   createDefaultPhaseVisibility,
   type PhaseStatus,
   type PhaseVisibility,
-  type WorkflowPhase,
   WORKFLOW_PHASES,
+  type WorkflowPhase,
 } from "@/lib/types/development";
 
 export function getPromptShotCount(scenes: Scene[] = []): number {
@@ -19,7 +19,7 @@ export function derivePhaseStatus(project: ProjectFormData): Record<WorkflowPhas
   const breakdownCount = project.development?.scriptBreakdown?.length || 0;
   const promptShotCount = getPromptShotCount(project.scenes);
   const characterCount = project.characters?.length || 0;
-  const locationCount = project.setting?.locations?.length || 0;
+  const _locationCount = project.setting?.locations?.length || 0;
   const screenplayWords = project.screenplayText?.trim().split(/\s+/).filter(Boolean).length || 0;
   const conceptReady = Boolean(
     project.development?.conceptStatement ||
@@ -75,7 +75,9 @@ export function derivePhaseStatus(project: ProjectFormData): Record<WorkflowPhas
   };
 }
 
-export function ensureProjectPhaseStatus(project: ProjectFormData): Record<WorkflowPhase, PhaseStatus> {
+export function ensureProjectPhaseStatus(
+  project: ProjectFormData
+): Record<WorkflowPhase, PhaseStatus> {
   return {
     ...derivePhaseStatus(project),
     ...project.phaseStatus,
@@ -103,13 +105,19 @@ export function getStepOrder(project?: Partial<ProjectFormData>): WorkflowPhase[
   );
 }
 
-export function getNextStep(currentStep: WorkflowPhase, project?: Partial<ProjectFormData>): WorkflowPhase | null {
+export function getNextStep(
+  currentStep: WorkflowPhase,
+  project?: Partial<ProjectFormData>
+): WorkflowPhase | null {
   const order = getStepOrder(project);
   const index = order.indexOf(currentStep);
   return index >= 0 && index < order.length - 1 ? order[index + 1] : null;
 }
 
-export function getPreviousStep(currentStep: WorkflowPhase, project?: Partial<ProjectFormData>): WorkflowPhase | null {
+export function getPreviousStep(
+  currentStep: WorkflowPhase,
+  project?: Partial<ProjectFormData>
+): WorkflowPhase | null {
   const order = getStepOrder(project);
   const index = order.indexOf(currentStep);
   return index > 0 ? order[index - 1] : null;

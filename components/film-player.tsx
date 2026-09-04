@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Pause, Play, SkipBack, SkipForward } from "lucide-react";
+import { Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -28,13 +28,13 @@ export function FilmPlayer({ scenes, title, autoPlay = false }: FilmPlayerProps)
   // Build playlist from scenes
   useEffect(() => {
     const sortedScenes = [...scenes].sort((a, b) => a.sceneNumber - b.sceneNumber);
-    
+
     const videos = sortedScenes
       .map((scene) => {
         const completedVideo = scene.generatedVideos?.find(
           (v) => v.status === "completed" && v.videoUrl
         );
-        
+
         if (completedVideo) {
           return {
             sceneNumber: scene.sceneNumber,
@@ -89,11 +89,14 @@ export function FilmPlayer({ scenes, title, autoPlay = false }: FilmPlayerProps)
     }
   }, [hasPrev]);
 
-  const goToScene = useCallback((index: number) => {
-    if (index >= 0 && index < playlist.length) {
-      setCurrentSceneIndex(index);
-    }
-  }, [playlist.length]);
+  const goToScene = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < playlist.length) {
+        setCurrentSceneIndex(index);
+      }
+    },
+    [playlist.length]
+  );
 
   // Auto-advance to next scene when current video ends
   const handleVideoEnded = useCallback(() => {
@@ -143,7 +146,7 @@ export function FilmPlayer({ scenes, title, autoPlay = false }: FilmPlayerProps)
             <track kind="captions" />
           </video>
         )}
-        
+
         {/* Play overlay (when paused) */}
         {!isPlaying && (
           <button
@@ -226,5 +229,3 @@ export function FilmPlayer({ scenes, title, autoPlay = false }: FilmPlayerProps)
     </div>
   );
 }
-
-

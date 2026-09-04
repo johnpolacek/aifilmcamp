@@ -1,10 +1,12 @@
 "use client";
 
+import JSZip from "jszip";
 import {
   ArrowLeft,
   Check,
   Download,
   Edit,
+  FileDown,
   Film,
   Image as ImageIcon,
   Loader2,
@@ -13,16 +15,14 @@ import {
   Sparkles,
   Trash2,
   Video,
-  X,
-  FileDown,
   Volume2,
+  X,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import JSZip from "jszip";
 import { AudioTrackModal } from "@/components/audio-track-modal";
 import type { Character, Location } from "@/components/project-form";
 import { ScenePlayer, type ScenePlayerHandle } from "@/components/scene-player";
@@ -48,8 +48,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
+import { Textarea } from "@/components/ui/textarea";
 import { getImageUrl, getPublicUrl } from "@/lib/image-utils";
 import type { AudioTrack, GenerationMode, Scene, Shot, ShotVideo } from "@/lib/scenes-client";
 import { createNewShot, getEffectiveDuration } from "@/lib/scenes-client";
@@ -57,9 +57,9 @@ import { elementsToText, parseScreenplayToElements } from "@/lib/screenplay-pars
 import type { ScreenplayElement, ScreenplayElementType } from "@/lib/types/screenplay";
 import { createScreenplayElement, ELEMENT_TYPE_LABELS } from "@/lib/types/screenplay";
 import { uploadFile } from "@/lib/upload-utils";
-import { generateThumbnailFromFile, generateThumbnailFromUrl } from "@/lib/video-thumbnail";
 import { cn } from "@/lib/utils";
 import { isVideoGenerationEnabled } from "@/lib/utils/video-generation";
+import { generateThumbnailFromFile, generateThumbnailFromUrl } from "@/lib/video-thumbnail";
 
 // ============================================================================
 // TYPES
@@ -506,23 +506,28 @@ export function EditSceneView({
       transitionOut: initialScene.transitionOut || { type: "none", durationMs: 0 },
       masterVolume: initialScene.masterVolume ?? 1.0,
     };
-    
+
     console.log(
       "[EditSceneView] Initializing scene state:",
-      JSON.stringify({
-        sceneId: initialScene.id,
-        initialRemovedShotsCount: initialScene.removedShots?.length || 0,
-        initialRemovedShots: initialScene.removedShots?.map(s => ({
-          id: s.id,
-          prompt: s.prompt?.substring(0, 50),
-          hasVideo: !!s.video,
-          videoStatus: s.video?.status,
-          videoUrl: s.video?.url?.substring(0, 100),
-        })) || [],
-        initializedRemovedShotsCount: initializedScene.removedShots?.length || 0,
-      }, null, 2)
+      JSON.stringify(
+        {
+          sceneId: initialScene.id,
+          initialRemovedShotsCount: initialScene.removedShots?.length || 0,
+          initialRemovedShots:
+            initialScene.removedShots?.map((s) => ({
+              id: s.id,
+              prompt: s.prompt?.substring(0, 50),
+              hasVideo: !!s.video,
+              videoStatus: s.video?.status,
+              videoUrl: s.video?.url?.substring(0, 100),
+            })) || [],
+          initializedRemovedShotsCount: initializedScene.removedShots?.length || 0,
+        },
+        null,
+        2
+      )
     );
-    
+
     return initializedScene;
   });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
@@ -541,11 +546,13 @@ export function EditSceneView({
   const [selectedShot, setSelectedShot] = useState<Shot | null>(null);
   const [showShotEditor, setShowShotEditor] = useState(false);
   // shotId -> { operationId, thumbnailUrl, thumbnailPath } for polling
-  const [pendingShots, setPendingShots] = useState<Map<string, { operationId: string; thumbnailUrl?: string; thumbnailPath?: string }>>(new Map());
-  
+  const [pendingShots, setPendingShots] = useState<
+    Map<string, { operationId: string; thumbnailUrl?: string; thumbnailPath?: string }>
+  >(new Map());
+
   // Use removedShots from scene state instead of separate state
   const removedShots = scene.removedShots || [];
-  
+
   const [showMediaLibrary, setShowMediaLibrary] = useState(false);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null); // Track which video is playing in Media Library
   const [shotToDelete, setShotToDelete] = useState<Shot | null>(null); // Shot pending deletion confirmation
@@ -567,7 +574,7 @@ export function EditSceneView({
   const [showAudioTrackEditor, setShowAudioTrackEditor] = useState(false);
 
   // Scene player state
-  const [showPlayer, setShowPlayer] = useState(false);
+  const [_showPlayer, _setShowPlayer] = useState(false);
   const scenePlayerRef = useRef<ScenePlayerHandle>(null);
 
   // Render scene state
@@ -579,7 +586,9 @@ export function EditSceneView({
   // Export source videos state
   const [showExportDialog, setShowExportDialog] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(
+    null
+  );
 
   // Build library images from characters and generated images
   const libraryImages = useMemo(() => {
@@ -704,7 +713,7 @@ export function EditSceneView({
             const thumbnailPath = shot.video?.operationId
               ? `projects/${projectId}/scenes/${initialScene.id}/thumbnails/${shot.id}.jpg`
               : undefined;
-            
+
             // Try to construct thumbnail URL using getPublicUrl utility
             const thumbnailUrl = thumbnailPath ? getPublicUrl(thumbnailPath) : undefined;
 
@@ -719,7 +728,7 @@ export function EditSceneView({
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, [initialScene.id, initialScene.shots.filter, projectId]); // Only run once on mount
 
   // ============================================================================
   // POLLING FOR SHOT VIDEO COMPLETION
@@ -732,11 +741,11 @@ export function EditSceneView({
       for (const [shotId, pendingData] of pendingShots.entries()) {
         try {
           const { operationId, thumbnailUrl: predictedThumbnailUrl, thumbnailPath } = pendingData;
-          
+
           // First, check if thumbnail exists via HEAD request (simple/fast)
           if (predictedThumbnailUrl) {
             try {
-              const headResponse = await fetch(predictedThumbnailUrl, { method: 'HEAD' });
+              const headResponse = await fetch(predictedThumbnailUrl, { method: "HEAD" });
               if (headResponse.ok) {
                 console.log(
                   "[EditSceneView] Thumbnail exists! Video is ready:",
@@ -744,7 +753,7 @@ export function EditSceneView({
                 );
                 // Thumbnail exists - now call video-status to get the video URL
               }
-            } catch (headError) {
+            } catch (_headError) {
               // HEAD request failed - thumbnail not ready yet, continue with normal polling
               console.log(
                 "[EditSceneView] Thumbnail not ready yet:",
@@ -752,12 +761,16 @@ export function EditSceneView({
               );
             }
           }
-          
+
           // Call video-status API to check/trigger backend processing
-          const statusUrl = `/api/ai/video-status?operationId=${encodeURIComponent(operationId)}&projectId=${projectId}&sceneId=${scene.id}&videoId=${shotId}${thumbnailPath ? `&thumbnailPath=${encodeURIComponent(thumbnailPath)}` : ''}`;
+          const statusUrl = `/api/ai/video-status?operationId=${encodeURIComponent(operationId)}&projectId=${projectId}&sceneId=${scene.id}&videoId=${shotId}${thumbnailPath ? `&thumbnailPath=${encodeURIComponent(thumbnailPath)}` : ""}`;
           console.log(
             "[EditSceneView] Polling video status:",
-            JSON.stringify({ shotId, operationId, statusUrl, hasThumbnailPath: !!thumbnailPath }, null, 2)
+            JSON.stringify(
+              { shotId, operationId, statusUrl, hasThumbnailPath: !!thumbnailPath },
+              null,
+              2
+            )
           );
 
           const response = await fetch(statusUrl);
@@ -765,19 +778,23 @@ export function EditSceneView({
 
           console.log(
             "[EditSceneView] Video status response:",
-            JSON.stringify({ 
-              shotId, 
-              responseStatus: response.status,
-              success: data.success,
-              status: data.status,
-              hasVideoUrl: !!data.videoUrl,
-              videoUrl: data.videoUrl?.substring(0, 100),
-              hasThumbnailUrl: !!data.thumbnailUrl,
-              thumbnailUrl: data.thumbnailUrl?.substring(0, 100),
-              durationMs: data.durationMs,
-              error: data.error,
-              fullResponse: data
-            }, null, 2)
+            JSON.stringify(
+              {
+                shotId,
+                responseStatus: response.status,
+                success: data.success,
+                status: data.status,
+                hasVideoUrl: !!data.videoUrl,
+                videoUrl: data.videoUrl?.substring(0, 100),
+                hasThumbnailUrl: !!data.thumbnailUrl,
+                thumbnailUrl: data.thumbnailUrl?.substring(0, 100),
+                durationMs: data.durationMs,
+                error: data.error,
+                fullResponse: data,
+              },
+              null,
+              2
+            )
           );
 
           // Handle API errors (500 responses) as failed status
@@ -815,12 +832,16 @@ export function EditSceneView({
             if (data.status === "completed" && data.videoUrl) {
               console.log(
                 "[EditSceneView] Video completed - checking for thumbnail:",
-                JSON.stringify({ 
-                  shotId, 
-                  videoUrl: data.videoUrl, 
-                  thumbnailUrl: data.thumbnailUrl,
-                  durationMs: data.durationMs,
-                }, null, 2)
+                JSON.stringify(
+                  {
+                    shotId,
+                    videoUrl: data.videoUrl,
+                    thumbnailUrl: data.thumbnailUrl,
+                    durationMs: data.durationMs,
+                  },
+                  null,
+                  2
+                )
               );
 
               // If server didn't generate thumbnail, generate client-side
@@ -830,10 +851,10 @@ export function EditSceneView({
                   "[EditSceneView] No server thumbnail, generating client-side:",
                   JSON.stringify({ videoUrl: data.videoUrl }, null, 2)
                 );
-                
+
                 try {
                   const thumbnailResult = await generateThumbnailFromUrl(data.videoUrl);
-                  
+
                   if (thumbnailResult.success && thumbnailResult.thumbnailBlob) {
                     // Upload thumbnail to S3
                     const thumbnailFile = new File(
@@ -841,13 +862,13 @@ export function EditSceneView({
                       `thumbnail-${shotId}.jpg`,
                       { type: "image/jpeg" }
                     );
-                    
+
                     const thumbnailUploadResult = await uploadFile(thumbnailFile, {
                       projectId,
                       sceneId: scene.id,
                       mediaType: "image",
                     });
-                    
+
                     if (thumbnailUploadResult.success && thumbnailUploadResult.url) {
                       thumbnailUrl = thumbnailUploadResult.url;
                       console.log(
@@ -872,30 +893,38 @@ export function EditSceneView({
 
               console.log(
                 "[EditSceneView] About to update scene state with completed video:",
-                JSON.stringify({ 
-                  shotId,
-                  videoUrl: data.videoUrl,
-                  thumbnailUrl
-                }, null, 2)
+                JSON.stringify(
+                  {
+                    shotId,
+                    videoUrl: data.videoUrl,
+                    thumbnailUrl,
+                  },
+                  null,
+                  2
+                )
               );
 
               setScene((prev) => {
                 // Check if shot exists in current state
-                const existingShot = prev.shots.find(s => s.id === shotId);
+                const existingShot = prev.shots.find((s) => s.id === shotId);
                 console.log(
                   "[EditSceneView] Looking for shot in state:",
-                  JSON.stringify({ 
-                    shotId,
-                    foundShot: !!existingShot,
-                    totalShots: prev.shots.length,
-                    shotIds: prev.shots.map(s => s.id)
-                  }, null, 2)
+                  JSON.stringify(
+                    {
+                      shotId,
+                      foundShot: !!existingShot,
+                      totalShots: prev.shots.length,
+                      shotIds: prev.shots.map((s) => s.id),
+                    },
+                    null,
+                    2
+                  )
                 );
 
                 if (!existingShot) {
                   console.error(
                     "[EditSceneView] Shot not found in state! Cannot update.",
-                    JSON.stringify({ shotId, availableShots: prev.shots.map(s => s.id) }, null, 2)
+                    JSON.stringify({ shotId, availableShots: prev.shots.map((s) => s.id) }, null, 2)
                   );
                   return prev; // Don't update if shot not found
                 }
@@ -916,18 +945,24 @@ export function EditSceneView({
                     : s
                 );
 
-                const updatedShot = updatedShots.find(s => s.id === shotId);
+                const updatedShot = updatedShots.find((s) => s.id === shotId);
                 console.log(
                   "[EditSceneView] Scene state updated successfully:",
-                  JSON.stringify({ 
-                    shotId,
-                    updatedShot: updatedShot ? {
-                      id: updatedShot.id,
-                      videoUrl: updatedShot.video?.url,
-                      videoThumbnailUrl: updatedShot.video?.thumbnailUrl,
-                      videoStatus: updatedShot.video?.status
-                    } : null
-                  }, null, 2)
+                  JSON.stringify(
+                    {
+                      shotId,
+                      updatedShot: updatedShot
+                        ? {
+                            id: updatedShot.id,
+                            videoUrl: updatedShot.video?.url,
+                            videoThumbnailUrl: updatedShot.video?.thumbnailUrl,
+                            videoStatus: updatedShot.video?.status,
+                          }
+                        : null,
+                    },
+                    null,
+                    2
+                  )
                 );
 
                 return {
@@ -935,7 +970,7 @@ export function EditSceneView({
                   shots: updatedShots,
                 };
               });
-              
+
               setPendingShots((prev) => {
                 const next = new Map(prev);
                 next.delete(shotId);
@@ -945,7 +980,7 @@ export function EditSceneView({
                 );
                 return next;
               });
-              
+
               console.log("[EditSceneView] Showing success toast for completed video");
               toast.success("Video generation completed!");
             } else if (data.status === "failed") {
@@ -1277,7 +1312,7 @@ export function EditSceneView({
         // Add to pending shots for polling (includes thumbnailUrl for HEAD check)
         setPendingShots((prev) => {
           const next = new Map(prev);
-          next.set(newShot.id, { 
+          next.set(newShot.id, {
             operationId: data.video.operationId,
             thumbnailUrl: data.thumbnailUrl,
             thumbnailPath: data.thumbnailPath,
@@ -1326,7 +1361,7 @@ export function EditSceneView({
       });
 
       console.log("[EditSceneView] Upload result:", JSON.stringify(result, null, 2));
-      
+
       if (result.success && result.url) {
         // Get video duration (default to 5 seconds if not available)
         let durationMs = 5000;
@@ -1355,34 +1390,38 @@ export function EditSceneView({
         try {
           console.log(
             "[EditSceneView] Generating thumbnail client-side:",
-            JSON.stringify({ 
-              fileName: file.name,
-              fileSize: file.size,
-              durationMs 
-            }, null, 2)
+            JSON.stringify(
+              {
+                fileName: file.name,
+                fileSize: file.size,
+                durationMs,
+              },
+              null,
+              2
+            )
           );
 
           const thumbnailResult = await generateThumbnailFromFile(file);
-          
+
           if (thumbnailResult.success && thumbnailResult.thumbnailBlob) {
             // Update duration from video metadata
             if (thumbnailResult.durationMs) {
               durationMs = thumbnailResult.durationMs;
             }
-            
+
             // Upload thumbnail to S3
             const thumbnailFile = new File(
               [thumbnailResult.thumbnailBlob],
               `thumbnail-${Date.now()}.jpg`,
               { type: "image/jpeg" }
             );
-            
+
             const thumbnailUploadResult = await uploadFile(thumbnailFile, {
               projectId,
               sceneId: scene.id,
               mediaType: "image",
             });
-            
+
             if (thumbnailUploadResult.success && thumbnailUploadResult.url) {
               thumbnailUrl = thumbnailUploadResult.url;
               console.log(
@@ -1414,13 +1453,20 @@ export function EditSceneView({
           durationMs,
         };
         newShot.updatedAt = new Date().toISOString();
-        
-        console.log("[EditSceneView] Creating shot with video:", JSON.stringify({
-          shotId: newShot.id,
-          videoUrl: newShot.video.url,
-          videoThumbnailUrl: newShot.video.thumbnailUrl,
-          durationMs: newShot.video.durationMs
-        }, null, 2));
+
+        console.log(
+          "[EditSceneView] Creating shot with video:",
+          JSON.stringify(
+            {
+              shotId: newShot.id,
+              videoUrl: newShot.video.url,
+              videoThumbnailUrl: newShot.video.thumbnailUrl,
+              durationMs: newShot.video.durationMs,
+            },
+            null,
+            2
+          )
+        );
 
         setScene((prev) => ({
           ...prev,
@@ -1472,38 +1518,48 @@ export function EditSceneView({
 
   const handleShotDelete = (shotId: string) => {
     const shotToDelete = scene.shots.find((s) => s.id === shotId);
-    
+
     console.log(
       "[EditSceneView] handleShotDelete called:",
-      JSON.stringify({
-        shotId,
-        shotFound: !!shotToDelete,
-        shotHasVideo: !!shotToDelete?.video,
-        videoStatus: shotToDelete?.video?.status,
-        videoUrl: shotToDelete?.video?.url?.substring(0, 100),
-        currentRemovedShotsCount: scene.removedShots?.length || 0,
-      }, null, 2)
+      JSON.stringify(
+        {
+          shotId,
+          shotFound: !!shotToDelete,
+          shotHasVideo: !!shotToDelete?.video,
+          videoStatus: shotToDelete?.video?.status,
+          videoUrl: shotToDelete?.video?.url?.substring(0, 100),
+          currentRemovedShotsCount: scene.removedShots?.length || 0,
+        },
+        null,
+        2
+      )
     );
-    
+
     setScene((prev) => {
-      const updatedShots = prev.shots.filter((s) => s.id !== shotId).map((s, i) => ({ ...s, order: i }));
+      const updatedShots = prev.shots
+        .filter((s) => s.id !== shotId)
+        .map((s, i) => ({ ...s, order: i }));
       const updatedRemovedShots = [...(prev.removedShots || [])];
-      
-      if (shotToDelete && shotToDelete.video?.url && shotToDelete.video.status === "completed") {
+
+      if (shotToDelete?.video?.url && shotToDelete.video.status === "completed") {
         // Shot has a completed video - move to removed shots instead of deleting
         updatedRemovedShots.push(shotToDelete);
         console.log(
           "[EditSceneView] Adding shot to removedShots:",
-          JSON.stringify({
-            shotId: shotToDelete.id,
-            prompt: shotToDelete.prompt?.substring(0, 50),
-            videoUrl: shotToDelete.video.url.substring(0, 100),
-            newRemovedShotsCount: updatedRemovedShots.length,
-          }, null, 2)
+          JSON.stringify(
+            {
+              shotId: shotToDelete.id,
+              prompt: shotToDelete.prompt?.substring(0, 50),
+              videoUrl: shotToDelete.video.url.substring(0, 100),
+              newRemovedShotsCount: updatedRemovedShots.length,
+            },
+            null,
+            2
+          )
         );
         toast.success("Shot moved to Media Library");
       }
-      
+
       return {
         ...prev,
         shots: updatedShots,
@@ -1518,15 +1574,19 @@ export function EditSceneView({
   const handleSaveVideoToMediaLibrary = (shot: Shot) => {
     console.log(
       "[EditSceneView] handleSaveVideoToMediaLibrary called:",
-      JSON.stringify({
-        shotId: shot.id,
-        hasVideo: !!shot.video,
-        videoStatus: shot.video?.status,
-        videoUrl: shot.video?.url?.substring(0, 100),
-        currentRemovedShotsCount: scene.removedShots?.length || 0,
-      }, null, 2)
+      JSON.stringify(
+        {
+          shotId: shot.id,
+          hasVideo: !!shot.video,
+          videoStatus: shot.video?.status,
+          videoUrl: shot.video?.url?.substring(0, 100),
+          currentRemovedShotsCount: scene.removedShots?.length || 0,
+        },
+        null,
+        2
+      )
     );
-    
+
     if (shot.video?.url && shot.video.status === "completed") {
       // Create a copy with a new unique ID to avoid duplicate key conflicts
       const mediaLibraryShot: Shot = {
@@ -1535,23 +1595,31 @@ export function EditSceneView({
       };
       console.log(
         "[EditSceneView] Saving video to media library:",
-        JSON.stringify({ 
-          originalShotId: shot.id,
-          newMediaLibraryId: mediaLibraryShot.id,
-          videoUrl: shot.video.url.substring(0, 100),
-          thumbnailUrl: shot.video.thumbnailUrl?.substring(0, 100),
-          currentRemovedShotsCount: scene.removedShots?.length || 0,
-        }, null, 2)
+        JSON.stringify(
+          {
+            originalShotId: shot.id,
+            newMediaLibraryId: mediaLibraryShot.id,
+            videoUrl: shot.video.url.substring(0, 100),
+            thumbnailUrl: shot.video.thumbnailUrl?.substring(0, 100),
+            currentRemovedShotsCount: scene.removedShots?.length || 0,
+          },
+          null,
+          2
+        )
       );
       setScene((prev) => {
         const newRemovedShots = [...(prev.removedShots || []), mediaLibraryShot];
         console.log(
           "[EditSceneView] Updated removedShots in scene state:",
-          JSON.stringify({
-            previousCount: prev.removedShots?.length || 0,
-            newCount: newRemovedShots.length,
-            addedShotId: mediaLibraryShot.id,
-          }, null, 2)
+          JSON.stringify(
+            {
+              previousCount: prev.removedShots?.length || 0,
+              newCount: newRemovedShots.length,
+              addedShotId: mediaLibraryShot.id,
+            },
+            null,
+            2
+          )
         );
         return {
           ...prev,
@@ -1562,11 +1630,15 @@ export function EditSceneView({
     } else {
       console.log(
         "[EditSceneView] Skipping save to media library - video not completed:",
-        JSON.stringify({
-          shotId: shot.id,
-          hasVideo: !!shot.video,
-          videoStatus: shot.video?.status,
-        }, null, 2)
+        JSON.stringify(
+          {
+            shotId: shot.id,
+            hasVideo: !!shot.video,
+            videoStatus: shot.video?.status,
+          },
+          null,
+          2
+        )
       );
     }
   };
@@ -1587,7 +1659,9 @@ export function EditSceneView({
 
     // If video is playing, pause it first
     if (playingVideoId === shotId) {
-      const videoElement = document.querySelector(`video[data-shot-id="${shotId}"]`) as HTMLVideoElement;
+      const videoElement = document.querySelector(
+        `video[data-shot-id="${shotId}"]`
+      ) as HTMLVideoElement;
       videoElement?.pause();
       setPlayingVideoId(null);
     }
@@ -1624,7 +1698,11 @@ export function EditSceneView({
       } catch (error) {
         console.error(
           "[EditSceneView] Error deleting video:",
-          JSON.stringify({ shotId, error: error instanceof Error ? error.message : String(error) }, null, 2)
+          JSON.stringify(
+            { shotId, error: error instanceof Error ? error.message : String(error) },
+            null,
+            2
+          )
         );
         toast.error("Failed to delete video. Please try again.");
         setShotToDelete(null);
@@ -1637,11 +1715,15 @@ export function EditSceneView({
       const newRemovedShots = (prev.removedShots || []).filter((s) => s.id !== shotId);
       console.log(
         "[EditSceneView] Removing shot from removedShots:",
-        JSON.stringify({
-          shotId,
-          previousCount: prev.removedShots?.length || 0,
-          newCount: newRemovedShots.length,
-        }, null, 2)
+        JSON.stringify(
+          {
+            shotId,
+            previousCount: prev.removedShots?.length || 0,
+            newCount: newRemovedShots.length,
+          },
+          null,
+          2
+        )
       );
       return {
         ...prev,
@@ -1661,7 +1743,7 @@ export function EditSceneView({
       order: scene.shots.length,
       updatedAt: new Date().toISOString(),
     };
-    
+
     setScene((prev) => ({
       ...prev,
       shots: [...prev.shots, newShot],
@@ -1675,7 +1757,7 @@ export function EditSceneView({
     try {
       const response = await fetch(`/api/scenes/${scene.id}/compose?projectId=${projectId}`);
       const data = await response.json();
-      
+
       // Update progress and stage
       if (data.progress !== null && data.progress !== undefined) {
         setRenderProgress(data.progress);
@@ -1683,7 +1765,7 @@ export function EditSceneView({
       if (data.stage) {
         setRenderStage(data.stage);
       }
-      
+
       if (data.status === "completed" && data.compositeVideo) {
         setScene((prev) => ({
           ...prev,
@@ -1721,7 +1803,7 @@ export function EditSceneView({
     if (scene.compositeStatus === "processing") {
       // Poll immediately on mount
       pollCompositionStatus();
-      
+
       const interval = setInterval(async () => {
         const shouldStop = await pollCompositionStatus();
         if (shouldStop) {
@@ -1772,31 +1854,34 @@ export function EditSceneView({
     }
   };
 
-  const handleDownloadVideo = useCallback(async (videoUrl: string) => {
-    try {
-      toast.info("Downloading video...");
-      const response = await fetch(videoUrl);
-      if (!response.ok) {
-        throw new Error("Failed to fetch video");
+  const handleDownloadVideo = useCallback(
+    async (videoUrl: string) => {
+      try {
+        toast.info("Downloading video...");
+        const response = await fetch(videoUrl);
+        if (!response.ok) {
+          throw new Error("Failed to fetch video");
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `scene-${scene.sceneNumber}-${Date.now()}.mp4`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        toast.success("Video downloaded!");
+      } catch (error) {
+        console.error(
+          "[EditSceneView] Download video error:",
+          JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
+        );
+        toast.error("Failed to download video");
       }
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `scene-${scene.sceneNumber}-${Date.now()}.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-      toast.success("Video downloaded!");
-    } catch (error) {
-      console.error(
-        "[EditSceneView] Download video error:",
-        JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
-      );
-      toast.error("Failed to download video");
-    }
-  }, [scene.sceneNumber]);
+    },
+    [scene.sceneNumber]
+  );
 
   const handleExportSourceVideos = useCallback(async () => {
     try {
@@ -1805,12 +1890,12 @@ export function EditSceneView({
 
       // Collect all source video URLs from shots
       const sourceVideos: Array<{ url: string; filename: string }> = [];
-      
-      scene.shots.forEach((shot, index) => {
+
+      scene.shots.forEach((shot, _index) => {
         // Use originalVideo if it exists (original source before trimming), otherwise use video
         const videoUrl = shot.originalVideo?.url || shot.video?.url;
         if (videoUrl && shot.video?.status === "completed") {
-          const extension = videoUrl.split('.').pop()?.split('?')[0] || 'mp4';
+          const extension = videoUrl.split(".").pop()?.split("?")[0] || "mp4";
           sourceVideos.push({
             url: videoUrl,
             filename: `shot-${shot.order + 1}-${shot.id.substring(0, 8)}.${extension}`,
@@ -1845,7 +1930,11 @@ export function EditSceneView({
         } catch (error) {
           console.error(
             `[EditSceneView] Failed to download ${filename}:`,
-            JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
+            JSON.stringify(
+              { error: error instanceof Error ? error.message : String(error) },
+              null,
+              2
+            )
           );
           toast.error(`Failed to download ${filename}`);
         }
@@ -1854,7 +1943,7 @@ export function EditSceneView({
       // Generate zip file
       toast.info("Creating zip file...");
       const zipBlob = await zip.generateAsync({ type: "blob" });
-      
+
       // Download zip
       const zipUrl = window.URL.createObjectURL(zipBlob);
       const a = document.createElement("a");
@@ -2020,12 +2109,12 @@ export function EditSceneView({
         const timelineEndMs = prev.shots.reduce((total, shot) => {
           return total + getEffectiveDuration(shot);
         }, 0);
-        
+
         const positionedTrack: AudioTrack = {
           ...track,
           startTimeMs: timelineEndMs,
         };
-        
+
         return { ...prev, audioTracks: [...prev.audioTracks, positionedTrack] };
       }
     });
@@ -2042,14 +2131,14 @@ export function EditSceneView({
     setSelectedAudioTrack(null);
   };
 
-  const handleAudioTrackVolumeChange = (trackId: string, volume: number) => {
+  const _handleAudioTrackVolumeChange = (trackId: string, volume: number) => {
     setScene((prev) => ({
       ...prev,
       audioTracks: prev.audioTracks.map((t) => (t.id === trackId ? { ...t, volume } : t)),
     }));
   };
 
-  const handleAudioTrackMuteToggle = (trackId: string) => {
+  const _handleAudioTrackMuteToggle = (trackId: string) => {
     setScene((prev) => ({
       ...prev,
       audioTracks: prev.audioTracks.map((t) => (t.id === trackId ? { ...t, muted: !t.muted } : t)),
@@ -2062,17 +2151,17 @@ export function EditSceneView({
       // Calculate the shot's timeline position if sourceVideoShotId is provided
       let positionedTrack = audioTrack;
       if (audioTrack.sourceVideoShotId) {
-        const sourceShot = prev.shots.find(s => s.id === audioTrack.sourceVideoShotId);
+        const sourceShot = prev.shots.find((s) => s.id === audioTrack.sourceVideoShotId);
         if (sourceShot) {
           // Calculate timeline position by summing durations of shots before this one
           const shotStartMs = prev.shots
-            .filter(s => s.order < sourceShot.order)
+            .filter((s) => s.order < sourceShot.order)
             .reduce((total, shot) => total + getEffectiveDuration(shot), 0);
-          
+
           // Calculate shot end position (start + duration)
           const shotDurationMs = getEffectiveDuration(sourceShot);
           const shotEndMs = shotStartMs + shotDurationMs;
-          
+
           // Position audio at shot end (for overlap workflow)
           positionedTrack = {
             ...audioTrack,
@@ -2080,7 +2169,7 @@ export function EditSceneView({
           };
         }
       }
-      
+
       return {
         ...prev,
         audioTracks: [...prev.audioTracks, positionedTrack],
@@ -2093,7 +2182,9 @@ export function EditSceneView({
     setScene((prev) => ({
       ...prev,
       audioTracks: prev.audioTracks.map((t) =>
-        t.id === trackId ? { ...t, startTimeMs: newStartTimeMs, updatedAt: new Date().toISOString() } : t
+        t.id === trackId
+          ? { ...t, startTimeMs: newStartTimeMs, updatedAt: new Date().toISOString() }
+          : t
       ),
     }));
   };
@@ -2109,21 +2200,21 @@ export function EditSceneView({
   // Handle create overlap - trim video so it starts when audio starts
   const handleCreateOverlap = (audioTrack: AudioTrack) => {
     if (!audioTrack.sourceVideoShotId) return;
-    
+
     setScene((prev) => {
-      const sourceShot = prev.shots.find(s => s.id === audioTrack.sourceVideoShotId);
+      const sourceShot = prev.shots.find((s) => s.id === audioTrack.sourceVideoShotId);
       if (!sourceShot) return prev;
-      
+
       // Calculate shot's timeline start position
       const shotStartMs = prev.shots
-        .filter(s => s.order < sourceShot.order)
+        .filter((s) => s.order < sourceShot.order)
         .reduce((total, shot) => total + getEffectiveDuration(shot), 0);
-      
+
       // Calculate how much to trim from video start
       // Audio starts at audioTrack.startTimeMs, video should start there too
       const audioStartMs = audioTrack.startTimeMs;
       const trimAmount = audioStartMs - shotStartMs;
-      
+
       if (trimAmount > 0) {
         // Update shot with trim from start
         const updatedShots = prev.shots.map((s) =>
@@ -2135,10 +2226,10 @@ export function EditSceneView({
               }
             : s
         );
-        
+
         return { ...prev, shots: updatedShots };
       }
-      
+
       return prev;
     });
   };
@@ -2307,9 +2398,7 @@ export function EditSceneView({
                 </span>
               )}
               {saveStatus === "error" && (
-                <span className="flex items-center gap-1.5 text-destructive">
-                  Failed to save
-                </span>
+                <span className="flex items-center gap-1.5 text-destructive">Failed to save</span>
               )}
             </div>
           </div>
@@ -2478,11 +2567,16 @@ export function EditSceneView({
           {/* Main Area - Player & Timeline */}
           <div className="lg:col-span-3 space-y-2">
             <div className="w-full mx-auto">
-              <ScenePlayer ref={scenePlayerRef} shots={scene.shots} audioTracks={scene.audioTracks} masterVolume={scene.masterVolume ?? 1.0} />
+              <ScenePlayer
+                ref={scenePlayerRef}
+                shots={scene.shots}
+                audioTracks={scene.audioTracks}
+                masterVolume={scene.masterVolume ?? 1.0}
+              />
             </div>
 
             {/* Video Generation Status */}
-            {(pendingShots.size > 0 || scene.shots.some(s => s.video?.status === "failed")) && (
+            {(pendingShots.size > 0 || scene.shots.some((s) => s.video?.status === "failed")) && (
               <div className="space-y-2">
                 {/* Processing indicator */}
                 {pendingShots.size > 0 && (
@@ -2500,44 +2594,46 @@ export function EditSceneView({
                 )}
 
                 {/* Failed shots */}
-                {scene.shots.filter(s => s.video?.status === "failed").map((shot) => {
-                  const errorMessage = shot.video?.error || "Unknown error occurred";
-                  const isAudioError = errorMessage.toLowerCase().includes("audio");
-                  
-                  return (
-                    <div 
-                      key={shot.id}
-                      className="flex items-start gap-3 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-lg"
-                    >
-                      <X className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-destructive">
-                          Video generation failed
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {errorMessage}
-                        </p>
-                        {isAudioError && (
-                          <p className="text-xs text-muted-foreground mt-2 italic">
-                            💡 Tip: Audio errors often occur when the prompt doesn&apos;t provide enough content for the video duration. Try adding more action or dialogue.
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          scenePlayerRef.current?.pause();
-                          setSelectedShot(shot);
-                          setShowShotEditor(true);
-                        }}
-                        className="shrink-0 text-xs"
+                {scene.shots
+                  .filter((s) => s.video?.status === "failed")
+                  .map((shot) => {
+                    const errorMessage = shot.video?.error || "Unknown error occurred";
+                    const isAudioError = errorMessage.toLowerCase().includes("audio");
+
+                    return (
+                      <div
+                        key={shot.id}
+                        className="flex items-start gap-3 px-4 py-3 bg-destructive/10 border border-destructive/20 rounded-lg"
                       >
-                        Edit & Retry
-                      </Button>
-                    </div>
-                  );
-                })}
+                        <X className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-destructive">
+                            Video generation failed
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">{errorMessage}</p>
+                          {isAudioError && (
+                            <p className="text-xs text-muted-foreground mt-2 italic">
+                              💡 Tip: Audio errors often occur when the prompt doesn&apos;t provide
+                              enough content for the video duration. Try adding more action or
+                              dialogue.
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            scenePlayerRef.current?.pause();
+                            setSelectedShot(shot);
+                            setShowShotEditor(true);
+                          }}
+                          className="shrink-0 text-xs"
+                        >
+                          Edit & Retry
+                        </Button>
+                      </div>
+                    );
+                  })}
               </div>
             )}
 
@@ -2593,12 +2689,7 @@ export function EditSceneView({
                     <Plus className="h-4 w-4 mr-2" />
                     Video
                   </Button>
-                  <Button
-                    type="button"
-                    onClick={handleAddAudioTrack}
-                    variant="outline"
-                    size="sm"
-                  >
+                  <Button type="button" onClick={handleAddAudioTrack} variant="outline" size="sm">
                     <Plus className="h-4 w-4 mr-2" />
                     Audio
                   </Button>
@@ -2609,7 +2700,9 @@ export function EditSceneView({
                 {!(isRendering || scene.compositeStatus === "processing") && (
                   <Button
                     onClick={handleRenderScene}
-                    disabled={scene.shots.filter(s => s.video?.status === "completed").length === 0}
+                    disabled={
+                      scene.shots.filter((s) => s.video?.status === "completed").length === 0
+                    }
                     variant="outline"
                     size="sm"
                   >
@@ -2678,9 +2771,7 @@ export function EditSceneView({
                       </span>
                     </div>
                     {renderProgress !== null && (
-                      <span className="text-xs text-muted-foreground">
-                        {renderProgress}%
-                      </span>
+                      <span className="text-xs text-muted-foreground">{renderProgress}%</span>
                     )}
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -2706,14 +2797,11 @@ export function EditSceneView({
                       Media Library
                     </CardTitle>
                     <p className="text-sm text-muted-foreground mt-1">
-                      {removedShots.length} shot{removedShots.length !== 1 ? "s" : ""} with generated videos that have been removed from the timeline
+                      {removedShots.length} shot{removedShots.length !== 1 ? "s" : ""} with
+                      generated videos that have been removed from the timeline
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => setShowMediaLibrary(true)}
-                  >
+                  <Button type="button" variant="outline" onClick={() => setShowMediaLibrary(true)}>
                     <Video className="h-4 w-4 mr-2" />
                     View All
                   </Button>
@@ -2762,7 +2850,8 @@ export function EditSceneView({
                       size="sm"
                       onClick={() => setShowMediaLibrary(true)}
                     >
-                      View {removedShots.length - 8} more shot{removedShots.length - 8 !== 1 ? "s" : ""}
+                      View {removedShots.length - 8} more shot
+                      {removedShots.length - 8 !== 1 ? "s" : ""}
                     </Button>
                   </div>
                 )}
@@ -2785,7 +2874,6 @@ export function EditSceneView({
           </Button>
         </div>
       </div>
-
 
       {/* Shot Editor Dialog */}
       <ShotEditorDialog
@@ -2811,12 +2899,14 @@ export function EditSceneView({
       />
 
       {/* Media Library Dialog */}
-      <Dialog 
-        open={showMediaLibrary} 
+      <Dialog
+        open={showMediaLibrary}
         onOpenChange={(open) => {
           if (!open && playingVideoId) {
             // Pause any playing video when dialog closes
-            const videoElement = document.querySelector(`video[data-shot-id="${playingVideoId}"]`) as HTMLVideoElement;
+            const videoElement = document.querySelector(
+              `video[data-shot-id="${playingVideoId}"]`
+            ) as HTMLVideoElement;
             videoElement?.pause();
             setPlayingVideoId(null);
           }
@@ -2830,7 +2920,8 @@ export function EditSceneView({
               Media Library
             </DialogTitle>
             <DialogDescription>
-              Shots with generated videos that have been removed from the timeline. You can add them back to the scene as new shots or permanently remove them.
+              Shots with generated videos that have been removed from the timeline. You can add them
+              back to the scene as new shots or permanently remove them.
             </DialogDescription>
           </DialogHeader>
 
@@ -2844,12 +2935,14 @@ export function EditSceneView({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {removedShots.map((shot) => {
                   const isPlaying = playingVideoId === shot.id;
-                  
+
                   const handleVideoClick = () => {
                     if (!shot.video?.url) return;
-                    
-                    const videoElement = document.querySelector(`video[data-shot-id="${shot.id}"]`) as HTMLVideoElement;
-                    
+
+                    const videoElement = document.querySelector(
+                      `video[data-shot-id="${shot.id}"]`
+                    ) as HTMLVideoElement;
+
                     if (isPlaying && videoElement) {
                       // Pause this video
                       videoElement.pause();
@@ -2857,7 +2950,9 @@ export function EditSceneView({
                     } else {
                       // Pause any other playing video
                       if (playingVideoId) {
-                        const otherVideo = document.querySelector(`video[data-shot-id="${playingVideoId}"]`) as HTMLVideoElement;
+                        const otherVideo = document.querySelector(
+                          `video[data-shot-id="${playingVideoId}"]`
+                        ) as HTMLVideoElement;
                         otherVideo?.pause();
                       }
                       // Play this video
@@ -2873,31 +2968,31 @@ export function EditSceneView({
                   };
 
                   return (
-                  <Card key={shot.id} className="overflow-hidden">
-                      <div 
+                    <Card key={shot.id} className="overflow-hidden">
+                      <div
                         className="relative aspect-video bg-muted/30 cursor-pointer group"
                         onClick={handleVideoClick}
                       >
                         {shot.video?.thumbnailUrl && !isPlaying ? (
                           <>
-                        <Image
-                          src={shot.video.thumbnailUrl}
-                          alt={shot.prompt}
-                          fill
-                          className="object-cover"
-                        />
+                            <Image
+                              src={shot.video.thumbnailUrl}
+                              alt={shot.prompt}
+                              fill
+                              className="object-cover"
+                            />
                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <PlayCircle className="h-16 w-16 text-white/90" />
                             </div>
                           </>
-                      ) : shot.video?.url ? (
+                        ) : shot.video?.url ? (
                           <>
-                        <video
+                            <video
                               data-shot-id={shot.id}
-                          src={shot.video.url}
-                          className="w-full h-full object-cover"
-                          muted
-                          playsInline
+                              src={shot.video.url}
+                              className="w-full h-full object-cover"
+                              muted
+                              playsInline
                               onEnded={handleVideoEnded}
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -2910,45 +3005,45 @@ export function EditSceneView({
                               </div>
                             )}
                           </>
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Video className="h-12 w-12 text-muted-foreground opacity-50" />
-                        </div>
-                      )}
-                    </div>
-                    <CardContent className="p-4 space-y-3">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium line-clamp-2">{shot.prompt}</p>
-                        {shot.video?.durationMs && (
-                          <p className="text-xs text-muted-foreground">
-                            Duration: {(shot.video.durationMs / 1000).toFixed(1)}s
-                          </p>
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Video className="h-12 w-12 text-muted-foreground opacity-50" />
+                          </div>
                         )}
                       </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="default"
-                          size="sm"
-                          onClick={() => handleAddShotFromLibrary(shot)}
-                          className="flex-1"
-                        >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add to Scene
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleRemoveFromLibraryClick(shot.id)}
-                          className="flex-1"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Delete
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium line-clamp-2">{shot.prompt}</p>
+                          {shot.video?.durationMs && (
+                            <p className="text-xs text-muted-foreground">
+                              Duration: {(shot.video.durationMs / 1000).toFixed(1)}s
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            type="button"
+                            variant="default"
+                            size="sm"
+                            onClick={() => handleAddShotFromLibrary(shot)}
+                            className="flex-1"
+                          >
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add to Scene
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleRemoveFromLibraryClick(shot.id)}
+                            className="flex-1"
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" />
+                            Delete
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
                   );
                 })}
               </div>
@@ -2969,22 +3064,15 @@ export function EditSceneView({
           <DialogHeader>
             <DialogTitle>Delete Video</DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete this video? This action cannot be undone. The video file will be removed from storage.
+              Are you sure you want to permanently delete this video? This action cannot be undone.
+              The video file will be removed from storage.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setShotToDelete(null)}
-            >
+            <Button type="button" variant="outline" onClick={() => setShotToDelete(null)}>
               Cancel
             </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleRemoveFromLibrary}
-            >
+            <Button type="button" variant="destructive" onClick={handleRemoveFromLibrary}>
               <Trash2 className="h-4 w-4 mr-2" />
               Delete Permanently
             </Button>
@@ -3009,234 +3097,234 @@ export function EditSceneView({
 
       {/* Generate Video Dialog - Only shown in development/localhost */}
       {isVideoGenerationEnabled() && (
-      <Dialog open={showGenerateVideoDialog} onOpenChange={setShowGenerateVideoDialog}>
-        <DialogContent className="max-w-[95vw] xl:max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
-          <DialogHeader className="shrink-0 pb-4 border-b">
-            <div className="flex items-center justify-between">
-              <DialogTitle className="text-xl font-semibold flex items-center gap-2">
-                <Film className="h-5 w-5 text-primary" />
-                Generate Video
-              </DialogTitle>
-              {/* Mode Selection - Inline with title on larger screens */}
-              <div className="flex gap-1 p-0.5 bg-muted rounded-lg">
-                <button
-                  type="button"
-                  onClick={() => setGenerateMode("start-end-frames")}
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
-                    generateMode === "start-end-frames"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <ImageIcon className="h-4 w-4" />
-                  Start/End Frames
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setGenerateMode("ingredients")}
-                  className={cn(
-                    "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
-                    generateMode === "ingredients"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                >
-                  <Sparkles className="h-4 w-4" />
-                  Ingredients
-                </button>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="flex-1 overflow-y-auto py-6">
-            {/* Start/End Frames Mode - Side by side on XL */}
-            {generateMode === "start-end-frames" && (
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-8">
-                {/* Start Frame */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                      1
-                    </span>
-                    <Label className="text-base font-medium">Start Frame</Label>
-                  </div>
-                  {startFrameImage ? (
-                    <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-border group shadow-sm">
-                      <Image
-                        src={startFrameImage}
-                        alt="Start frame"
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setStartFrameImage(undefined)}
-                        className="absolute top-3 right-3 p-1.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                        <span className="text-white text-sm font-medium">Start Frame</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <ImageInputZone
-                      onImageUrl={(url) => setStartFrameImage(url)}
-                      onUploadFile={(file) => handleImageUpload(file, "start")}
-                      projectId={projectId}
-                      sceneId={scene.id}
-                      disabled={isUploadingImage}
-                      placeholder="Describe the start frame..."
-                      libraryImages={libraryImages}
-                    />
-                  )}
-                </div>
-
-                {/* End Frame */}
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
-                      2
-                    </span>
-                    <Label className="text-base font-medium">End Frame</Label>
-                  </div>
-                  {endFrameImage ? (
-                    <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-border group shadow-sm">
-                      <Image src={endFrameImage} alt="End frame" fill className="object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setEndFrameImage(undefined)}
-                        className="absolute top-3 right-3 p-1.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                        <span className="text-white text-sm font-medium">End Frame</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <ImageInputZone
-                      onImageUrl={(url) => setEndFrameImage(url)}
-                      onUploadFile={(file) => handleImageUpload(file, "end")}
-                      projectId={projectId}
-                      sceneId={scene.id}
-                      disabled={isUploadingImage}
-                      placeholder="Describe the end frame..."
-                      libraryImages={libraryImages}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Ingredients Mode - Grid layout on XL */}
-            {generateMode === "ingredients" && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2">
-                  <Label className="text-base font-medium">Reference Images (up to 3)</Label>
-                  <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
-                    {referenceImages.length}/3 selected
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {referenceImages.map((img, index) => (
-                    <div
-                      key={index}
-                      className="relative aspect-video rounded-xl overflow-hidden border-2 border-border group shadow-sm"
-                    >
-                      <Image
-                        src={img}
-                        alt={`Reference ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setReferenceImages(referenceImages.filter((_, i) => i !== index))
-                        }
-                        className="absolute top-3 right-3 p-1.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                      <div className="absolute top-3 left-3">
-                        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg">
-                          {index + 1}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  {referenceImages.length < 3 && (
-                    <ImageInputZone
-                      onImageUrl={(url) => {
-                        if (referenceImages.length < 3) {
-                          setReferenceImages([...referenceImages, url]);
-                        }
-                      }}
-                      onUploadFile={(file) => handleImageUpload(file, "reference")}
-                      projectId={projectId}
-                      sceneId={scene.id}
-                      disabled={isUploadingImage}
-                      placeholder="Describe a reference image..."
-                      libraryImages={libraryImages}
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Fixed Footer with Prompt */}
-          <div className="shrink-0 border-t pt-4 space-y-4 bg-background">
-            <div className="space-y-2">
-              <Label htmlFor="generate-prompt" className="text-base font-medium">
-                Prompt
-              </Label>
-              <div className="flex gap-3">
-                <Textarea
-                  id="generate-prompt"
-                  value={generatePrompt}
-                  onChange={(e) => setGeneratePrompt(e.target.value)}
-                  placeholder={
-                    generateMode === "start-end-frames"
-                      ? "Describe the motion or transition between the start and end frames..."
-                      : "Describe the video you want to generate using the reference images..."
-                  }
-                  rows={2}
-                  className="bg-background resize-none flex-1"
-                />
-                <div className="flex flex-col gap-2 shrink-0">
-                  <Button
+        <Dialog open={showGenerateVideoDialog} onOpenChange={setShowGenerateVideoDialog}>
+          <DialogContent className="max-w-[95vw] xl:max-w-7xl max-h-[90vh] overflow-hidden flex flex-col">
+            <DialogHeader className="shrink-0 pb-4 border-b">
+              <div className="flex items-center justify-between">
+                <DialogTitle className="text-xl font-semibold flex items-center gap-2">
+                  <Film className="h-5 w-5 text-primary" />
+                  Generate Video
+                </DialogTitle>
+                {/* Mode Selection - Inline with title on larger screens */}
+                <div className="flex gap-1 p-0.5 bg-muted rounded-lg">
+                  <button
                     type="button"
-                    size="lg"
-                    onClick={handleGenerateVideoSubmit}
-                    disabled={isGeneratingVideo || !generatePrompt.trim()}
-                    className="h-full min-w-[140px]"
-                  >
-                    {isGeneratingVideo ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Generate
-                      </>
+                    onClick={() => setGenerateMode("start-end-frames")}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                      generateMode === "start-end-frames"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
                     )}
-                  </Button>
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    Start/End Frames
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGenerateMode("ingredients")}
+                    className={cn(
+                      "px-4 py-2 text-sm font-medium rounded-md transition-all flex items-center gap-2",
+                      generateMode === "ingredients"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Ingredients
+                  </button>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {generateMode === "start-end-frames"
-                  ? "Veo 3.1 will animate between your start and end frames based on this prompt."
-                  : "Veo 3.1 will use your reference images to maintain style and character consistency."}
-              </p>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-y-auto py-6">
+              {/* Start/End Frames Mode - Side by side on XL */}
+              {generateMode === "start-end-frames" && (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 xl:gap-8">
+                  {/* Start Frame */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                        1
+                      </span>
+                      <Label className="text-base font-medium">Start Frame</Label>
+                    </div>
+                    {startFrameImage ? (
+                      <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-border group shadow-sm">
+                        <Image
+                          src={startFrameImage}
+                          alt="Start frame"
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setStartFrameImage(undefined)}
+                          className="absolute top-3 right-3 p-1.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                          <span className="text-white text-sm font-medium">Start Frame</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <ImageInputZone
+                        onImageUrl={(url) => setStartFrameImage(url)}
+                        onUploadFile={(file) => handleImageUpload(file, "start")}
+                        projectId={projectId}
+                        sceneId={scene.id}
+                        disabled={isUploadingImage}
+                        placeholder="Describe the start frame..."
+                        libraryImages={libraryImages}
+                      />
+                    )}
+                  </div>
+
+                  {/* End Frame */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold">
+                        2
+                      </span>
+                      <Label className="text-base font-medium">End Frame</Label>
+                    </div>
+                    {endFrameImage ? (
+                      <div className="relative aspect-video rounded-xl overflow-hidden border-2 border-border group shadow-sm">
+                        <Image src={endFrameImage} alt="End frame" fill className="object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setEndFrameImage(undefined)}
+                          className="absolute top-3 right-3 p-1.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                          <span className="text-white text-sm font-medium">End Frame</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <ImageInputZone
+                        onImageUrl={(url) => setEndFrameImage(url)}
+                        onUploadFile={(file) => handleImageUpload(file, "end")}
+                        projectId={projectId}
+                        sceneId={scene.id}
+                        disabled={isUploadingImage}
+                        placeholder="Describe the end frame..."
+                        libraryImages={libraryImages}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Ingredients Mode - Grid layout on XL */}
+              {generateMode === "ingredients" && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-base font-medium">Reference Images (up to 3)</Label>
+                    <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">
+                      {referenceImages.length}/3 selected
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {referenceImages.map((img, index) => (
+                      <div
+                        key={index}
+                        className="relative aspect-video rounded-xl overflow-hidden border-2 border-border group shadow-sm"
+                      >
+                        <Image
+                          src={img}
+                          alt={`Reference ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReferenceImages(referenceImages.filter((_, i) => i !== index))
+                          }
+                          className="absolute top-3 right-3 p-1.5 rounded-full bg-destructive text-destructive-foreground opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                        <div className="absolute top-3 left-3">
+                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shadow-lg">
+                            {index + 1}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {referenceImages.length < 3 && (
+                      <ImageInputZone
+                        onImageUrl={(url) => {
+                          if (referenceImages.length < 3) {
+                            setReferenceImages([...referenceImages, url]);
+                          }
+                        }}
+                        onUploadFile={(file) => handleImageUpload(file, "reference")}
+                        projectId={projectId}
+                        sceneId={scene.id}
+                        disabled={isUploadingImage}
+                        placeholder="Describe a reference image..."
+                        libraryImages={libraryImages}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
+            {/* Fixed Footer with Prompt */}
+            <div className="shrink-0 border-t pt-4 space-y-4 bg-background">
+              <div className="space-y-2">
+                <Label htmlFor="generate-prompt" className="text-base font-medium">
+                  Prompt
+                </Label>
+                <div className="flex gap-3">
+                  <Textarea
+                    id="generate-prompt"
+                    value={generatePrompt}
+                    onChange={(e) => setGeneratePrompt(e.target.value)}
+                    placeholder={
+                      generateMode === "start-end-frames"
+                        ? "Describe the motion or transition between the start and end frames..."
+                        : "Describe the video you want to generate using the reference images..."
+                    }
+                    rows={2}
+                    className="bg-background resize-none flex-1"
+                  />
+                  <div className="flex flex-col gap-2 shrink-0">
+                    <Button
+                      type="button"
+                      size="lg"
+                      onClick={handleGenerateVideoSubmit}
+                      disabled={isGeneratingVideo || !generatePrompt.trim()}
+                      className="h-full min-w-[140px]"
+                    >
+                      {isGeneratingVideo ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 mr-2" />
+                          Generate
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {generateMode === "start-end-frames"
+                    ? "Veo 3.1 will animate between your start and end frames based on this prompt."
+                    : "Veo 3.1 will use your reference images to maintain style and character consistency."}
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* Screenplay Edit Dialog */}
@@ -3471,7 +3559,8 @@ export function EditSceneView({
                   and package them into a zip file.
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Total videos to export: {scene.shots.filter((s) => s.video?.status === "completed").length}
+                  Total videos to export:{" "}
+                  {scene.shots.filter((s) => s.video?.status === "completed").length}
                 </p>
               </div>
             )}
@@ -3488,7 +3577,10 @@ export function EditSceneView({
             <Button
               type="button"
               onClick={handleExportSourceVideos}
-              disabled={isExporting || scene.shots.filter((s) => s.video?.status === "completed").length === 0}
+              disabled={
+                isExporting ||
+                scene.shots.filter((s) => s.video?.status === "completed").length === 0
+              }
             >
               {isExporting ? (
                 <>

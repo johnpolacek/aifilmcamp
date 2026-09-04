@@ -23,13 +23,7 @@ interface ProjectViewProps {
   posts: Post[];
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card className="border-border bg-card/70">
       <CardHeader>
@@ -118,7 +112,9 @@ export function ProjectView({
         <Card className="border-border bg-muted/30">
           <CardContent className="flex flex-wrap items-center gap-3 p-4 text-sm text-muted-foreground">
             <span>{project.characters?.length || 0} characters</span>
-            <span>{project.development?.scriptBreakdown?.length || project.scenes?.length || 0} scenes</span>
+            <span>
+              {project.development?.scriptBreakdown?.length || project.scenes?.length || 0} scenes
+            </span>
             <span>{assetCount} asset groups</span>
             <span>{promptShotCount} prompt shots</span>
             <span>{publishedPhases.size} published phases</span>
@@ -128,7 +124,9 @@ export function ProjectView({
         {publishedPhases.has("concept") && (
           <Section title="Concept">
             <p className="text-sm leading-relaxed text-muted-foreground">
-              {project.development?.conceptStatement || project.development?.conceptSeed || "No concept published yet."}
+              {project.development?.conceptStatement ||
+                project.development?.conceptSeed ||
+                "No concept published yet."}
             </p>
           </Section>
         )}
@@ -137,14 +135,18 @@ export function ProjectView({
           <Section title="Title and Logline">
             <div className="space-y-2">
               <p className="text-lg font-semibold">{project.title}</p>
-              {project.logline && <p className="text-sm text-muted-foreground">{project.logline}</p>}
+              {project.logline && (
+                <p className="text-sm text-muted-foreground">{project.logline}</p>
+              )}
             </div>
           </Section>
         )}
 
         {publishedPhases.has("film-length") && (
           <Section title="Target Runtime">
-            <p className="text-sm text-muted-foreground">{project.filmLength || project.duration}</p>
+            <p className="text-sm text-muted-foreground">
+              {project.filmLength || project.duration}
+            </p>
           </Section>
         )}
 
@@ -152,7 +154,10 @@ export function ProjectView({
           <Section title="Characters">
             <div className="grid gap-4 md:grid-cols-2">
               {project.characters?.map((character, index) => (
-                <div key={`${character.name}-${index}`} className="rounded-lg border border-border bg-background p-4">
+                <div
+                  key={`${character.name}-${index}`}
+                  className="rounded-lg border border-border bg-background p-4"
+                >
                   {character.mainImage && project.username && (
                     <div className="relative mb-4 aspect-video overflow-hidden rounded-lg border border-border">
                       <OptimizedImage
@@ -172,7 +177,8 @@ export function ProjectView({
                   )}
                   {character.motivation && (
                     <p className="mt-2 text-sm text-muted-foreground">
-                      <span className="font-medium text-foreground">Motivation:</span> {character.motivation}
+                      <span className="font-medium text-foreground">Motivation:</span>{" "}
+                      {character.motivation}
                     </p>
                   )}
                   {character.arc && (
@@ -251,7 +257,10 @@ export function ProjectView({
                 {(project.characters || [])
                   .filter((character) => character.mainImage)
                   .map((character) => (
-                    <div key={character.name} className="rounded-lg border border-border bg-background p-3">
+                    <div
+                      key={character.name}
+                      className="rounded-lg border border-border bg-background p-3"
+                    >
                       <p className="mb-2 text-sm font-medium">{character.name}</p>
                       {project.username && character.mainImage && (
                         <div className="relative aspect-video overflow-hidden rounded-lg">
@@ -276,7 +285,10 @@ export function ProjectView({
                 {(project.setting?.locations || [])
                   .filter((location) => location.image)
                   .map((location) => (
-                    <div key={location.name} className="rounded-lg border border-border bg-background p-3">
+                    <div
+                      key={location.name}
+                      className="rounded-lg border border-border bg-background p-3"
+                    >
                       <p className="mb-2 text-sm font-medium">{location.name}</p>
                       {project.username && location.image && (
                         <div className="relative aspect-video overflow-hidden rounded-lg">
@@ -310,7 +322,10 @@ export function ProjectView({
                   )}
                   <div className="mt-4 space-y-3">
                     {(scene.promptShots || []).map((shot) => (
-                      <div key={shot.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                      <div
+                        key={shot.id}
+                        className="rounded-lg border border-border bg-muted/30 p-3"
+                      >
                         <p className="font-medium">
                           Shot {shot.shotNumber}: {shot.title}
                         </p>
@@ -319,7 +334,9 @@ export function ProjectView({
                           <span>Camera: {shot.cameraMovement || "Not set"}</span>
                           <span>Duration: {shot.durationEstimateSeconds || 0}s</span>
                         </div>
-                        {shot.action && <p className="mt-2 text-sm text-muted-foreground">{shot.action}</p>}
+                        {shot.action && (
+                          <p className="mt-2 text-sm text-muted-foreground">{shot.action}</p>
+                        )}
                         <pre className="mt-3 whitespace-pre-wrap rounded-md border border-border bg-background p-3 text-xs leading-relaxed">
                           {shot.prompt}
                         </pre>

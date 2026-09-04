@@ -5,10 +5,7 @@ import { getScene, saveScene } from "@/lib/scenes";
  * POST /api/scenes/[sceneId]/compose/webhook
  * Webhook called by the video composer when composition is complete
  */
-export async function POST(
-  request: Request,
-  { params }: { params: Promise<{ sceneId: string }> }
-) {
+export async function POST(request: Request, { params }: { params: Promise<{ sceneId: string }> }) {
   try {
     const { sceneId } = await params;
     const { searchParams } = new URL(request.url);
@@ -16,10 +13,7 @@ export async function POST(
 
     if (!projectId) {
       console.error("[compose-webhook] Missing projectId");
-      return NextResponse.json(
-        { error: "projectId query param is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "projectId query param is required" }, { status: 400 });
     }
 
     const result = await request.json();
@@ -88,16 +82,8 @@ export async function POST(
   } catch (error) {
     console.error(
       "[compose-webhook] Error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
-    return NextResponse.json(
-      { error: "Failed to process webhook" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to process webhook" }, { status: 500 });
   }
 }
-

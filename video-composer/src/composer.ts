@@ -1,24 +1,18 @@
+import { randomUUID } from "node:crypto";
+import { mkdir, rm } from "node:fs/promises";
+import { join } from "node:path";
 import ffmpeg from "fluent-ffmpeg";
-import { mkdir, rm } from "fs/promises";
-import { join } from "path";
-import { v4 as uuid } from "uuid";
 import { downloadFile } from "./downloader.js";
-import { uploadToS3 } from "./uploader.js";
 import { createJob, updateJob } from "./job-store.js";
-import type {
-  CompositionRequest,
-  CompositionResult,
-  CompositionAudioTrack,
-} from "./types.js";
+import type { CompositionAudioTrack, CompositionRequest, CompositionResult } from "./types.js";
+import { uploadToS3 } from "./uploader.js";
 
 /**
  * Process a video composition request
  * Downloads source files, composites with FFmpeg, uploads result
  */
-export async function processComposition(
-  request: CompositionRequest
-): Promise<void> {
-  const workDir = join("/tmp", `compose-${uuid()}`);
+export async function processComposition(request: CompositionRequest): Promise<void> {
+  const workDir = join("/tmp", `compose-${randomUUID()}`);
 
   // Initialize job tracking
   createJob(request.jobId);
@@ -43,7 +37,8 @@ export async function processComposition(
     // 1. Download all source files
     const videoFiles: string[] = [];
     const sortedShots = request.shots.sort((a, b) => a.order - b.order);
-    const totalDownloads = sortedShots.length + (request.audioTracks?.filter(t => !t.muted).length || 0);
+    const totalDownloads =
+      sortedShots.length + (request.audioTracks?.filter((t) => !t.muted).length || 0);
     let downloadedCount = 0;
 
     updateJob(request.jobId, {
@@ -211,23 +206,23 @@ async function composeWithFfmpeg(
     } catch (err) {
       console.error(
         "[composer] Failed to probe video duration:",
-        JSON.stringify({ videoFile, error: err instanceof Error ? err.message : String(err) }, null, 2)
+        JSON.stringify(
+          { videoFile, error: err instanceof Error ? err.message : String(err) },
+          null,
+          2
+        )
       );
       actualDurations.push(0); // Will fall back to shot.durationMs
     }
   }
 
-  console.log(
-    "[composer] Probed video durations:",
-    JSON.stringify({ actualDurations }, null, 2)
-  );
+  console.log("[composer] Probed video durations:", JSON.stringify({ actualDurations }, null, 2));
 
   // Calculate total video duration for audio track positioning
-  let totalVideoDurationMs = 0;
+  let _totalVideoDurationMs = 0;
   for (const shot of shots) {
-    const effectiveDuration =
-      shot.durationMs - shot.trimStartMs - shot.trimEndMs;
-    totalVideoDurationMs += effectiveDuration;
+    const effectiveDuration = shot.durationMs - shot.trimStartMs - shot.trimEndMs;
+    _totalVideoDurationMs += effectiveDuration;
   }
 
   return new Promise((resolve, reject) => {
@@ -251,18 +246,19 @@ async function composeWithFfmpeg(
     // Process each video shot
     shots.forEach((shot, i) => {
       const trimStart = shot.trimStartMs / 1000;
-      const storedDuration =
-        (shot.durationMs - shot.trimStartMs - shot.trimEndMs) / 1000;
-      
+      const storedDuration = (shot.durationMs - shot.trimStartMs - shot.trimEndMs) / 1000;
+
       // Use actual probed duration if available, otherwise fall back to stored duration
       const actualDurationMs = actualDurations[i] || shot.durationMs;
       const actualDuration = actualDurationMs / 1000;
-      
+
       // For fade calculations, use the smaller of stored vs actual to be safe
       // This ensures fade out starts early enough to complete before video ends
       const needsTrim = shot.trimStartMs > 0 || shot.trimEndMs > 0;
-      const effectiveDuration = needsTrim ? storedDuration : Math.min(storedDuration, actualDuration);
-      
+      const effectiveDuration = needsTrim
+        ? storedDuration
+        : Math.min(storedDuration, actualDuration);
+
       const vLabel = `v${i}`;
       const aLabel = `a${i}`;
       const fadeDuration = (shot.fadeDurationMs || 500) / 1000;
@@ -271,22 +267,26 @@ async function composeWithFfmpeg(
 
       console.log(
         "[composer] Processing shot fade effects:",
-        JSON.stringify({
-          shotId: shot.id,
-          order: shot.order,
-          durationMs: shot.durationMs,
-          actualDurationMs,
-          trimStartMs: shot.trimStartMs,
-          trimEndMs: shot.trimEndMs,
-          storedDuration,
-          actualDuration,
-          effectiveDuration,
-          needsTrim,
-          fadeInType,
-          fadeOutType,
-          fadeDurationMs: shot.fadeDurationMs,
-          fadeDurationSeconds: fadeDuration,
-        }, null, 2)
+        JSON.stringify(
+          {
+            shotId: shot.id,
+            order: shot.order,
+            durationMs: shot.durationMs,
+            actualDurationMs,
+            trimStartMs: shot.trimStartMs,
+            trimEndMs: shot.trimEndMs,
+            storedDuration,
+            actualDuration,
+            effectiveDuration,
+            needsTrim,
+            fadeInType,
+            fadeOutType,
+            fadeDurationMs: shot.fadeDurationMs,
+            fadeDurationSeconds: fadeDuration,
+          },
+          null,
+          2
+        )
       );
 
       // Build video filter chain
@@ -294,13 +294,13 @@ async function composeWithFfmpeg(
       let videoFilter = needsTrim
         ? `[${i}:v]trim=start=${trimStart}:duration=${storedDuration},setpts=PTS-STARTPTS,format=yuv420p`
         : `[${i}:v]setpts=PTS-STARTPTS,format=yuv420p`;
-      
+
       // Apply fade in if needed
       if (fadeInType !== "none") {
         const color = fadeInType === "white" ? ":c=white" : "";
         videoFilter += `,fade=t=in:st=0:d=${fadeDuration}${color}`;
       }
-      
+
       // Apply fade out if needed
       if (fadeOutType !== "none") {
         // Use effective duration (actual video duration) for fade out timing
@@ -310,19 +310,23 @@ async function composeWithFfmpeg(
         videoFilter += `,fade=t=out:st=${fadeOutStart}:d=${fadeDuration}${color}`;
         console.log(
           "[composer] Fade out filter:",
-          JSON.stringify({ 
-            needsTrim, 
-            storedDuration,
-            actualDuration,
-            effectiveDuration,
-            fadeOutStart, 
-            fadeDuration, 
-            color: color || "black", 
-            filterPart: `fade=t=out:st=${fadeOutStart}:d=${fadeDuration}${color}` 
-          }, null, 2)
+          JSON.stringify(
+            {
+              needsTrim,
+              storedDuration,
+              actualDuration,
+              effectiveDuration,
+              fadeOutStart,
+              fadeDuration,
+              color: color || "black",
+              filterPart: `fade=t=out:st=${fadeOutStart}:d=${fadeDuration}${color}`,
+            },
+            null,
+            2
+          )
         );
       }
-      
+
       videoFilter += `[${vLabel}]`;
       filters.push(videoFilter);
 
@@ -347,12 +351,8 @@ async function composeWithFfmpeg(
     // Concatenate all video segments
     const concatVideoInput = videoLabels.join("");
     const concatAudioInput = audioLabels.join("");
-    filters.push(
-      `${concatVideoInput}concat=n=${shots.length}:v=1:a=0[outv]`
-    );
-    filters.push(
-      `${concatAudioInput}concat=n=${shots.length}:v=0:a=1[concat_audio]`
-    );
+    filters.push(`${concatVideoInput}concat=n=${shots.length}:v=1:a=0[outv]`);
+    filters.push(`${concatAudioInput}concat=n=${shots.length}:v=0:a=1[concat_audio]`);
 
     // Handle additional audio tracks (overlay on concatenated video audio)
     if (audioFiles.length > 0) {
@@ -379,7 +379,7 @@ async function composeWithFfmpeg(
       filters.push(
         `${audioTrackLabels.join("")}amix=inputs=${audioTrackLabels.length}:duration=longest:dropout_transition=0[mixed_audio]`
       );
-      
+
       // Apply master volume to mixed audio
       const masterVolume = request.masterVolume ?? 1.0;
       if (masterVolume !== 1.0) {
@@ -398,10 +398,7 @@ async function composeWithFfmpeg(
       }
     }
 
-    console.log(
-      "[composer] FFmpeg filter complex:",
-      JSON.stringify({ filters }, null, 2)
-    );
+    console.log("[composer] FFmpeg filter complex:", JSON.stringify({ filters }, null, 2));
 
     command
       .complexFilter(filters)
@@ -426,10 +423,7 @@ async function composeWithFfmpeg(
       ])
       .output(outputPath)
       .on("start", (commandLine) => {
-        console.log(
-          "[composer] FFmpeg command:",
-          JSON.stringify({ commandLine }, null, 2)
-        );
+        console.log("[composer] FFmpeg command:", JSON.stringify({ commandLine }, null, 2));
       })
       .on("progress", (progress) => {
         if (progress.percent) {
@@ -437,7 +431,9 @@ async function composeWithFfmpeg(
           // Normalize to 20-90% range (downloads are 0-20%, upload is 90-100%)
           const normalizedProgress = Math.min(100, progress.percent);
           const mappedProgress = 20 + Math.round((normalizedProgress / 100) * 70);
-          console.log(`[composer] Progress: ${Math.round(progress.percent)}% (mapped: ${mappedProgress}%)`);
+          console.log(
+            `[composer] Progress: ${Math.round(progress.percent)}% (mapped: ${mappedProgress}%)`
+          );
           updateJob(jobId, {
             stage: `Encoding video... ${Math.min(100, Math.round(progress.percent))}%`,
             progress: mappedProgress,
@@ -467,10 +463,7 @@ async function composeWithFfmpeg(
 /**
  * Generate a thumbnail from the video
  */
-async function generateThumbnail(
-  videoPath: string,
-  outputPath: string
-): Promise<void> {
+async function generateThumbnail(videoPath: string, outputPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
     ffmpeg(videoPath)
       .seekInput(1) // 1 second in
@@ -498,14 +491,8 @@ async function getVideoDuration(videoPath: string): Promise<number> {
 /**
  * Send webhook notification
  */
-async function sendWebhook(
-  url: string,
-  result: CompositionResult
-): Promise<void> {
-  console.log(
-    "[composer] Sending webhook:",
-    JSON.stringify({ url, result }, null, 2)
-  );
+async function sendWebhook(url: string, result: CompositionResult): Promise<void> {
+  console.log("[composer] Sending webhook:", JSON.stringify({ url, result }, null, 2));
 
   try {
     const response = await fetch(url, {
@@ -532,12 +519,7 @@ async function sendWebhook(
   } catch (error) {
     console.error(
       "[composer] Webhook error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
   }
 }
-

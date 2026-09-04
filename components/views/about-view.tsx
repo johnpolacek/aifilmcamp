@@ -1,4 +1,4 @@
-import { Flame } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 export function AboutView() {
   return (
@@ -10,7 +10,7 @@ export function AboutView() {
         <div className="container mx-auto px-4 lg:px-8 relative">
           <div className="max-w-4xl mx-auto text-center">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6">
-              <Flame className="h-4 w-4" />
+              <Logo className="h-4 w-4" />
               <span>A Pre-Production Platform for AI Film Creators</span>
             </div>
 

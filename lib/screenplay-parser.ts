@@ -583,7 +583,7 @@ export function parseScreenplayToElements(text: string): ScreenplayElement[] {
   }
 
   const lines = text.split("\n");
-  const linesToLog = lines.slice(0, 40);
+  const _linesToLog = lines.slice(0, 40);
   const elements: ScreenplayElement[] = [];
 
   let i = 0;
@@ -756,7 +756,7 @@ export function parseScreenplayToElements(text: string): ScreenplayElement[] {
     i++;
   }
 
-  const elementsToLog = elements.slice(0, 40);
+  const _elementsToLog = elements.slice(0, 40);
   return elements;
 }
 

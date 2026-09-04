@@ -3,7 +3,7 @@
  * Combines multiple scene videos into a single film
  */
 
-import type { Scene, GeneratedVideo } from "./scenes";
+import type { GeneratedVideo, Scene } from "./scenes";
 
 export interface StitchOptions {
   projectId: string;
@@ -26,24 +26,21 @@ export interface StitchResult {
 export function getCompletedVideos(scenes: Scene[]): GeneratedVideo[] {
   return scenes
     .sort((a, b) => a.sceneNumber - b.sceneNumber)
-    .flatMap((scene) => 
+    .flatMap((scene) =>
       (scene.generatedVideos || []).filter((v) => v.status === "completed" && v.videoUrl)
     );
 }
 
 /**
  * Stitch scene videos into a single film
- * 
+ *
  * Note: Client-side video stitching has limitations. For production use,
  * consider using server-side video processing with FFmpeg or a video API.
- * 
+ *
  * This implementation creates a playlist/manifest approach that can be
  * used with a video player that supports playlists.
  */
-export async function stitchScenes(
-  scenes: Scene[],
-  options: StitchOptions
-): Promise<StitchResult> {
+export async function stitchScenes(scenes: Scene[], options: StitchOptions): Promise<StitchResult> {
   const { projectId, sceneIds } = options;
 
   try {
@@ -82,7 +79,7 @@ export async function stitchScenes(
     // For now, we return the manifest data
     // In a production implementation, this would upload the manifest to S3
     // and optionally trigger server-side video concatenation
-    
+
     console.log(
       "[stitchScenes] Created film manifest:",
       JSON.stringify({ filmId, sceneCount: videos.length }, null, 2)
@@ -123,13 +120,13 @@ export function createVideoPlaylist(scenes: Scene[]): {
   }>;
 } {
   const sortedScenes = [...scenes].sort((a, b) => a.sceneNumber - b.sceneNumber);
-  
+
   const videos = sortedScenes
     .map((scene) => {
       const completedVideo = scene.generatedVideos?.find(
         (v) => v.status === "completed" && v.videoUrl
       );
-      
+
       if (completedVideo) {
         return {
           sceneNumber: scene.sceneNumber,
@@ -144,5 +141,3 @@ export function createVideoPlaylist(scenes: Scene[]): {
 
   return { videos };
 }
-
-

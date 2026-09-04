@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
 import type { ProjectFormData } from "@/components/project-form";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -104,7 +103,8 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
         const visiblePosts = posts.slice(0, visibleCount);
         const hasMorePosts = visibleCount < posts.length;
         const promptShotCount = getPromptShotCount(project.scenes);
-        const sceneCount = project.development?.scriptBreakdown?.length || project.scenes?.length || 0;
+        const sceneCount =
+          project.development?.scriptBreakdown?.length || project.scenes?.length || 0;
 
         return (
           <Card key={project.id} className="bg-muted/30 border-border overflow-hidden">

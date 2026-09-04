@@ -295,7 +295,7 @@ function associateImagesWithChunks(
       if (prevText.endsWith("\n") || text.startsWith("\n")) {
         return acc + text;
       }
-      return acc + " " + text;
+      return `${acc} ${text}`;
     }, "");
 
   // Track which chunk we're currently building

@@ -2,10 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { deleteScene, saveScene } from "@/lib/scenes";
 
-export async function PUT(
-  request: Request,
-  { params }: { params: Promise<{ sceneId: string }> }
-) {
+export async function PUT(request: Request, { params }: { params: Promise<{ sceneId: string }> }) {
   try {
     const { userId } = await auth();
 
@@ -25,26 +22,17 @@ export async function PUT(
     }
 
     if (scene.id !== sceneId) {
-      return NextResponse.json(
-        { success: false, error: "Scene ID mismatch" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Scene ID mismatch" }, { status: 400 });
     }
 
     await saveScene(projectId, scene);
 
-    console.log(
-      "[scenes/[sceneId]] Scene saved:",
-      JSON.stringify({ projectId, sceneId }, null, 2)
-    );
+    console.log("[scenes/[sceneId]] Scene saved:", JSON.stringify({ projectId, sceneId }, null, 2));
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[scenes/[sceneId]] Error saving scene:", JSON.stringify({ error }, null, 2));
-    return NextResponse.json(
-      { success: false, error: "Failed to save scene" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Failed to save scene" }, { status: 500 });
   }
 }
 
@@ -80,10 +68,6 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[scenes/[sceneId]] Error deleting scene:", JSON.stringify({ error }, null, 2));
-    return NextResponse.json(
-      { success: false, error: "Failed to delete scene" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Failed to delete scene" }, { status: 500 });
   }
 }
-

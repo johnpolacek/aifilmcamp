@@ -1,5 +1,5 @@
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { readFile } from "fs/promises";
+import { readFile } from "node:fs/promises";
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 
 const s3 = new S3Client({
   region: process.env.AWS_REGION || "us-east-1",
@@ -20,10 +20,7 @@ export async function uploadToS3(
   key: string,
   contentType: string
 ): Promise<string> {
-  console.log(
-    "[uploader] Uploading to S3:",
-    JSON.stringify({ key, contentType }, null, 2)
-  );
+  console.log("[uploader] Uploading to S3:", JSON.stringify({ key, contentType }, null, 2));
 
   const body = await readFile(filePath);
 
@@ -44,11 +41,7 @@ export async function uploadToS3(
     url = `https://${BUCKET}.s3.amazonaws.com/${key}`;
   }
 
-  console.log(
-    "[uploader] Upload complete:",
-    JSON.stringify({ url }, null, 2)
-  );
+  console.log("[uploader] Upload complete:", JSON.stringify({ url }, null, 2));
 
   return url;
 }
-

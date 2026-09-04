@@ -13,9 +13,9 @@ import {
   Loader2,
   Plus,
   Quote,
+  SquarePlay,
   Video,
   X,
-  Youtube,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
@@ -963,7 +963,7 @@ export function PostForm({
                       className="h-7 px-2 text-xs"
                       title="Add YouTube Video"
                     >
-                      <Youtube className="h-3 w-3 mr-1" />
+                      <SquarePlay className="h-3 w-3 mr-1" />
                       YouTube
                     </Button>
                     <Button

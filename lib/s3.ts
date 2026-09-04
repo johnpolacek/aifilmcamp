@@ -17,8 +17,10 @@ export const s3Client = new S3Client({
   },
 });
 
-export const BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME || process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME!;
-export const CLOUDFRONT_DOMAIN = process.env.AWS_CLOUDFRONT_DOMAIN || process.env.NEXT_PUBLIC_AWS_CLOUDFRONT_DOMAIN;
+export const BUCKET_NAME =
+  process.env.AWS_S3_BUCKET_NAME || process.env.NEXT_PUBLIC_AWS_S3_BUCKET_NAME!;
+export const CLOUDFRONT_DOMAIN =
+  process.env.AWS_CLOUDFRONT_DOMAIN || process.env.NEXT_PUBLIC_AWS_CLOUDFRONT_DOMAIN;
 
 /**
  * Get the public URL for an S3 object (using CloudFront if available, otherwise S3)
@@ -72,11 +74,11 @@ export async function getFileBufferFromS3(key: string): Promise<Buffer | null> {
 
     const response = await s3Client.send(command);
     const arrayBuffer = await response.Body?.transformToByteArray();
-    
+
     if (!arrayBuffer) {
       return null;
     }
-    
+
     return Buffer.from(arrayBuffer);
   } catch (error) {
     const awsError = error as {
@@ -239,7 +241,7 @@ export async function uploadImageFromBuffer(
       console.log(
         "[uploadImageFromBuffer] Using optimizeImage path (maintains aspect ratio, no cropping)"
       );
-      
+
       // CRITICAL: Force optimizeImage - never use thumbnail for post images
       // Double-check that options is not set to thumbnail
       if (options?.isThumbnail) {
@@ -247,7 +249,7 @@ export async function uploadImageFromBuffer(
           "[uploadImageFromBuffer] ERROR: isThumbnail was set but we're in post image path! This should never happen!"
         );
       }
-      
+
       const result = await optimizeImage(buffer);
       optimizedBuffer = result.buffer;
       optimizedContentType = result.contentType;
@@ -331,13 +333,20 @@ export async function generatePresignedUploadUrl(
   });
 
   const publicUrl = getPublicUrlServer(key);
-  
-  console.log("[s3] Generated presigned URL:", JSON.stringify({
-    key,
-    publicUrl,
-    cloudfrontDomain: CLOUDFRONT_DOMAIN,
-    bucketName: BUCKET_NAME
-  }, null, 2));
+
+  console.log(
+    "[s3] Generated presigned URL:",
+    JSON.stringify(
+      {
+        key,
+        publicUrl,
+        cloudfrontDomain: CLOUDFRONT_DOMAIN,
+        bucketName: BUCKET_NAME,
+      },
+      null,
+      2
+    )
+  );
 
   return { uploadUrl, publicUrl, key };
 }
@@ -353,14 +362,15 @@ export async function deleteObjectFromS3(key: string): Promise<void> {
     });
 
     await s3Client.send(command);
-    console.log(
-      "[s3] Deleted object:",
-      JSON.stringify({ key }, null, 2)
-    );
+    console.log("[s3] Deleted object:", JSON.stringify({ key }, null, 2));
   } catch (error) {
     console.error(
       "[s3] Error deleting object:",
-      JSON.stringify({ key, error: error instanceof Error ? error.message : String(error) }, null, 2)
+      JSON.stringify(
+        { key, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
     );
     throw error;
   }
@@ -393,7 +403,11 @@ export function extractS3KeyFromUrl(url: string): string | null {
   } catch (error) {
     console.error(
       "[s3] Error extracting S3 key from URL:",
-      JSON.stringify({ url, error: error instanceof Error ? error.message : String(error) }, null, 2)
+      JSON.stringify(
+        { url, error: error instanceof Error ? error.message : String(error) },
+        null,
+        2
+      )
     );
     return null;
   }

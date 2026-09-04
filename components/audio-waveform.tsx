@@ -55,7 +55,10 @@ export function AudioWaveform({
           setIsLoading(false);
         }
       } catch (error) {
-        console.error("[AudioWaveform] Failed to load waveform:", error instanceof Error ? error.message : String(error));
+        console.error(
+          "[AudioWaveform] Failed to load waveform:",
+          error instanceof Error ? error.message : String(error)
+        );
         if (!cancelled) {
           setIsLoading(false);
           // Set a fallback waveform so the UI doesn't break
@@ -85,7 +88,7 @@ export function AudioWaveform({
     // Use deterministic pattern based on index to avoid hydration errors
     const numBars = Math.max(1, Math.floor(width / 4));
     return (
-      <div 
+      <div
         className={`flex items-center justify-center gap-[1px] ${className}`}
         style={{ width, height, backgroundColor }}
       >
@@ -115,15 +118,15 @@ export function AudioWaveform({
   // Handle CSS variable format like "hsl(var(--primary) / 0.6)"
   let fillColor = color;
   let fillOpacity = 1;
-  
-  if (color.includes('var(--primary)')) {
+
+  if (color.includes("var(--primary)")) {
     // Extract opacity if present
     const opacityMatch = color.match(/\/\s*([\d.]+)\)/);
     if (opacityMatch) {
       fillOpacity = parseFloat(opacityMatch[1]);
     }
     // Use currentColor for CSS variable support
-    fillColor = 'currentColor';
+    fillColor = "currentColor";
   }
 
   return (
@@ -131,9 +134,9 @@ export function AudioWaveform({
       width={width}
       height={height}
       className={className}
-      style={{ 
-        backgroundColor, 
-        color: color.includes('var(--primary)') ? 'hsl(var(--primary))' : undefined 
+      style={{
+        backgroundColor,
+        color: color.includes("var(--primary)") ? "hsl(var(--primary))" : undefined,
       }}
       viewBox={`0 0 ${width} ${height}`}
       preserveAspectRatio="none"
@@ -142,7 +145,7 @@ export function AudioWaveform({
         const barHeight = Math.max(2, peak * height * 0.9);
         const x = i * (barWidth + gap);
         const y = (height - barHeight) / 2;
-        
+
         return (
           <rect
             key={i}
@@ -161,4 +164,3 @@ export function AudioWaveform({
 }
 
 export default AudioWaveform;
-

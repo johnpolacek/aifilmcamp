@@ -1,5 +1,5 @@
-import { SignedIn, SignedOut, SignUpButton } from "@clerk/nextjs";
-import { ArrowRight, Flame } from "lucide-react";
+import { ClerkLoading, Show, SignUpButton } from "@clerk/nextjs";
+import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
@@ -11,12 +11,7 @@ export function Hero() {
 
       <div className="container mx-auto px-4 lg:px-8 relative">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-sm text-primary mb-6">
-            <Flame className="h-4 w-4" />
-            <span>Build AI film projects before you render them</span>
-          </div>
-
-          <h1 className="text-5xl lg:text-7xl font-bold mb-6 text-balance leading-tight">
+          <h1 className="text-5xl lg:text-7xl font-black mb-6 text-balance leading-tight">
             Create. Share. Collaborate.
           </h1>
 
@@ -26,7 +21,18 @@ export function Hero() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <SignedIn>
+            <ClerkLoading>
+              <Button
+                size="lg"
+                className="bg-primary text-primary-foreground text-base px-8 invisible"
+                aria-hidden="true"
+                tabIndex={-1}
+              >
+                Start Creating
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </ClerkLoading>
+            <Show when="signed-in">
               <Button
                 size="lg"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8"
@@ -37,8 +43,8 @@ export function Hero() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-            </SignedIn>
-            <SignedOut>
+            </Show>
+            <Show when="signed-out">
               <SignUpButton mode="modal">
                 <Button
                   size="lg"
@@ -48,7 +54,7 @@ export function Hero() {
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </SignUpButton>
-            </SignedOut>
+            </Show>
             <Button
               size="lg"
               variant="outline"

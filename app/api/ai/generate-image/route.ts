@@ -8,10 +8,7 @@ export async function POST(request: Request) {
     // Check authentication
     const { userId } = await auth();
     if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     // Parse request body
@@ -19,10 +16,7 @@ export async function POST(request: Request) {
     const { prompt, projectId, sceneId, aspectRatio = "16:9", referenceImages } = body;
 
     if (!prompt) {
-      return NextResponse.json(
-        { success: false, error: "Prompt is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "Prompt is required" }, { status: 400 });
     }
 
     if (!projectId || !sceneId) {
@@ -55,7 +49,11 @@ export async function POST(request: Request) {
 
     console.log(
       "[generate-image] Starting image generation:",
-      JSON.stringify({ prompt: enhancedPrompt.substring(0, 100), projectId, sceneId, aspectRatio }, null, 2)
+      JSON.stringify(
+        { prompt: enhancedPrompt.substring(0, 100), projectId, sceneId, aspectRatio },
+        null,
+        2
+      )
     );
 
     // Generate image using Gemini
@@ -101,18 +99,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error(
       "[generate-image] Error:",
-      JSON.stringify(
-        { error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
+      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }, null, 2)
     );
 
-    return NextResponse.json(
-      { success: false, error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: "Internal server error" }, { status: 500 });
   }
 }
-
-

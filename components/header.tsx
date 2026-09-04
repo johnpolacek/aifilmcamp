@@ -1,8 +1,8 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import { Flame } from "lucide-react";
+import { ClerkLoading, Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
@@ -11,7 +11,7 @@ export function Header() {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-xl font-bold">
-            <Flame className="h-6 w-6 text-primary" />
+            <Logo className="h-7 w-7" />
             <span className="text-balance">AI Film Camp</span>
           </Link>
 
@@ -43,7 +43,15 @@ export function Header() {
           </nav>
 
           <div className="flex items-center gap-3">
-            <SignedIn>
+            <ClerkLoading>
+              <div className="flex items-center gap-3" aria-hidden="true">
+                <span className="hidden sm:inline-flex items-center justify-center h-8 px-3 text-sm font-medium invisible">
+                  Dashboard
+                </span>
+                <span className="h-7 w-7 rounded-full bg-muted/50 animate-pulse" />
+              </div>
+            </ClerkLoading>
+            <Show when="signed-in">
               <div className="flex items-center gap-3" suppressHydrationWarning>
                 <Link
                   href="/dashboard"
@@ -51,10 +59,12 @@ export function Header() {
                 >
                   Dashboard
                 </Link>
-                <UserButton />
+                <span className="flex h-7 w-7 items-center justify-center">
+                  <UserButton />
+                </span>
               </div>
-            </SignedIn>
-            <SignedOut>
+            </Show>
+            <Show when="signed-out">
               <div className="flex items-center gap-2" suppressHydrationWarning>
                 <SignInButton mode="modal">
                   <Button
@@ -71,7 +81,7 @@ export function Header() {
                   </Button>
                 </SignUpButton>
               </div>
-            </SignedOut>
+            </Show>
           </div>
         </div>
       </div>

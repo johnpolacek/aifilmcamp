@@ -16,14 +16,17 @@ export interface JobStatus {
 const jobs = new Map<string, JobStatus>();
 
 // Cleanup interval - remove old jobs
-setInterval(() => {
-  const oneHourAgo = Date.now() - 60 * 60 * 1000;
-  for (const [jobId, job] of jobs.entries()) {
-    if (new Date(job.updatedAt).getTime() < oneHourAgo) {
-      jobs.delete(jobId);
+setInterval(
+  () => {
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    for (const [jobId, job] of jobs.entries()) {
+      if (new Date(job.updatedAt).getTime() < oneHourAgo) {
+        jobs.delete(jobId);
+      }
     }
-  }
-}, 5 * 60 * 1000); // Run every 5 minutes
+  },
+  5 * 60 * 1000
+); // Run every 5 minutes
 
 export function createJob(jobId: string): JobStatus {
   const job: JobStatus = {
@@ -61,4 +64,3 @@ export function getJob(jobId: string): JobStatus | null {
 export function deleteJob(jobId: string): void {
   jobs.delete(jobId);
 }
-

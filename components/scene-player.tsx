@@ -1,7 +1,15 @@
 "use client";
 
 import { Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from "lucide-react";
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import type { AudioTrack, Shot } from "@/lib/scenes-client";
@@ -18,7 +26,10 @@ export interface ScenePlayerHandle {
   pause: () => void;
 }
 
-export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(function ScenePlayer({ shots, audioTracks = [], masterVolume = 1.0, className }, ref) {
+export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(function ScenePlayer(
+  { shots, audioTracks = [], masterVolume = 1.0, className },
+  ref
+) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const preloadedVideoRefs = useRef<Map<string, HTMLVideoElement>>(new Map());
   const preloadedShotsRef = useRef<Set<string>>(new Set());
@@ -38,7 +49,7 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
     const filtered = shots
       .filter((shot) => shot.video?.status === "completed" && shot.video?.url)
       .sort((a, b) => a.order - b.order);
-    
+
     return filtered;
   }, [shots]);
 
@@ -47,27 +58,27 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
     let currentTimeMs = 0;
     return playableShots.map((shot) => {
       const startTime = currentTimeMs;
-      
+
       // Check if video has been trimmed (originalVideo exists)
       // If so, the current video.durationMs IS the effective duration (trim already baked in)
       const hasBeenTrimmed = !!shot.originalVideo;
-      
+
       // Get base duration - use original video duration if trimmed, otherwise current video
-      const baseDuration = hasBeenTrimmed 
-        ? (shot.originalVideo?.durationMs || 8000)
-        : (actualDurations.get(shot.id) || shot.video?.durationMs || 5000);
-      
+      const baseDuration = hasBeenTrimmed
+        ? shot.originalVideo?.durationMs || 8000
+        : actualDurations.get(shot.id) || shot.video?.durationMs || 5000;
+
       // Get trim values - only apply if video hasn't been trimmed yet
-      const trimStartMs = hasBeenTrimmed ? 0 : (shot.trimStartMs || 0);
-      const trimEndMs = hasBeenTrimmed ? 0 : (shot.trimEndMs || 0);
-      
+      const trimStartMs = hasBeenTrimmed ? 0 : shot.trimStartMs || 0;
+      const trimEndMs = hasBeenTrimmed ? 0 : shot.trimEndMs || 0;
+
       // Calculate effective duration
       // If trimmed, use current video duration directly (trim is baked in)
       // If not trimmed, subtract trim values from base duration
       const effectiveDuration = hasBeenTrimmed
-        ? (shot.video?.durationMs || 5000)
+        ? shot.video?.durationMs || 5000
         : Math.max(0, baseDuration - trimStartMs - trimEndMs);
-      
+
       currentTimeMs += effectiveDuration;
       return {
         shot,
@@ -100,7 +111,7 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
     const shotInfo = shotTimeline[currentShotIndex];
     if (!shotInfo) return 0;
     // currentTime is in video time, subtract trim start to get effective position
-    const effectiveVideoTime = Math.max(0, (currentTime * 1000) - shotInfo.trimStartMs);
+    const effectiveVideoTime = Math.max(0, currentTime * 1000 - shotInfo.trimStartMs);
     return shotInfo.startTimeMs + effectiveVideoTime;
   }, [shotTimeline, currentShotIndex, currentTime]);
 
@@ -113,11 +124,11 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
 
         const trackStartMs = track.startTimeMs;
         const trackEndMs = track.startTimeMs + track.durationMs;
-        
+
         // If originalSourceUrl exists, the audio file is already trimmed, so don't apply trimStartMs again
         // trimStartMs/trimEndMs are just metadata about what was trimmed
         const hasBeenTrimmed = !!track.originalSourceUrl;
-        const trimStartMs = hasBeenTrimmed ? 0 : (track.trimStartMs || 0);
+        const trimStartMs = hasBeenTrimmed ? 0 : track.trimStartMs || 0;
 
         // Check if this track should be playing at the current time
         if (globalTime >= trackStartMs && globalTime < trackEndMs) {
@@ -176,9 +187,13 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
   }, [globalTimeMs, syncAudioTracks, getActiveVideo]);
 
   // Expose pause method to parent components
-  useImperativeHandle(ref, () => ({
-    pause: pauseVideo,
-  }), [pauseVideo]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      pause: pauseVideo,
+    }),
+    [pauseVideo]
+  );
 
   // Toggle play/pause
   const togglePlay = useCallback(() => {
@@ -203,30 +218,31 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
       const nextShot = playableShots[nextIndex];
       const currentVideo = videoRef.current;
       const wasPlaying = !currentVideo?.paused;
-      
+
       // If next video is preloaded and ready, copy its src to current video for instant switch
       if (nextShot?.video?.url && preloadedShotsRef.current.has(nextShot.id)) {
         const preloadedVideo = preloadedVideoRefs.current.get(nextShot.id);
-        
-        if (preloadedVideo && preloadedVideo.readyState >= 2 && currentVideo) { // HAVE_CURRENT_DATA or higher
+
+        if (preloadedVideo && preloadedVideo.readyState >= 2 && currentVideo) {
+          // HAVE_CURRENT_DATA or higher
           // Copy preloaded video's src to current video - this is instant since it's already loaded
           const nextVideoSrc = preloadedVideo.src;
           const nextVideoCurrentTime = nextShotInfo.trimStartMs / 1000;
-          
+
           // If src is different, update it (should be instant since browser has it cached)
           if (currentVideo.src !== nextVideoSrc) {
             currentVideo.src = nextVideoSrc;
           }
-          
+
           // Set position and state
           currentVideo.currentTime = nextVideoCurrentTime;
           currentVideo.volume = volume;
           currentVideo.muted = isMuted || nextShot.audioMuted || false;
-          
+
           // Update state
           setCurrentShotIndex(nextIndex);
           setVideoError(null);
-          
+
           // Continue playing if it was playing
           if (wasPlaying) {
             // Small delay to ensure src is applied
@@ -236,19 +252,19 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
               }
             }, 10);
           }
-          
+
           return;
         }
       }
-      
+
       // Fallback: change src if preload didn't work
       setCurrentShotIndex(nextIndex);
       setVideoError(null);
-      
+
       if (nextShotInfo && currentVideo) {
         // Ensure muted state is set for the next shot
         currentVideo.muted = isMuted || nextShot?.audioMuted || false;
-        
+
         setTimeout(() => {
           if (videoRef.current) {
             videoRef.current.currentTime = nextShotInfo.trimStartMs / 1000;
@@ -261,10 +277,10 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
   // Go to previous shot
   const goToPrevShot = useCallback(() => {
     const currentShotInfo = shotTimeline[currentShotIndex];
-    const effectiveCurrentTime = currentShotInfo 
-      ? (currentTime * 1000 - currentShotInfo.trimStartMs) / 1000 
+    const effectiveCurrentTime = currentShotInfo
+      ? (currentTime * 1000 - currentShotInfo.trimStartMs) / 1000
       : currentTime;
-    
+
     // If we're more than 2 seconds into current shot, restart it at trim start
     if (effectiveCurrentTime > 2) {
       if (videoRef.current && currentShotInfo) {
@@ -277,27 +293,27 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
       const prevShotInfo = shotTimeline[prevIndex];
       const currentVideo = videoRef.current;
       const wasPlaying = !currentVideo?.paused;
-      
+
       // If prev video is preloaded and ready, use it for instant switch
       if (prevShot?.video?.url && preloadedShotsRef.current.has(prevShot.id)) {
         const preloadedVideo = preloadedVideoRefs.current.get(prevShot.id);
-        
+
         if (preloadedVideo && preloadedVideo.readyState >= 2 && currentVideo) {
           const prevVideoSrc = preloadedVideo.src;
           const prevVideoCurrentTime = prevShotInfo.trimStartMs / 1000;
-          
+
           // Copy preloaded video's src to current video
           if (currentVideo.src !== prevVideoSrc) {
             currentVideo.src = prevVideoSrc;
           }
-          
+
           currentVideo.currentTime = prevVideoCurrentTime;
           currentVideo.volume = volume;
           currentVideo.muted = isMuted || prevShot.audioMuted || false;
-          
+
           setCurrentShotIndex(prevIndex);
           setVideoError(null);
-          
+
           if (wasPlaying) {
             setTimeout(() => {
               if (currentVideo && currentVideo.src === prevVideoSrc) {
@@ -305,11 +321,11 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
               }
             }, 10);
           }
-          
+
           return;
         }
       }
-      
+
       // Fallback: change src if preload didn't work
       setCurrentShotIndex(prevIndex);
       setVideoError(null);
@@ -324,34 +340,34 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
   }, [hasPrev, currentTime, currentShotIndex, shotTimeline, playableShots, volume, isMuted]);
 
   // Go to specific shot
-  const goToShot = useCallback(
+  const _goToShot = useCallback(
     (index: number) => {
       if (index >= 0 && index < playableShots.length) {
         const targetShot = playableShots[index];
         const targetShotInfo = shotTimeline[index];
         const currentVideo = videoRef.current;
         const wasPlaying = !currentVideo?.paused;
-        
+
         // If target video is preloaded and ready, use it for instant switch
         if (targetShot?.video?.url && preloadedShotsRef.current.has(targetShot.id)) {
           const preloadedVideo = preloadedVideoRefs.current.get(targetShot.id);
-          
+
           if (preloadedVideo && preloadedVideo.readyState >= 2 && currentVideo) {
             const targetVideoSrc = preloadedVideo.src;
             const targetVideoCurrentTime = targetShotInfo.trimStartMs / 1000;
-            
+
             // Copy preloaded video's src to current video
             if (currentVideo.src !== targetVideoSrc) {
               currentVideo.src = targetVideoSrc;
             }
-            
+
             currentVideo.currentTime = targetVideoCurrentTime;
             currentVideo.volume = volume;
             currentVideo.muted = isMuted || targetShot.audioMuted || false;
-            
+
             setCurrentShotIndex(index);
             setVideoError(null);
-            
+
             if (wasPlaying) {
               setTimeout(() => {
                 if (currentVideo && currentVideo.src === targetVideoSrc) {
@@ -359,11 +375,11 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
                 }
               }, 10);
             }
-            
+
             return;
           }
         }
-        
+
         // Fallback: change src if preload didn't work
         setCurrentShotIndex(index);
         setVideoError(null);
@@ -401,12 +417,13 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
     const video = getActiveVideo();
     if (video) {
       setCurrentTime(video.currentTime);
-      
+
       // Check if we've reached the trim end point
       const shotInfo = shotTimeline[currentShotIndex];
       if (shotInfo) {
         const trimEndPoint = (shotInfo.baseDuration - shotInfo.trimEndMs) / 1000;
-        if (video.currentTime >= trimEndPoint - 0.05) { // Small threshold for timing accuracy
+        if (video.currentTime >= trimEndPoint - 0.05) {
+          // Small threshold for timing accuracy
           // Manually trigger video ended behavior
           video.pause();
           if (hasNext) {
@@ -421,7 +438,16 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
         }
       }
     }
-  }, [shotTimeline, currentShotIndex, hasNext, goToNextShot, playVideo, syncAudioTracks, totalDurationMs, getActiveVideo]);
+  }, [
+    shotTimeline,
+    currentShotIndex,
+    hasNext,
+    goToNextShot,
+    playVideo,
+    syncAudioTracks,
+    totalDurationMs,
+    getActiveVideo,
+  ]);
 
   // Preload all shot videos for smooth transitions
   useEffect(() => {
@@ -456,31 +482,32 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
         const shotIndex = playableShots.findIndex((s) => s.id === targetShotItem.shot.id);
         const targetShot = playableShots[shotIndex];
         // Add trim start offset to get actual video time
-        const videoTime = (seekTimeMs - targetShotItem.startTimeMs + targetShotItem.trimStartMs) / 1000;
+        const videoTime =
+          (seekTimeMs - targetShotItem.startTimeMs + targetShotItem.trimStartMs) / 1000;
 
         if (shotIndex !== currentShotIndex) {
           const currentVideo = videoRef.current;
           const wasPlaying = !currentVideo?.paused;
-          
+
           // If target video is preloaded and ready, use it for instant switch
           if (targetShot?.video?.url && preloadedShotsRef.current.has(targetShot.id)) {
             const preloadedVideo = preloadedVideoRefs.current.get(targetShot.id);
-            
+
             if (preloadedVideo && preloadedVideo.readyState >= 2 && currentVideo) {
               const targetVideoSrc = preloadedVideo.src;
-              
+
               // Copy preloaded video's src to current video
               if (currentVideo.src !== targetVideoSrc) {
                 currentVideo.src = targetVideoSrc;
               }
-              
+
               currentVideo.currentTime = videoTime;
               currentVideo.volume = volume;
               currentVideo.muted = isMuted || targetShot.audioMuted || false;
-              
+
               setCurrentShotIndex(shotIndex);
               setVideoError(null);
-              
+
               if (wasPlaying) {
                 setTimeout(() => {
                   if (currentVideo && currentVideo.src === targetVideoSrc) {
@@ -488,11 +515,11 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
                   }
                 }, 10);
               }
-              
+
               return;
             }
           }
-          
+
           // Fallback: change src if preload didn't work
           setCurrentShotIndex(shotIndex);
           setTimeout(() => {
@@ -527,14 +554,17 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
   }, [isMuted, getActiveVideo]);
 
   // Handle volume change
-  const handleVolumeChange = useCallback((value: number[]) => {
-    const newVolume = value[0];
-    setVolume(newVolume);
-    const video = getActiveVideo();
-    if (video) {
-      video.volume = newVolume;
-    }
-  }, [getActiveVideo]);
+  const handleVolumeChange = useCallback(
+    (value: number[]) => {
+      const newVolume = value[0];
+      setVolume(newVolume);
+      const video = getActiveVideo();
+      if (video) {
+        video.volume = newVolume;
+      }
+    },
+    [getActiveVideo]
+  );
 
   // Format time as MM:SS
   const formatTime = (ms: number) => {
@@ -560,61 +590,71 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
   }
 
   // Shared event handlers for video elements
-  const createVideoHandlers = useCallback((shotIndex: number, shot: Shot) => {
-    return {
-      onEnded: handleVideoEnded,
-      onTimeUpdate: handleTimeUpdate,
-      onClick: togglePlay,
-      onPlay: () => {
-        setIsPlaying(true);
-        setVideoError(null);
-      },
-      onPause: () => setIsPlaying(false),
-      onError: (e: React.SyntheticEvent<HTMLVideoElement>) => {
-        const video = e.currentTarget;
-        const error = video.error;
-        const errorMessage = error ? `${error.code}: ${error.message}` : "Unknown error";
-        console.error("[ScenePlayer] Video error:", JSON.stringify({
-          src: video.src,
-          error: errorMessage,
-          networkState: video.networkState,
-          readyState: video.readyState
-        }, null, 2));
-        setVideoError(`Failed to load video: ${errorMessage}`);
-      },
-      onLoadedData: () => {
-        setVideoError(null);
-        // Seek to trim start position when video loads
-        const shotInfo = shotTimeline[shotIndex];
-        const video = getActiveVideo();
-        if (shotInfo && shotInfo.trimStartMs > 0 && video) {
-          video.currentTime = shotInfo.trimStartMs / 1000;
-        }
-      },
-      onLoadedMetadata: (e: React.SyntheticEvent<HTMLVideoElement>) => {
-        const video = e.currentTarget;
-        if (video.duration && isFinite(video.duration) && shot) {
-          const durationMs = Math.round(video.duration * 1000);
-          // Only update if different from stored/default duration
-          const storedDuration = shot.video?.durationMs || 5000;
-          if (Math.abs(durationMs - storedDuration) > 100) {
-            setActualDurations(prev => {
-              const next = new Map(prev);
-              next.set(shot.id, durationMs);
-              return next;
-            });
+  const createVideoHandlers = useCallback(
+    (shotIndex: number, shot: Shot) => {
+      return {
+        onEnded: handleVideoEnded,
+        onTimeUpdate: handleTimeUpdate,
+        onClick: togglePlay,
+        onPlay: () => {
+          setIsPlaying(true);
+          setVideoError(null);
+        },
+        onPause: () => setIsPlaying(false),
+        onError: (e: React.SyntheticEvent<HTMLVideoElement>) => {
+          const video = e.currentTarget;
+          const error = video.error;
+          const errorMessage = error ? `${error.code}: ${error.message}` : "Unknown error";
+          console.error(
+            "[ScenePlayer] Video error:",
+            JSON.stringify(
+              {
+                src: video.src,
+                error: errorMessage,
+                networkState: video.networkState,
+                readyState: video.readyState,
+              },
+              null,
+              2
+            )
+          );
+          setVideoError(`Failed to load video: ${errorMessage}`);
+        },
+        onLoadedData: () => {
+          setVideoError(null);
+          // Seek to trim start position when video loads
+          const shotInfo = shotTimeline[shotIndex];
+          const video = getActiveVideo();
+          if (shotInfo && shotInfo.trimStartMs > 0 && video) {
+            video.currentTime = shotInfo.trimStartMs / 1000;
           }
-        }
-      },
-    };
-  }, [handleVideoEnded, handleTimeUpdate, togglePlay, shotTimeline, getActiveVideo]);
+        },
+        onLoadedMetadata: (e: React.SyntheticEvent<HTMLVideoElement>) => {
+          const video = e.currentTarget;
+          if (video.duration && Number.isFinite(video.duration) && shot) {
+            const durationMs = Math.round(video.duration * 1000);
+            // Only update if different from stored/default duration
+            const storedDuration = shot.video?.durationMs || 5000;
+            if (Math.abs(durationMs - storedDuration) > 100) {
+              setActualDurations((prev) => {
+                const next = new Map(prev);
+                next.set(shot.id, durationMs);
+                return next;
+              });
+            }
+          }
+        },
+      };
+    },
+    [handleVideoEnded, handleTimeUpdate, togglePlay, shotTimeline, getActiveVideo]
+  );
 
   return (
     <div className={cn("space-y-3", className)}>
       {/* Video Player */}
       <div className="relative aspect-video bg-black rounded-lg overflow-hidden">
         {/* Current video */}
-        {currentShot && currentShot.video?.url && (
+        {currentShot?.video?.url && (
           <>
             <video
               ref={videoRef}
@@ -626,68 +666,75 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
             >
               <track kind="captions" />
             </video>
-            
+
             {/* Fade In Overlay */}
-            {currentShot.fadeInType && currentShot.fadeInType !== "none" && (() => {
-              const shotInfo = shotTimeline[currentShotIndex];
-              if (!shotInfo) return null;
-              
-              const fadeDuration = (currentShot.fadeDurationMs || 500) / 1000; // Convert to seconds
-              // Video time relative to trim start (fade starts at beginning of effective video)
-              const videoTime = Math.max(0, currentTime - (shotInfo.trimStartMs / 1000));
-              const fadeProgress = Math.min(1, Math.max(0, videoTime / fadeDuration));
-              const opacity = currentShot.fadeInType === "black" || currentShot.fadeInType === "white" 
-                ? 1 - fadeProgress 
-                : 0;
-              const bgColor = currentShot.fadeInType === "white" ? "bg-white" : "bg-black";
-              
-              if (fadeProgress < 1 && videoTime >= 0) {
-                return (
-                  <div
-                    className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
-                    style={{ opacity }}
-                  />
-                );
-              }
-              return null;
-            })()}
-            
+            {currentShot.fadeInType &&
+              currentShot.fadeInType !== "none" &&
+              (() => {
+                const shotInfo = shotTimeline[currentShotIndex];
+                if (!shotInfo) return null;
+
+                const fadeDuration = (currentShot.fadeDurationMs || 500) / 1000; // Convert to seconds
+                // Video time relative to trim start (fade starts at beginning of effective video)
+                const videoTime = Math.max(0, currentTime - shotInfo.trimStartMs / 1000);
+                const fadeProgress = Math.min(1, Math.max(0, videoTime / fadeDuration));
+                const opacity =
+                  currentShot.fadeInType === "black" || currentShot.fadeInType === "white"
+                    ? 1 - fadeProgress
+                    : 0;
+                const bgColor = currentShot.fadeInType === "white" ? "bg-white" : "bg-black";
+
+                if (fadeProgress < 1 && videoTime >= 0) {
+                  return (
+                    <div
+                      className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
+                      style={{ opacity }}
+                    />
+                  );
+                }
+                return null;
+              })()}
+
             {/* Fade Out Overlay */}
-            {currentShot.fadeOutType && currentShot.fadeOutType !== "none" && (() => {
-              const shotInfo = shotTimeline[currentShotIndex];
-              if (!shotInfo) return null;
-              
-              const fadeDuration = (currentShot.fadeDurationMs || 500) / 1000; // Convert to seconds
-              const effectiveDuration = shotInfo.durationMs / 1000; // Effective duration in seconds
-              const fadeOutStart = effectiveDuration - fadeDuration;
-              // Video time relative to trim start (fade out is at end of effective video)
-              const videoTime = Math.max(0, currentTime - (shotInfo.trimStartMs / 1000));
-              const fadeProgress = videoTime >= fadeOutStart
-                ? Math.min(1, Math.max(0, (videoTime - fadeOutStart) / fadeDuration))
-                : 0;
-              const opacity = currentShot.fadeOutType === "black" || currentShot.fadeOutType === "white"
-                ? fadeProgress
-                : 0;
-              const bgColor = currentShot.fadeOutType === "white" ? "bg-white" : "bg-black";
-              
-              if (fadeProgress > 0) {
-                return (
-                  <div
-                    className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
-                    style={{ opacity }}
-                  />
-                );
-              }
-              return null;
-            })()}
+            {currentShot.fadeOutType &&
+              currentShot.fadeOutType !== "none" &&
+              (() => {
+                const shotInfo = shotTimeline[currentShotIndex];
+                if (!shotInfo) return null;
+
+                const fadeDuration = (currentShot.fadeDurationMs || 500) / 1000; // Convert to seconds
+                const effectiveDuration = shotInfo.durationMs / 1000; // Effective duration in seconds
+                const fadeOutStart = effectiveDuration - fadeDuration;
+                // Video time relative to trim start (fade out is at end of effective video)
+                const videoTime = Math.max(0, currentTime - shotInfo.trimStartMs / 1000);
+                const fadeProgress =
+                  videoTime >= fadeOutStart
+                    ? Math.min(1, Math.max(0, (videoTime - fadeOutStart) / fadeDuration))
+                    : 0;
+                const opacity =
+                  currentShot.fadeOutType === "black" || currentShot.fadeOutType === "white"
+                    ? fadeProgress
+                    : 0;
+                const bgColor = currentShot.fadeOutType === "white" ? "bg-white" : "bg-black";
+
+                if (fadeProgress > 0) {
+                  return (
+                    <div
+                      className={`absolute inset-0 ${bgColor} transition-opacity duration-75 pointer-events-none z-10`}
+                      style={{ opacity }}
+                    />
+                  );
+                }
+                return null;
+              })()}
           </>
         )}
-        
+
         {/* Preloaded videos for all shots (hidden, for preloading only) */}
         {playableShots.map((shot) => {
           // Skip the current shot since it's already rendered above
           if (shot.id === currentShot?.id) return null;
-          
+
           return shot.video?.url ? (
             <video
               key={shot.id}
@@ -826,4 +873,3 @@ export const ScenePlayer = forwardRef<ScenePlayerHandle, ScenePlayerProps>(funct
     </div>
   );
 });
-

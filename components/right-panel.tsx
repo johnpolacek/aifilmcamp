@@ -1,24 +1,21 @@
 interface RightPanelProps {
-  aspectRatio: string
-  selectedClipLabel: string
+  aspectRatio: string;
+  selectedClipLabel: string;
 }
 
-export default function RightPanel({
-  aspectRatio,
-  selectedClipLabel,
-}: RightPanelProps) {
+export default function RightPanel({ aspectRatio, selectedClipLabel }: RightPanelProps) {
   const getAspectClass = () => {
     switch (aspectRatio) {
-      case '16:9':
-        return 'aspect-video'
-      case '9:16':
-        return 'aspect-[9/16]'
-      case '1:1':
-        return 'aspect-square'
+      case "16:9":
+        return "aspect-video";
+      case "9:16":
+        return "aspect-[9/16]";
+      case "1:1":
+        return "aspect-square";
       default:
-        return 'aspect-video'
+        return "aspect-video";
     }
-  }
+  };
 
   return (
     <div className="flex-1 bg-card rounded-lg border border-border flex flex-col items-center justify-center p-6 relative">
@@ -35,9 +32,7 @@ export default function RightPanel({
       </div>
 
       {/* Aspect Ratio Label */}
-      <p className="text-muted-foreground text-sm mt-4">
-        Aspect Ratio: {aspectRatio}
-      </p>
+      <p className="text-muted-foreground text-sm mt-4">Aspect Ratio: {aspectRatio}</p>
     </div>
-  )
+  );
 }

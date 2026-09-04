@@ -51,4 +51,3 @@ export interface JobStatus {
   progress?: number;
   error?: string;
 }
-
