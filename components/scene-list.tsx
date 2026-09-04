@@ -10,7 +10,6 @@ import type { Character, Location } from "@/components/project-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import type { Scene } from "@/lib/scenes-client";
-import { getDefaultTransition } from "@/lib/scenes-client";
 
 interface SceneListProps {
   projectId: string;
@@ -108,9 +107,6 @@ export function SceneList({
       visualIntent: "",
       characters: [],
       promptShots: [],
-      shots: [],
-      audioTracks: [],
-      transitionOut: getDefaultTransition(),
       generatedImages: [],
       generatedVideos: [],
       createdAt: now,

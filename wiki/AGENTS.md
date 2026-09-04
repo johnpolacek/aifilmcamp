@@ -18,7 +18,7 @@ Keep this wiki concise, persistent, and readable in plain markdown.
 
 - how the app is structured
 - how projects, scenes, and supporting media flow through the system
-- how the separate video-composer service fits into the repo
+- the boundary between web planning/assets and any future native editing app
 - current project posture and constraints that affect future work
 - durable notes grounded in inspected code, config, or repo-local docs
 

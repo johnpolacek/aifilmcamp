@@ -2,7 +2,7 @@
 
 ## Summary
 
-AI Film Camp currently looks like a hybrid product: part community site, part project workspace for developing AI film projects, and part tooling surface for stitching and exporting media.
+AI Film Camp currently looks like a hybrid product: part community site, part project workspace for developing AI film projects, with asset management, prompt planning, and project exports.
 
 ## Public App Surface
 
@@ -10,7 +10,6 @@ The App Router currently exposes:
 
 - `/` for the public landing page
 - `/about`, `/films`, `/projects`, and `/resources` for public content and discovery
-- `/tools/aifilmstitcher` and `/tools/aivideostitcher` for tool-facing entry points
 - `/{username}/{projectSlug}` for public project pages
 
 ## Authenticated Workspace Surface
@@ -19,7 +18,8 @@ The dashboard area includes:
 
 - `/dashboard`
 - `/dashboard/profile`
-- `/dashboard/projects`
+- `/dashboard/projects/new` and `/dashboard/projects/{id}/edit`
+- `/dashboard/projects/{id}/scenes/{sceneId}/edit` for scene planning and shot prompts
 
 These routes align with the repo’s project, profile, and publishing workflows rather than a simple content site.
 
@@ -35,18 +35,13 @@ The repo includes forms, editors, and workflow utilities for:
 
 - project setup
 - screenplay editing
-- scene editing
+- scene planning
 - shot and prompt management
 - export and publishing behavior
 
-### Tooling surfaces
+### Planning and asset tools
 
-The codebase includes dedicated tooling for:
-
-- AI video stitching
-- export
-- audio tracks and waveform handling
-- timeline and scene playback
+The app retains source imports, reference assets, image generation, shot prompts, and project exports. The timeline, video editor, audio tools, stitching pages, and composition backend were removed on 2026-09-04. A native macOS editor may be explored in the future.
 
 ## Architectural Character
 
@@ -54,4 +49,4 @@ This is more than a marketing site, but it is not yet a full end-to-end AI-film 
 
 ## Important Context
 
-The root `README.md` is still boilerplate from project setup and should not be treated as the canonical project description. This wiki exists in part to replace that gap with repo-grounded documentation.
+The root `README.md` describes local setup and the product boundary. This wiki holds the deeper workflow and storage notes.

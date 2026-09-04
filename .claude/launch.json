@@ -4,7 +4,7 @@
     {
       "name": "aifilmcamp",
       "runtimeExecutable": "pnpm",
-      "runtimeArgs": ["dev:next"],
+      "runtimeArgs": ["dev"],
       "port": 3000,
       "autoPort": true
     }

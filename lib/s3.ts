@@ -5,7 +5,6 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { optimizeAvatar, optimizeImage, optimizeThumbnail } from "./image-optimization";
 
 // Initialize S3 Client
@@ -314,44 +313,6 @@ export async function uploadFileFromBuffer(
 }
 
 /**
- * Generate a presigned URL for direct browser-to-S3 uploads
- * This allows uploading large files without going through the server
- */
-export async function generatePresignedUploadUrl(
-  key: string,
-  contentType: string,
-  expiresInSeconds = 3600 // 1 hour default
-): Promise<{ uploadUrl: string; publicUrl: string; key: string }> {
-  const command = new PutObjectCommand({
-    Bucket: BUCKET_NAME,
-    Key: key,
-    ContentType: contentType,
-  });
-
-  const uploadUrl = await getSignedUrl(s3Client, command, {
-    expiresIn: expiresInSeconds,
-  });
-
-  const publicUrl = getPublicUrlServer(key);
-
-  console.log(
-    "[s3] Generated presigned URL:",
-    JSON.stringify(
-      {
-        key,
-        publicUrl,
-        cloudfrontDomain: CLOUDFRONT_DOMAIN,
-        bucketName: BUCKET_NAME,
-      },
-      null,
-      2
-    )
-  );
-
-  return { uploadUrl, publicUrl, key };
-}
-
-/**
  * Delete an object from S3
  */
 export async function deleteObjectFromS3(key: string): Promise<void> {
@@ -373,42 +334,5 @@ export async function deleteObjectFromS3(key: string): Promise<void> {
       )
     );
     throw error;
-  }
-}
-
-/**
- * Extract S3 key from a public URL (CloudFront or S3)
- */
-export function extractS3KeyFromUrl(url: string): string | null {
-  try {
-    // Handle CloudFront URLs: https://domain.com/key
-    if (CLOUDFRONT_DOMAIN && url.includes(CLOUDFRONT_DOMAIN)) {
-      const urlObj = new URL(url);
-      return urlObj.pathname.substring(1); // Remove leading slash
-    }
-
-    // Handle S3 URLs: https://bucket.s3.amazonaws.com/key or https://bucket.s3.region.amazonaws.com/key
-    if (url.includes(".s3.") && url.includes("amazonaws.com")) {
-      const urlObj = new URL(url);
-      return urlObj.pathname.substring(1); // Remove leading slash
-    }
-
-    // If URL doesn't match known patterns, try to extract path
-    try {
-      const urlObj = new URL(url);
-      return urlObj.pathname.substring(1);
-    } catch {
-      return null;
-    }
-  } catch (error) {
-    console.error(
-      "[s3] Error extracting S3 key from URL:",
-      JSON.stringify(
-        { url, error: error instanceof Error ? error.message : String(error) },
-        null,
-        2
-      )
-    );
-    return null;
   }
 }

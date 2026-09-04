@@ -2,8 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   /* config options here */
-  // Externalize native Node.js modules that shouldn't be bundled
-  serverExternalPackages: ["fluent-ffmpeg"],
   images: {
     // Disable Vercel image optimization to avoid costs
     // Images will still benefit from lazy loading, responsive sizing, and layout shift prevention

@@ -1,58 +1,21 @@
-# Storage And Composition
+# Storage And Media
 
-## Summary
+## Project And Scene Storage
 
-AI Film Camp currently uses S3-backed JSON storage for project data and scenes, plus a separate Node/FFmpeg service for video composition.
+Projects are stored as JSON under `projects/` in S3. `lib/projects.ts` loads, saves, lists, and resolves projects, and normalizes development phase status and visibility.
 
-## Project Storage
+`lib/scenes.ts` supports scenes embedded in a project's `scenes` array and a fallback at `scenes/{projectId}/{sceneId}.json`. Scene planning saves preserve existing JSON properties, including historical media fields that the web app no longer interprets. Syncing an existing scene from the script breakdown also preserves those properties.
 
-Project records are stored under the `projects/` prefix in S3 as JSON files.
+The active scene model in `lib/scenes-client.ts` contains screenplay details, characters, locations, prompt shots, and asset metadata. New scenes no longer initialize timeline or audio layers.
 
-Key responsibilities in `lib/projects.ts`:
+## Assets And Exports
 
-- load a project by ID
-- save project data back to S3
-- list project IDs
-- filter projects by username
-- resolve a public project by username and slug
-- delete project data
+Uploads for project documents, character images, and location images use the existing server actions and S3 helpers. Image optimization, Google image generation/reference analysis, and project exports remain. Historical generated video assets remain available to the existing export code.
 
-The save path also normalizes workflow-related fields such as duration, film length, phase status, and phase visibility.
+S3 and CloudFront remain the storage and delivery infrastructure. Removing editing code does not delete stored project JSON or uploaded media.
 
-## Scene Storage
+## Composition Removal
 
-Scene data is managed through `lib/scenes.ts`.
+On 2026-09-04, the browser timeline, shot/video editor, audio tools, stitching pages, FFmpeg composer service, and their processing APIs were removed. Video-generation polling and timeline migration/mutation helpers were also removed. The scene planning and shot prompt interface remains.
 
-The current scene model supports two storage modes:
-
-- scenes embedded in a project’s `scenes` array
-- scenes stored separately under `scenes/{projectId}/{sceneId}.json`
-
-That split exists to preserve compatibility while allowing newer scene persistence patterns.
-
-## Media And Upload Layer
-
-The repo includes:
-
-- presigned-upload API support
-- image optimization helpers
-- video thumbnail helpers
-- utilities for waveform, transitions, and export
-
-S3 plus CloudFront are core infrastructure assumptions in the current codebase.
-
-## Video Composer Service
-
-The bundled `video-composer/` service is a separate Node.js service that:
-
-1. receives composition jobs from the Next.js app
-2. downloads source video and audio
-3. uses FFmpeg to composite them
-4. uploads final outputs to S3
-5. reports completion through a webhook
-
-This service is an important architectural boundary. Composition is not handled fully inside the Next.js app.
-
-## Practical Implication
-
-The repo already contains meaningful production-pipeline infrastructure, but that infrastructure is mostly about organizing, assembling, and exporting media once source materials exist. It does not by itself solve the upstream problem of generating consistently strong AI-film inputs.
+There is no composition service to start or deploy with this app. A possible native macOS editor is a future project, not a current dependency. The prior implementation is recoverable from Git history, including checkpoint `a5ed51b`.

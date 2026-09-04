@@ -475,8 +475,6 @@ export function parsedScenesToScenes(
   screenplay: string;
   characters: string[];
   locationId?: string;
-  shots: [];
-  audioTracks: [];
   generatedImages: [];
   generatedVideos: [];
   createdAt: string;
@@ -506,8 +504,6 @@ export function parsedScenesToScenes(
       characters: parsed.characters,
       locationId: matchedLocation,
       promptShots: [],
-      shots: [],
-      audioTracks: [],
       generatedImages: [],
       generatedVideos: [],
       createdAt: now,

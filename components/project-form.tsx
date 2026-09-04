@@ -25,7 +25,7 @@ import { Suspense, useCallback, useEffect, useId, useRef, useState } from "react
 import { toast } from "sonner";
 import { ExtractConfirmDialog } from "@/components/extract-confirm-dialog";
 import { ProjectDevelopmentPhases } from "@/components/project-development-phases";
-import { SceneList } from "@/components/scene-editor";
+import { SceneList } from "@/components/scene-list";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ImagePreview } from "@/components/ui/image-preview";
@@ -529,6 +529,7 @@ export default function ProjectForm({
       const existingScene = existingScenes.get(item.title.trim().toLowerCase());
 
       return {
+        ...existingScene,
         id:
           existingScene?.id || `scene-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         projectId: existingScene?.projectId || effectiveProjectId,
@@ -542,9 +543,6 @@ export default function ProjectForm({
         characters: item.characters,
         locationId: item.locationName || existingScene?.locationId,
         promptShots: existingScene?.promptShots || [],
-        shots: existingScene?.shots || [],
-        audioTracks: existingScene?.audioTracks || [],
-        transitionOut: existingScene?.transitionOut || { type: "none", durationMs: 0 },
         generatedImages: existingScene?.generatedImages || [],
         generatedVideos: existingScene?.generatedVideos || [],
         createdAt: existingScene?.createdAt || now,

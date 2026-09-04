@@ -14,8 +14,8 @@ export async function generateMetadata({
   const scene = await getScene(id, sceneId);
 
   return {
-    title: scene ? `Edit: ${scene.title} - AI Film Camp` : "Edit Scene - AI Film Camp",
-    description: "Edit your scene",
+    title: scene ? `Plan: ${scene.title} - AI Film Camp` : "Scene Planning - AI Film Camp",
+    description: "Plan scene details and shot prompts",
   };
 }
 
