@@ -1,10 +1,9 @@
 "use client";
 
-import { Calendar, Clock, Edit, Eye, MessageSquare, X } from "lucide-react";
+import { Edit, Eye, X } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import type { ProjectFormData } from "@/components/project-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -15,23 +14,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { ImagePlaceholder } from "@/components/ui/image-placeholder";
 import { OptimizedImage } from "@/components/ui/optimized-image";
-import { getPromptShotCount } from "@/lib/development";
-import type { Post } from "@/lib/posts";
-
-type DashboardView = ProjectFormData & {
-  id: string;
-  lastUpdated?: string;
-};
+import type { ProjectSummary } from "@/lib/project-basics";
 
 interface DashboardViewProps {
-  initialProjects: DashboardView[];
-  initialPostsByProject?: Record<string, Post[]>;
+  initialProjects: ProjectSummary[];
 }
 
-export function DashboardView({ initialProjects, initialPostsByProject = {} }: DashboardViewProps) {
-  const [projects, setProjects] = useState<DashboardView[]>(initialProjects);
-  const [visiblePostsCount, setVisiblePostsCount] = useState<Record<string, number>>({});
+export function DashboardView({ initialProjects }: DashboardViewProps) {
+  const [projects, setProjects] = useState<ProjectSummary[]>(initialProjects);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState<Record<string, boolean>>({});
   const [projectToDelete, setProjectToDelete] = useState<{ id: string; title: string } | null>(
     null
@@ -47,7 +39,7 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
       await deleteProject(id);
 
       // Remove from local state
-      setProjects(projects.filter((p) => p.id !== id));
+      setProjects((current) => current.filter((p) => p.id !== id));
 
       // Close dialog
       setDeleteDialogOpen({ ...deleteDialogOpen, [id]: false });
@@ -79,39 +71,16 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
     setProjectToDelete(null);
   };
 
-  const showMorePosts = (projectId: string) => {
-    setVisiblePostsCount({
-      ...visiblePostsCount,
-      [projectId]: (visiblePostsCount[projectId] || 1) + 3,
-    });
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
-
   return (
     <div className="grid gap-6">
       {projects.map((project) => {
-        const posts = initialPostsByProject[project.id] || [];
-        const visibleCount = visiblePostsCount[project.id] || 1;
-        const visiblePosts = posts.slice(0, visibleCount);
-        const hasMorePosts = visibleCount < posts.length;
-        const promptShotCount = getPromptShotCount(project.scenes);
-        const sceneCount =
-          project.development?.scriptBreakdown?.length || project.scenes?.length || 0;
-
         return (
           <Card key={project.id} className="bg-muted/30 border-border overflow-hidden">
-            <div className="grid grid-cols-2 gap-4 p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4">
               {/* Left: Image */}
               <div className="relative aspect-video">
                 <OptimizedImage
+                  placeholder={<ImagePlaceholder text="" className="absolute inset-0" />}
                   type="thumbnail"
                   filename={project.thumbnail}
                   username={project.username}
@@ -134,60 +103,32 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
                       {project.logline}
                     </p>
                   )}
-                  <div className="flex items-center gap-4 text-xs text-muted-foreground mb-3">
-                    {(project.filmLength || project.duration) && (
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {project.filmLength || project.duration}
-                      </div>
-                    )}
-                    {project.lastUpdated && (
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        Updated {project.lastUpdated}
-                      </div>
-                    )}
-                    {posts.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        <MessageSquare className="h-3 w-3" />
-                        {posts.length} {posts.length === 1 ? "post" : "posts"}
-                      </div>
-                    )}
-                    <div className="flex items-center gap-1">
-                      <span>{sceneCount} scenes</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <span>{promptShotCount} prompts</span>
-                    </div>
-                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {project.isPublished ? "Public" : "Private"}
+                  </p>
                 </div>
-                <div className="flex justify-between gap-2 mt-4">
+                <div className="flex flex-wrap justify-between gap-2 mt-4">
                   <div className="flex gap-2">
-                    <Link href={`/dashboard/projects/${project.id}/posts/new`}>
-                      <Button size="sm" variant="default">
-                        <MessageSquare className="h-4 w-4 mr-2" />
-                        New Post
-                      </Button>
-                    </Link>
                     {project.username && project.slug && (
-                      <Link href={`/${project.username}/${project.slug}`}>
-                        <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`/${project.username}/${project.slug}`}>
                           <Eye className="h-4 w-4 mr-2" />
-                          View
-                        </Button>
-                      </Link>
+                          {project.isPublished ? "View" : "Preview"}
+                        </Link>
+                      </Button>
                     )}
-                    <Link href={`/dashboard/projects/${project.id}/edit`}>
-                      <Button size="sm" variant="outline">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href={`/dashboard/projects/${project.id}/edit`}>
                         <Edit className="h-4 w-4 mr-2" />
                         Edit
-                      </Button>
-                    </Link>
+                      </Link>
+                    </Button>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
                       variant="ghost"
+                      aria-label={`Delete ${project.title}`}
                       onClick={() => openDeleteDialog(project.id, project.title)}
                       className="text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
@@ -195,94 +136,6 @@ export function DashboardView({ initialProjects, initialPostsByProject = {} }: D
                     </Button>
                   </div>
                 </div>
-              </div>
-
-              {/* Posts Section - Full Width */}
-              <div className="col-span-2">
-                {posts.length === 0 ? (
-                  <div className="text-center py-8">
-                    <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground opacity-50" />
-                    <p className="text-sm text-muted-foreground">
-                      No posts yet. Publish progress updates as you develop the project.
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <div className="space-y-2">
-                      {visiblePosts.map((post) => (
-                        <div
-                          key={post.id}
-                          className="p-3 bg-background/50 rounded border border-border"
-                        >
-                          <div className="flex items-start justify-between mb-1">
-                            <h4 className="font-semibold text-sm">{post.title}</h4>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-muted-foreground">
-                                {formatDate(post.createdAt)}
-                              </span>
-                              {project.username && project.slug && (
-                                <Link
-                                  href={`/${project.username}/${project.slug}/posts/${post.id}`}
-                                >
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-xs gap-2 px-2! py-1! h-auto"
-                                  >
-                                    <Eye className="h-3 w-3" /> View
-                                  </Button>
-                                </Link>
-                              )}
-                              <Link
-                                href={`/dashboard/projects/${project.id}/posts/${post.id}/edit`}
-                              >
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-xs gap-2 px-2! py-1! h-auto"
-                                >
-                                  <Edit className="h-3 w-3" /> Edit
-                                </Button>
-                              </Link>
-                            </div>
-                          </div>
-                          <div className="flex gap-3 items-start">
-                            {post.image && (post.username || project.username) && (
-                              <div className="shrink-0 w-1/3 rounded-md overflow-hidden border border-border">
-                                <OptimizedImage
-                                  type="post"
-                                  filename={post.image}
-                                  username={post.username || project.username || ""}
-                                  alt={post.title}
-                                  width={400}
-                                  height={200}
-                                  className="w-full h-auto"
-                                  objectFit="contain"
-                                />
-                              </div>
-                            )}
-                            <p className="text-xs text-muted-foreground line-clamp-2 flex-1">
-                              {post.content}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {hasMorePosts && (
-                      <div className="mt-3">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => showMorePosts(project.id)}
-                          className="w-full"
-                        >
-                          Show {Math.min(3, posts.length - visibleCount)} More{" "}
-                          {posts.length - visibleCount === 1 ? "Post" : "Posts"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 

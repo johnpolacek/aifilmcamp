@@ -205,6 +205,7 @@ function createInitialProjectFormData(initialData?: Partial<ProjectFormData>): P
     normalizeFilmLengthOption(initialData?.duration);
 
   return {
+    ...initialData,
     title: initialData?.title || "",
     logline: initialData?.logline || "",
     duration: normalizedFilmLength || initialData?.duration || "",

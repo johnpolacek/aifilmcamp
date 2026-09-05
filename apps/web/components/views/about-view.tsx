@@ -20,7 +20,8 @@ export function AboutView() {
 
             <p className="text-xl lg:text-2xl text-muted-foreground mb-10 text-balance max-w-2xl mx-auto leading-relaxed">
               AI Film Camp helps creators move from clean-slate concept to screenplay, reference
-              assets, and prompt-ready scene plans, then share that development package publicly.
+              assets, and prompt-ready scene plans. Give your film a home and share it when you’re
+              ready.
             </p>
           </div>
         </div>

@@ -1,98 +1,61 @@
-import { ArrowLeft, Plus } from "lucide-react";
 import Link from "next/link";
-import { PostsList } from "@/components/posts-list";
+import { ProjectBasicsForm } from "@/components/project-basics-form";
 import type { ProjectFormData } from "@/components/project-form";
-import ProjectForm from "@/components/project-form";
+import { ShareProjectButton } from "@/components/share-project-button";
 import { Button } from "@/components/ui/button";
-import type { Post } from "@/lib/posts";
-
-interface EditProjectViewProps {
-  projectData: ProjectFormData | null;
-  projectId: string;
-  posts: Post[];
-  username: string;
-  projectSlug: string;
-}
 
 export function EditProjectView({
   projectData,
   projectId,
-  posts,
-  username,
-  projectSlug,
-}: EditProjectViewProps) {
-  if (!projectData) {
-    return (
-      <div className="min-h-screen bg-background pt-24 pb-16">
-        <div className="container mx-auto px-4 lg:px-8">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 text-primary mb-6 hover:opacity-80 transition-opacity"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span className="text-sm font-semibold">Back to Dashboard</span>
-          </Link>
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold mb-2">Project Not Found</h2>
-            <p className="text-muted-foreground">
-              The project you&apos;re looking for doesn&apos;t exist.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+}: {
+  projectData: ProjectFormData;
+  projectId: string;
+}) {
+  const { title, logline, thumbnail, filmLink, isPublished, username, slug } = projectData;
   return (
-    <div className="min-h-screen bg-background pt-24 pb-16">
-      <div className="container mx-auto px-4 lg:px-8">
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 text-primary mb-6 hover:opacity-80 transition-opacity"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm font-semibold">Back to Dashboard</span>
+    <main className="min-h-screen bg-background px-4 pt-28 pb-16">
+      <div className="mx-auto max-w-2xl">
+        <Link href="/dashboard" className="text-sm text-primary hover:underline">
+          ← My projects
         </Link>
-
-        <div className="space-y-12">
-          <ProjectForm
-            initialData={projectData}
-            projectId={projectId}
-            isEditing
-            redirectPath="/dashboard"
-            useGridLayout={true}
-          />
-
-          <div className="w-full border-t border-border pt-8">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold">Project Posts</h2>
-              <Link href={`/dashboard/projects/${projectId}/posts/new`}>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Post
-                </Button>
+        <div className="my-8 flex flex-wrap items-center justify-between gap-4">
+          <h1 className="text-3xl font-bold">Project details</h1>
+          {username && slug && (
+            <Button variant="outline" asChild>
+              <Link href={`/${username}/${slug}`}>
+                {isPublished ? "View public page" : "Preview page"}
               </Link>
+            </Button>
+          )}
+        </div>
+        <ProjectBasicsForm
+          projectId={projectId}
+          username={username}
+          initialData={{ title, logline, thumbnail, filmLink, isPublished }}
+        />
+        {isPublished && username && slug && (
+          <div className="mt-6 rounded-lg border p-4 text-sm">
+            <div className="mb-2 flex items-center justify-between gap-4">
+              <p className="font-medium">Share your project</p>
+              <ShareProjectButton path={`/${username}/${slug}`} />
             </div>
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <div
-                  key={post.id}
-                  className="h-[50vh] rounded-xl border border-border overflow-hidden"
-                >
-                  <PostsList
-                    projectId={projectId}
-                    initialPosts={[post]}
-                    canEdit={true}
-                    username={username}
-                    projectSlug={projectSlug}
-                    showAddButton={false}
-                  />
-                </div>
-              ))}
-            </div>
+            <Link className="break-all text-primary hover:underline" href={`/${username}/${slug}`}>
+              /{username}/{slug}
+            </Link>
           </div>
+        )}
+        <div className="mt-10 border-t pt-6">
+          <Link
+            className="font-medium text-primary hover:underline"
+            href={`/dashboard/projects/${projectId}/development`}
+          >
+            Development workspace →
+          </Link>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Work on your script, characters, scenes, and assets.
+          </p>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

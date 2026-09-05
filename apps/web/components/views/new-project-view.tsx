@@ -2,7 +2,7 @@
 
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import ProjectForm from "@/components/project-form";
+import { ProjectBasicsForm } from "@/components/project-basics-form";
 
 export function NewProjectView() {
   return (
@@ -16,7 +16,8 @@ export function NewProjectView() {
           <span className="text-sm font-semibold">Back to Dashboard</span>
         </Link>
 
-        <ProjectForm redirectPath="/dashboard" />
+        <h1 className="text-3xl font-bold mb-6">New project</h1>
+        <ProjectBasicsForm />
       </div>
     </div>
   );

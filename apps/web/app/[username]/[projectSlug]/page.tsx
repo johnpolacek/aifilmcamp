@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ProjectView } from "@/components/views/project-view";
-import { getPostsForProject } from "@/lib/posts";
 import { getUserProfile } from "@/lib/profiles";
-import { getProjectByUsernameAndSlug } from "@/lib/projects";
+import { getVisibleProject } from "@/lib/project-access";
 import { getImageUrl } from "@/lib/utils";
 
 export async function generateMetadata({
@@ -12,7 +11,7 @@ export async function generateMetadata({
   params: Promise<{ username: string; projectSlug: string }>;
 }): Promise<Metadata> {
   const { username, projectSlug } = await params;
-  const projectData = await getProjectByUsernameAndSlug(username, projectSlug);
+  const projectData = await getVisibleProject(username, projectSlug);
 
   if (!projectData) {
     return {
@@ -26,6 +25,7 @@ export async function generateMetadata({
     : undefined;
 
   return {
+    robots: project.isPublished ? undefined : { index: false, follow: false },
     title: `${project.title} - ${username} - AI Film Camp`,
     description: project.logline || `View ${project.title} by ${username} on AI Film Camp`,
     openGraph: {
@@ -61,7 +61,7 @@ export default async function ProjectPage({
   const { username, projectSlug } = await params;
 
   // Get project data
-  const projectData = await getProjectByUsernameAndSlug(username, projectSlug);
+  const projectData = await getVisibleProject(username, projectSlug);
 
   if (!projectData) {
     notFound();
@@ -73,17 +73,12 @@ export default async function ProjectPage({
   // Get creator profile
   const creatorProfile = await getUserProfile(username);
 
-  // Get posts for this project
-  const posts = await getPostsForProject(id);
-
   return (
     <ProjectView
       projectId={id}
       project={{ ...project, slug: projectSlug }}
       username={username}
-      projectSlug={projectSlug}
       creatorProfile={creatorProfile}
-      posts={posts}
     />
   );
 }

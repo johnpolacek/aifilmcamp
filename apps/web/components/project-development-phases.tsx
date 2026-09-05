@@ -40,24 +40,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import {
   canEnterStep,
   derivePhaseStatus,
-  ensureProjectPhaseVisibility,
   getFirstIncompleteStep,
   getNextStep,
   getPreviousStep,
   getPromptShotCount,
   getStepOrder,
 } from "@/lib/development";
-import {
-  FILM_LENGTH_OPTIONS,
-  type PhaseVisibility,
-  type StartMode,
-  type WorkflowPhase,
-} from "@/lib/types/development";
+import { FILM_LENGTH_OPTIONS, type StartMode, type WorkflowPhase } from "@/lib/types/development";
 import { cn } from "@/lib/utils";
 
 interface ProjectDevelopmentWizardProps {
@@ -307,21 +300,18 @@ const stepMeta: Record<
     label: string;
     description: string;
     icon: typeof Lightbulb;
-    supportsVisibility?: boolean;
   }
 > = {
   "start-mode": {
     label: "New Project",
     description: "Choose whether to start from a blank slate or bring in source material first.",
     icon: Lightbulb,
-    supportsVisibility: false,
   },
   "source-import": {
     label: "Import Source",
     description:
       "Upload an outline, brainstorm export, or screenplay draft so AI can seed the project from your material.",
     icon: Upload,
-    supportsVisibility: false,
   },
   concept: {
     label: "Concept",
@@ -375,7 +365,6 @@ const stepMeta: Record<
 function WizardStepFrame({
   data,
   step,
-  onVisibilityChange,
   onPrevious,
   onNext,
   nextLabel,
@@ -387,7 +376,6 @@ function WizardStepFrame({
 }: {
   data: ProjectFormData;
   step: WizardStep;
-  onVisibilityChange: (step: WizardStep, value: PhaseVisibility) => void;
   onPrevious?: () => void;
   onNext: () => void;
   nextLabel?: string;
@@ -399,7 +387,6 @@ function WizardStepFrame({
 }) {
   const meta = stepMeta[step];
   const Icon = meta.icon;
-  const visibility = ensureProjectPhaseVisibility(data)[step];
 
   return (
     <Card className="border-border bg-card/70">
@@ -410,24 +397,6 @@ function WizardStepFrame({
               <Icon className="h-5 w-5" />
             </div>
             <CardTitle className="text-2xl">{meta.label}</CardTitle>
-            {meta.supportsVisibility !== false && (
-              <div className="ml-auto flex items-center gap-3">
-                <Label
-                  htmlFor={`${step}-public-switch`}
-                  className="text-sm font-medium text-foreground"
-                >
-                  Public
-                </Label>
-                <Switch
-                  id={`${step}-public-switch`}
-                  checked={visibility === "published"}
-                  onCheckedChange={(checked) =>
-                    onVisibilityChange(step, checked ? "published" : "private")
-                  }
-                  aria-label="Toggle public visibility"
-                />
-              </div>
-            )}
           </div>
           <p className="w-full text-sm text-muted-foreground">{meta.description}</p>
         </div>
@@ -511,16 +480,6 @@ export function ProjectDevelopmentWizard({
     });
   };
 
-  const updateVisibility = (step: WizardStep, visibility: PhaseVisibility) => {
-    updateData({
-      ...data,
-      phaseVisibility: {
-        ...ensureProjectPhaseVisibility(data),
-        [step]: visibility,
-      },
-    });
-  };
-
   const withLoading = async (step: WizardStep, action: () => Promise<void>) => {
     setLoadingStep(step);
     try {
@@ -550,7 +509,7 @@ export function ProjectDevelopmentWizard({
     }
 
     if (!nextStep) {
-      toast.success("Wizard complete. Continue refining or publish phases when ready.");
+      toast.success("Workspace ready. Continue refining your film.");
       return;
     }
     setStep(nextStep);
@@ -1736,7 +1695,6 @@ export function ProjectDevelopmentWizard({
       <WizardStepFrame
         data={data}
         step={activeStep}
-        onVisibilityChange={updateVisibility}
         onPrevious={previousStep ? handlePrevious : undefined}
         onNext={() => void handleNext()}
         nextLabel={isCreateProjectStep ? "Create Project" : undefined}

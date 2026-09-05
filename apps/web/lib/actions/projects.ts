@@ -4,6 +4,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { ProjectFormData } from "@/components/project-form";
+import { applyProjectBasics, type ProjectBasics } from "@/lib/project-basics";
 import { deleteProject as deleteProjectFromS3, getProject, saveProject } from "@/lib/projects";
 import {
   deleteObjectFromS3,
@@ -46,6 +47,42 @@ async function getCurrentUsername(): Promise<string> {
 
   // Use Clerk username or email prefix as username
   return user.username || user.emailAddresses[0]?.emailAddress.split("@")[0] || user.id;
+}
+
+/** Save only the project's public-facing basics; retain all stored working material. */
+export async function saveProjectBasics(input: ProjectBasics, projectId?: string) {
+  const username = await getCurrentUsername();
+  const existing = projectId ? await getProject(projectId) : null;
+  if (projectId && (!existing || existing.username !== username)) {
+    throw new Error("Project not found or you do not have permission to edit it.");
+  }
+  const id = projectId || `project-${crypto.randomUUID()}`;
+  const base: ProjectFormData = existing || {
+    title: "",
+    logline: "",
+    duration: "",
+    genre: "",
+    links: { links: [] },
+    tools: [],
+    username,
+  };
+  const project = applyProjectBasics(base, input);
+  project.slug =
+    existing?.slug ||
+    `${
+      project.title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "film"
+    }-${id.slice(-8)}`;
+  await saveProject(id, project);
+  revalidatePath("/dashboard");
+  revalidatePath(`/dashboard/projects/${id}/edit`);
+  revalidatePath(`/dashboard/projects/${id}/development`);
+  revalidatePath(`/${username}/${project.slug}`);
+  revalidatePath("/projects");
+  revalidatePath("/films");
+  return { success: true, projectId: id };
 }
 
 /**
@@ -104,8 +141,16 @@ export async function updateProject(projectId: string, data: ProjectFormData) {
     }
 
     // Save to S3
-    await saveProject(projectId, data);
+    await saveProject(projectId, {
+      ...existingProject,
+      ...data,
+      username: existingProject.username,
+      slug: existingProject.slug,
+    });
 
+    revalidatePath(`/${currentUsername}/${existingProject.slug}`);
+    revalidatePath("/projects");
+    revalidatePath("/films");
     // Revalidate the dashboard and edit pages
     revalidatePath("/dashboard");
     revalidatePath(`/dashboard/projects/${projectId}/edit`);
@@ -255,6 +300,9 @@ export async function deleteProject(projectId: string) {
 
     // Delete from S3
     await deleteProjectFromS3(projectId);
+    revalidatePath("/projects");
+    revalidatePath("/films");
+    revalidatePath(`/${currentUsername}/${existingProject.slug}`);
 
     // Revalidate the dashboard page
     revalidatePath("/dashboard");
@@ -302,6 +350,7 @@ export async function publishProject(projectId: string) {
     revalidatePath("/dashboard");
     revalidatePath(`/${currentUsername}/${existingProject.slug}`);
     revalidatePath("/films");
+    revalidatePath("/projects");
 
     return { success: true };
   } catch (error) {
@@ -345,6 +394,7 @@ export async function unpublishProject(projectId: string) {
     revalidatePath("/dashboard");
     revalidatePath(`/${currentUsername}/${existingProject.slug}`);
     revalidatePath("/films");
+    revalidatePath("/projects");
 
     return { success: true };
   } catch (error) {

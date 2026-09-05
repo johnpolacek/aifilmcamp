@@ -1,23 +1,10 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { EditScenePromptsView } from "@/components/views/edit-scene-prompts-view";
 import { getProject } from "@/lib/projects";
 import { getScene } from "@/lib/scenes";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ id: string; sceneId: string }>;
-}): Promise<Metadata> {
-  const { id, sceneId } = await params;
-  const scene = await getScene(id, sceneId);
-
-  return {
-    title: scene ? `Plan: ${scene.title} - AI Film Camp` : "Scene Planning - AI Film Camp",
-    description: "Plan scene details and shot prompts",
-  };
-}
+export const metadata = { title: "Scene planning - AI Film Camp" };
 
 export default async function EditScenePage({
   params,

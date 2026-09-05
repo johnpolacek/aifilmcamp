@@ -1,89 +1,72 @@
 import { Film } from "lucide-react";
-import { Header } from "@/components/header";
+import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ImagePlaceholder } from "@/components/ui/image-placeholder";
+import { getAllProjects } from "@/lib/projects";
+import { getThumbnailUrl } from "@/lib/utils";
 
-export function ProjectsView() {
-  // Placeholder projects data
-  const _placeholderProjects = [
-    {
-      id: "1",
-      title: "The Last Algorithm",
-      description:
-        "A sci-fi short exploring AI consciousness through the eyes of a self-aware algorithm discovering its own mortality.",
-      thumbnail: "",
-      creator: "filmmaker_xyz",
-      status: "Completed",
-      duration: "8:45",
-      genre: "Sci-Fi",
-      tools: [
-        { name: "Runway Gen-3", category: "video" as const },
-        { name: "Midjourney", category: "image" as const },
-        { name: "ElevenLabs", category: "sound" as const },
-      ],
-    },
-    {
-      id: "2",
-      title: "Memories in Motion",
-      description:
-        "An experimental documentary blending AI-generated visuals with real family photographs to explore themes of memory and time.",
-      thumbnail: "",
-      creator: "creative_soul",
-      status: "In Progress",
-      duration: "12:00",
-      genre: "Documentary",
-      tools: [
-        { name: "Pika Labs", category: "video" as const },
-        { name: "Stable Diffusion", category: "image" as const },
-      ],
-    },
-    {
-      id: "3",
-      title: "Urban Dreams",
-      description:
-        "A visual poem capturing the essence of city life through AI-generated imagery and soundscapes.",
-      thumbnail: "",
-      creator: "city_artist",
-      status: "Post-Production",
-      duration: "5:30",
-      genre: "Experimental",
-      tools: [
-        { name: "Runway Gen-3", category: "video" as const },
-        { name: "Suno", category: "sound" as const },
-      ],
-    },
-  ];
-
+export async function ProjectsView() {
+  const projects = Object.entries(await getAllProjects())
+    .filter(([, project]) => project.isPublished && project.username && project.slug)
+    .sort(([, a], [, b]) => (b.publishedAt || "").localeCompare(a.publishedAt || ""));
   return (
-    <main className="min-h-screen">
-      <Header />
-
-      {/* Hero Section */}
-      <section className="pt-32 lg:pt-40 bg-linear-to-b from-background to-muted/30">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-4xl lg:text-6xl font-bold mb-6 text-balance">Community Projects</h1>
-            <p className="text-lg lg:text-xl text-muted-foreground text-balance">
-              Explore concept-to-prompt AI film development packages from creators around the world.
-              Get inspired, learn, and collaborate.
+    <main className="min-h-screen px-4 pt-28 pb-20 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-12 flex flex-wrap items-end justify-between gap-6">
+          <div>
+            <h1 className="text-4xl font-bold md:text-5xl">Community projects</h1>
+            <p className="mt-4 text-lg text-muted-foreground">
+              Films and ideas from the AI Film Camp community.
             </p>
           </div>
+          <Button asChild>
+            <Link href="/dashboard/projects/new">Start a project</Link>
+          </Button>
         </div>
-      </section>
-
-      {/* Projects Grid */}
-      <section className="py-20">
-        <div className="container mx-auto px-4 lg:px-8">
-          {/* Empty State / Coming Soon Message */}
-          <div className="text-center mt-16">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-              <Film className="h-8 w-8 text-primary" />
-            </div>
-            <h3 className="text-2xl font-bold mb-2">Coming Soon</h3>
-            <p className="text-muted-foreground max-w-md mx-auto text-balance">
-              Join the community and share your own AI film development package.
+        {projects.length ? (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map(([id, project]) => (
+              <Link
+                key={id}
+                href={`/${project.username}/${project.slug}`}
+                className="group overflow-hidden rounded-xl border bg-card transition-colors hover:border-primary/50"
+              >
+                <div className="relative aspect-video bg-muted">
+                  {project.thumbnail && project.username ? (
+                    <Image
+                      src={getThumbnailUrl(project.thumbnail, project.username)}
+                      alt={project.title}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <ImagePlaceholder text="" className="h-full w-full" />
+                  )}
+                </div>
+                <div className="p-5">
+                  <h2 className="text-xl font-semibold group-hover:text-primary">
+                    {project.title}
+                  </h2>
+                  <p className="mt-1 text-sm text-muted-foreground">By {project.username}</p>
+                  {project.logline && (
+                    <p className="mt-3 line-clamp-2 text-sm leading-relaxed">{project.logline}</p>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed px-6 py-20 text-center">
+            <Film className="mx-auto mb-4 h-10 w-10 text-muted-foreground" />
+            <h2 className="text-xl font-semibold">A place for your next film</h2>
+            <p className="mt-2 text-muted-foreground">
+              Public projects will appear here. Start yours with just a title.
             </p>
           </div>
-        </div>
-      </section>
+        )}
+      </div>
     </main>
   );
 }
