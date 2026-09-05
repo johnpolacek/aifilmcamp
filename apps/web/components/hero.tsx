@@ -15,11 +15,6 @@ export function Hero() {
             Create. Share. Collaborate.
           </h1>
 
-          <p className="text-xl lg:text-2xl opacity-80 text-shadow-black mb-10 text-pretty max-w-4xl mx-auto leading-relaxed">
-            Develop ideas, scripts, reference assets, and prompt-ready scenes in one place. Share
-            your process and publish development packages as they take shape.
-          </p>
-
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <ClerkLoading>
               <Button
