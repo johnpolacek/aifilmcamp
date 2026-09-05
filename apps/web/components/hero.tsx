@@ -23,7 +23,7 @@ export function Hero() {
                 aria-hidden="true"
                 tabIndex={-1}
               >
-                Join
+                Join The Community
               </Button>
             </ClerkLoading>
             <Show when="signed-in">
@@ -44,7 +44,7 @@ export function Hero() {
                   size="lg"
                   className="h-16 px-12 text-2xl font-bold bg-primary text-white hover:bg-primary/90 hover:text-white"
                 >
-                  Join
+                  Join The Community
                 </Button>
               </SignUpButton>
               <SignInButton mode="modal">
