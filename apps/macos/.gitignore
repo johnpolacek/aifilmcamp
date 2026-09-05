@@ -1,0 +1,10 @@
+.build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+*.aifilm/
+*.db
+*.db-shm
+*.db-wal
+screenplays-private/

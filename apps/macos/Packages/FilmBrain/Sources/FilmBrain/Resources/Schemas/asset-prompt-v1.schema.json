@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "prompt"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["body", "targetModel", "guidance"],
+      "properties": {
+        "body": { "type": "string" },
+        "targetModel": { "type": "string" },
+        "guidance": { "type": "string" }
+      }
+    }
+  }
+}

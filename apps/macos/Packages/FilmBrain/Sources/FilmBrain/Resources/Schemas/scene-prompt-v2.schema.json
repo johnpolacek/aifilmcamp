@@ -1,0 +1,43 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "cards"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 2 },
+    "cards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["title", "body", "guidance", "settings", "references"],
+        "properties": {
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "guidance": { "type": "string" },
+          "settings": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["durationSeconds", "aspectRatio", "resolution"],
+            "properties": {
+              "durationSeconds": { "type": "integer" },
+              "aspectRatio": { "type": "string" },
+              "resolution": { "type": "string" }
+            }
+          },
+          "references": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["position", "sourceDesignator"],
+              "properties": {
+                "position": { "type": "integer" },
+                "sourceDesignator": { "type": "integer" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

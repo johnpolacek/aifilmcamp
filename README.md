@@ -1,30 +1,59 @@
 # AI Film Camp
 
-A project workspace and asset manager for developing AI films: concepts, characters, outlines, screenplays, reference assets, scene plans, and shot prompts. Projects can publish selected development phases and export their materials.
+A monorepo containing the web project workspace and native macOS filmmaking app.
 
-## Development
+```text
+apps/
+  web/       Next.js app: project planning, assets, and prompts
+  macos/     Native SwiftUI app, Swift packages, tools, and design docs
+wiki/        Web workflow and storage documentation
+```
 
-Use Node 22 (`nvm use`) and the pnpm version pinned in `package.json`.
+## Web development
+
+Use Node 22 (`nvm use`) and the pnpm version pinned in the root `package.json`.
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
+cp apps/web/.env.example apps/web/.env.local # first-time setup only
 pnpm dev
 ```
 
-Configure `.env.local` with Clerk authentication, AWS S3 storage, and Google AI credentials. See `.env.example` for the variable names. The app runs at http://localhost:3000.
+Configure `apps/web/.env.local` with Clerk authentication, AWS S3 storage, and Google AI credentials. Existing local environment files were moved into `apps/web`. The web app runs at http://localhost:3000.
+
+Root commands delegate to the web workspace:
 
 ```sh
 pnpm build
-pnpm exec tsc --noEmit
+pnpm start
+pnpm typecheck
 pnpm lint
+pnpm format:check
 ```
 
-## Product boundary
+Formatting and check commands also run inside `apps/web`. For direct tool access, use `pnpm --filter @aifilm-camp/web exec <command>`.
 
-This web app handles project planning, assets, and prompts. The browser video editor, timeline, audio mixing, stitching tools, video generation pipeline, and FFmpeg composer were removed in September 2026. A native macOS editor may be explored separately in the future.
+## macOS development
 
-Existing uploaded media and historical fields in stored project JSON are preserved. No data migration or remote media deletion is required for this removal. New scenes contain planning and asset metadata only.
+Requires macOS 15+, Xcode 26.6, and XcodeGen 2.46.0.
 
-## Documentation
+```sh
+pnpm build:macos
+pnpm dev:macos
+```
 
-See [the project wiki](wiki/index.md) for workflow and storage details.
+The build runs documentation checks, builds FilmCore and FilmBrain, regenerates the Xcode project, and builds the app. The development command builds and launches it. Both scripts also work directly without pnpm: `./apps/macos/scripts/build.sh` and `./apps/macos/dev`.
+
+The image-generation helper keeps its own npm dependencies and lockfile under `apps/macos/Tools/ImageGenerationHelper`; the native build manages these. It is intentionally outside the pnpm workspace. Native CI is preserved in `.github/workflows/macos.yml`.
+
+## Deployment
+
+For the existing web hosting project, set its Root Directory to `apps/web`, use the Next.js framework preset, and enable access to files outside the Root Directory so the root pnpm workspace and lockfile are available. Use `pnpm install --frozen-lockfile` for installation and `pnpm build` for the build command. Hosting settings are not changed by moving the local files.
+
+## Migration
+
+The macOS source, resources, design drafts, and tooling were moved from `../aifilm.camp/apps/macos`. Imported from source commit `05348be396f247e1cc8a0e57b419a103e79567a6`, including local logo drafts. Its Git history remains in that sibling repository. Old native build caches and local agent worktrees remain there because they refer to their original paths; new builds use this repository. The sibling repository's unrelated changes are preserved.
+
+Code paths in the web wiki are relative to `apps/web`.
+
+See [web documentation](apps/web/README.md), [macOS documentation](apps/macos/README.md), and [the web wiki](wiki/index.md).

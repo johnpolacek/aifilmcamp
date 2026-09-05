@@ -1,0 +1,46 @@
+name: macOS build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    defaults:
+      run:
+        working-directory: apps/macos
+    runs-on: macos-26
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Assert Xcode 26.6
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          test "$(xcodebuild -version | sed -n '1p')" = "Xcode 26.6"
+
+      - name: Install XcodeGen 2.46.0
+        run: |
+          set -euo pipefail
+          curl -fsSL \
+            https://github.com/yonaskolb/XcodeGen/releases/download/2.46.0/xcodegen.zip \
+            -o xcodegen.zip
+          echo "4d9e34b62172d645eed6457cac13fc222569974098ef4ee9c3368bedf0196806  xcodegen.zip" \
+            | shasum -a 256 -c -
+          unzip -q xcodegen.zip
+          sudo bash ./xcodegen/install.sh
+          test "$(xcodegen --version)" = "Version: 2.46.0"
+
+      - name: Verify generated project is current
+        run: |
+          set -euo pipefail
+          xcodegen generate --spec project.yml
+          git diff --exit-code -- "AI Film Camp.xcodeproj"
+
+      - name: Build prototype
+        run: ./scripts/build.sh

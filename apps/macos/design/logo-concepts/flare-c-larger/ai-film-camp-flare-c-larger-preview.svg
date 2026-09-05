@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 660" role="img" aria-labelledby="title desc">
+  <title id="title">AI Film Camp Flare C lens enlargement comparison</title>
+  <desc id="desc">The selected Flare C mark compared with a version whose lens circle and C are eight percent larger.</desc>
+  <defs>
+    <style>
+      .kicker { font: 700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 2.4px; fill: #A7650D; }
+      .heading { font: 650 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .name { font: 650 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .body { font: 400 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #6E6862; }
+      .label { font: 650 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1.2px; fill: #9A938D; }
+    </style>
+    <mask id="original-mask" maskUnits="userSpaceOnUse"><rect width="256" height="256" fill="#FFF"/><circle cx="126" cy="166" r="37" fill="none" stroke="#000" stroke-width="9"/><circle cx="126" cy="166" r="21" fill="#000"/><circle cx="132" cy="166" r="17" fill="#FFF"/></mask>
+    <mask id="larger-mask" maskUnits="userSpaceOnUse"><rect width="256" height="256" fill="#FFF"/><circle cx="126" cy="166" r="40" fill="none" stroke="#000" stroke-width="9.5"/><circle cx="126" cy="166" r="23" fill="#000"/><circle cx="132.5" cy="166" r="18.5" fill="#FFF"/></mask>
+    <symbol id="original" viewBox="0 0 256 256"><path d="M133 20c25 39 58 72 58 120 0 49-30 84-65 94-39-10-66-44-66-86 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Z" fill="currentColor" mask="url(#original-mask)" transform="translate(128 0) scale(1.3 1) translate(-128 0)"/></symbol>
+    <symbol id="larger" viewBox="0 0 256 256"><path d="M133 20c25 39 58 72 58 120 0 49-30 84-65 94-39-10-66-44-66-86 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Z" fill="currentColor" mask="url(#larger-mask)" transform="translate(128 0) scale(1.3 1) translate(-128 0)"/></symbol>
+  </defs>
+  <rect width="1100" height="660" fill="#FBFAF8"/>
+  <text x="52" y="56" class="kicker">AI FILM CAMP · FLARE C</text>
+  <text x="52" y="102" class="heading">A little more lens presence.</text>
+  <text x="52" y="133" class="body">The flame is unchanged; the complete lens-and-C group grows by approximately 8%.</text>
+  <g transform="translate(50 174)">
+    <rect width="475" height="420" rx="22" fill="#FFF" stroke="#E9E6E2"/>
+    <text x="24" y="38" class="label">BEFORE</text>
+    <use href="#original" x="112" y="54" width="250" height="250" color="#F5A623"/>
+    <text x="24" y="347" class="name">Original</text>
+    <text x="24" y="376" class="body">Ring radius 37 · inner C radius 21</text>
+  </g>
+  <g transform="translate(575 174)">
+    <rect width="475" height="420" rx="22" fill="#FFF" stroke="#F5A623" stroke-width="2"/>
+    <text x="24" y="38" class="label" fill="#A7650D">REVISED</text>
+    <use href="#larger" x="112" y="54" width="250" height="250" color="#F5A623"/>
+    <text x="24" y="347" class="name">Slightly Larger</text>
+    <text x="24" y="376" class="body">Ring radius 40 · inner C radius 23</text>
+  </g>
+  <text x="52" y="630" class="body">One-color vector · transparent negative space · unchanged 130% Wider Still flame</text>
+</svg>

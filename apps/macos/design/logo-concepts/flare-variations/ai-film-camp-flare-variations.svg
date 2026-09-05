@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 930" role="img" aria-labelledby="title desc">
+  <title id="title">AI Film Camp Flare variations</title>
+  <desc id="desc">Five variations of the Flare logo exploring proportion and lens-shaped negative space.</desc>
+  <defs>
+    <style>
+      .kicker { font: 700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 2.4px; fill: #A7650D; }
+      .heading { font: 650 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .name { font: 650 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .body { font: 400 15px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #6E6862; }
+      .label { font: 650 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1.3px; fill: #9A938D; }
+    </style>
+    <symbol id="a" viewBox="0 0 256 256"><path fill="currentColor" fill-rule="evenodd" d="M133 20c25 39 58 72 58 120 0 49-30 84-65 94-39-10-66-44-66-86 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Zm-7 108a38 38 0 1 0 0 76 38 38 0 0 0 0-76Z"/></symbol>
+    <symbol id="b" viewBox="0 0 256 256"><path fill="currentColor" fill-rule="evenodd" d="M132 32c27 36 53 68 53 108 0 44-26 76-59 86-35-10-59-41-59-80 0-31 17-60 49-88-3 25 6 41 22 52 7-30 1-56-6-78Zm-6 100a34 34 0 1 0 0 68 34 34 0 0 0 0-68Z"/></symbol>
+    <symbol id="c" viewBox="0 0 256 256"><path fill="currentColor" fill-rule="evenodd" d="M142 24c14 36 44 64 49 105 6 47-22 87-62 101-42-8-68-41-68-83 0-34 19-66 55-98-5 28 7 47 28 58 8-31 5-58-2-83Zm-4 108a36 36 0 1 0 0 72 36 36 0 0 0 0-72Z"/></symbol>
+    <symbol id="d" viewBox="0 0 256 256"><path fill="currentColor" fill-rule="evenodd" d="M133 20c25 39 58 72 58 120 0 49-30 84-65 94-39-10-66-44-66-86 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Zm-7 108 34 20v38l-34 20-34-20v-38l34-20Z"/></symbol>
+    <symbol id="e" viewBox="0 0 256 256"><path fill="currentColor" fill-rule="evenodd" d="M133 20c25 39 58 72 58 120 0 49-30 84-65 94-39-10-66-44-66-86 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Zm-57 148c25-31 75-31 100 0-25 31-75 31-100 0Z"/></symbol>
+  </defs>
+  <rect width="1500" height="930" fill="#FFFFFF"/>
+  <text x="60" y="56" class="kicker">AI FILM CAMP · FLARE STUDY</text>
+  <text x="60" y="102" class="heading">One idea, five proportions</text>
+  <text x="60" y="133" class="body">Flame outside · cinematic lens inside · flat amber · transparent background</text>
+
+  <g transform="translate(45 170)">
+    <rect width="450" height="320" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="25" y="38" class="kicker">A</text><text x="25" y="72" class="name">Balanced</text><text x="25" y="97" class="body">The original proportion, optically centered.</text>
+    <use href="#a" x="28" y="122" width="160" height="160" color="#F5A623"/>
+    <text x="232" y="148" class="label">SMALL</text><use href="#a" x="232" y="163" width="36" height="36" color="#191715"/>
+    <text x="305" y="148" class="label">REVERSED</text><rect x="305" y="160" width="82" height="82" rx="20" fill="#191715"/><use href="#a" x="318" y="173" width="56" height="56" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(525 170)">
+    <rect width="450" height="320" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="25" y="38" class="kicker">B</text><text x="25" y="72" class="name">Compact</text><text x="25" y="97" class="body">Shorter, wider, and optimized for app icons.</text>
+    <use href="#b" x="28" y="122" width="160" height="160" color="#F5A623"/>
+    <text x="232" y="148" class="label">SMALL</text><use href="#b" x="232" y="163" width="36" height="36" color="#191715"/>
+    <text x="305" y="148" class="label">REVERSED</text><rect x="305" y="160" width="82" height="82" rx="20" fill="#191715"/><use href="#b" x="318" y="173" width="56" height="56" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(1005 170)">
+    <rect width="450" height="320" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="25" y="38" class="kicker">C</text><text x="25" y="72" class="name">Orbit</text><text x="25" y="97" class="body">Asymmetry adds forward motion and energy.</text>
+    <use href="#c" x="28" y="122" width="160" height="160" color="#F5A623"/>
+    <text x="232" y="148" class="label">SMALL</text><use href="#c" x="232" y="163" width="36" height="36" color="#191715"/>
+    <text x="305" y="148" class="label">REVERSED</text><rect x="305" y="160" width="82" height="82" rx="20" fill="#191715"/><use href="#c" x="318" y="173" width="56" height="56" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(285 530)">
+    <rect width="450" height="320" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="25" y="38" class="kicker">D</text><text x="25" y="72" class="name">Iris</text><text x="25" y="97" class="body">A geometric aperture replaces the round lens.</text>
+    <use href="#d" x="28" y="122" width="160" height="160" color="#F5A623"/>
+    <text x="232" y="148" class="label">SMALL</text><use href="#d" x="232" y="163" width="36" height="36" color="#191715"/>
+    <text x="305" y="148" class="label">REVERSED</text><rect x="305" y="160" width="82" height="82" rx="20" fill="#191715"/><use href="#d" x="318" y="173" width="56" height="56" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(765 530)">
+    <rect width="450" height="320" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="25" y="38" class="kicker">E</text><text x="25" y="72" class="name">Cinema</text><text x="25" y="97" class="body">A wide lens opening makes film more explicit.</text>
+    <use href="#e" x="28" y="122" width="160" height="160" color="#F5A623"/>
+    <text x="232" y="148" class="label">SMALL</text><use href="#e" x="232" y="163" width="36" height="36" color="#191715"/>
+    <text x="305" y="148" class="label">REVERSED</text><rect x="305" y="160" width="82" height="82" rx="20" fill="#191715"/><use href="#e" x="318" y="173" width="56" height="56" color="#FFFFFF"/>
+  </g>
+</svg>

@@ -1,0 +1,33 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "scenes", "characters", "locations"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "scenes": {
+      "type": "array", "minItems": 1, "maxItems": 5000,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["id", "ordinal", "heading", "synopsis", "characterIds", "locationId"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^scene_[a-z0-9_]+$" },
+          "ordinal": { "type": "integer", "minimum": 1 },
+          "heading": { "type": "string" },
+          "synopsis": { "type": "string" },
+          "characterIds": { "type": "array", "maxItems": 2000, "items": { "type": "string", "pattern": "^char_[a-z0-9_]+$" } },
+          "locationId": { "type": ["string", "null"], "pattern": "^loc_[a-z0-9_]+$" }
+        }
+      }
+    },
+    "characters": {
+      "type": "array", "maxItems": 2000,
+      "items": { "type": "object", "additionalProperties": false, "required": ["id", "name", "description"],
+        "properties": { "id": { "type": "string", "pattern": "^char_[a-z0-9_]+$" }, "name": { "type": "string" }, "description": { "type": "string" } } }
+    },
+    "locations": {
+      "type": "array", "maxItems": 2000,
+      "items": { "type": "object", "additionalProperties": false, "required": ["id", "name", "description"],
+        "properties": { "id": { "type": "string", "pattern": "^loc_[a-z0-9_]+$" }, "name": { "type": "string" }, "description": { "type": "string" } } }
+    }
+  }
+}

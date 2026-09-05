@@ -1,0 +1,39 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "canonicalEntities", "proposedMerges"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "canonicalEntities": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["existingId", "kind", "name", "aliases", "description", "mergedFrom"],
+        "properties": {
+          "existingId": { "type": ["string", "null"] },
+          "kind": { "type": "string", "enum": ["character", "location", "prop", "vehicle", "creature", "object"] },
+          "name": { "type": "string" },
+          "aliases": { "type": "array", "maxItems": 128, "items": { "type": "string" } },
+          "description": { "type": "string" },
+          "mergedFrom": { "type": "array", "maxItems": 128, "items": { "type": "string" } }
+        }
+      }
+    },
+    "proposedMerges": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sourceId", "targetId", "reason"],
+        "properties": {
+          "sourceId": { "type": "string" },
+          "targetId": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      }
+    }
+  }
+}

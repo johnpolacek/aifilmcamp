@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">AI Film Camp Tri Iris logo concept</title>
+  <desc id="desc">Three amber shutter blades form a minimal abstract spark.</desc>
+  <defs><path id="blade" d="M128 24c34 8 61 28 79 55l-69 45c-2-15-11-28-27-37Z"/></defs>
+  <g fill="#F5A623">
+    <use href="#blade"/>
+    <use href="#blade" transform="rotate(120 128 128)"/>
+    <use href="#blade" transform="rotate(240 128 128)"/>
+  </g>
+</svg>

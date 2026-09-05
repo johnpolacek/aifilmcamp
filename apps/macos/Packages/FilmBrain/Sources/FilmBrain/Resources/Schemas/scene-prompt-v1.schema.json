@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "prompt", "settings"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "prompt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["body", "guidance"],
+      "properties": {
+        "body": { "type": "string" },
+        "guidance": { "type": "string" }
+      }
+    },
+    "settings": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["durationSeconds", "aspectRatio", "resolution"],
+      "properties": {
+        "durationSeconds": { "type": "integer" },
+        "aspectRatio": { "type": "string" },
+        "resolution": { "type": "string" }
+      }
+    }
+  }
+}

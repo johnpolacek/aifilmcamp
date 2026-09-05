@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 820" role="img" aria-labelledby="title desc">
+  <title id="title">AI Film Camp Flare final polish study</title>
+  <desc id="desc">A comparison of the current Flare mark, an optically balanced version, and a distinctive aperture-inspired C version.</desc>
+  <defs>
+    <style>
+      .kicker { font: 700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 2.5px; fill: #A7650D; }
+      .heading { font: 650 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .name { font: 650 20px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .body { font: 400 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #6E6862; }
+      .label { font: 650 11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1.2px; fill: #9A938D; }
+      .number { font: 700 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #FFF; }
+    </style>
+
+    <mask id="current-mask" maskUnits="userSpaceOnUse">
+      <rect width="256" height="256" fill="#FFF"/>
+      <circle cx="126" cy="166" r="37" fill="none" stroke="#000" stroke-width="9"/>
+      <circle cx="126" cy="166" r="21" fill="#000"/>
+      <circle cx="132" cy="166" r="17" fill="#FFF"/>
+    </mask>
+    <symbol id="current" viewBox="0 0 256 256">
+      <path d="M133 20c25 39 58 72 58 120 0 49-30 84-65 94-39-10-66-44-66-86 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Z" fill="currentColor" mask="url(#current-mask)" transform="translate(128 0) scale(1.3 1) translate(-128 0)"/>
+    </symbol>
+
+    <mask id="balanced-mask" maskUnits="userSpaceOnUse">
+      <rect width="256" height="256" fill="#FFF"/>
+      <circle cx="126" cy="160" r="37" fill="none" stroke="#000" stroke-width="9"/>
+      <circle cx="126" cy="160" r="21" fill="#000"/>
+      <circle cx="132" cy="160" r="17" fill="#FFF"/>
+    </mask>
+    <symbol id="balanced" viewBox="0 0 256 256">
+      <path d="M133 20C158 59 191 92 191 140c0 43-23 76-54 89-7 3-14 3-21 0-34-13-56-44-56-81 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Z" fill="currentColor" mask="url(#balanced-mask)" transform="translate(128 0) scale(1.3 1) translate(-128 0)"/>
+    </symbol>
+
+    <mask id="aperture-mask" maskUnits="userSpaceOnUse">
+      <rect width="256" height="256" fill="#FFF"/>
+      <circle cx="126" cy="160" r="37" fill="none" stroke="#000" stroke-width="9"/>
+      <path d="M146 143c-7-7-17-10-27-7-13 4-21 16-20 29 1 13 11 24 24 26 10 1 20-3 26-10-8 4-16 4-24 1-9-4-15-13-15-23 0-10 6-17 14-20 8-3 16-1 22 4Z" fill="#000"/>
+    </mask>
+    <symbol id="aperture" viewBox="0 0 256 256">
+      <path d="M133 20C158 59 191 92 191 140c0 43-23 76-54 89-7 3-14 3-21 0-34-13-56-44-56-81 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Z" fill="currentColor" mask="url(#aperture-mask)" transform="translate(128 0) scale(1.3 1) translate(-128 0)"/>
+    </symbol>
+  </defs>
+
+  <rect width="1400" height="820" fill="#FBFAF8"/>
+  <text x="54" y="56" class="kicker">AI FILM CAMP · FLARE FINAL POLISH</text>
+  <text x="54" y="102" class="heading">Same idea, three levels of refinement.</text>
+  <text x="54" y="133" class="body">Every option is a single-color vector with transparent lens knockouts.</text>
+
+  <g transform="translate(50 180)">
+    <rect width="410" height="560" rx="22" fill="#FFF" stroke="#E9E6E2"/>
+    <circle cx="34" cy="34" r="15" fill="#B9B2AC"/><text x="30.5" y="38.5" class="number">1</text>
+    <text x="60" y="39" class="label">CONTROL</text>
+    <use href="#current" x="73" y="78" width="264" height="264" color="#F5A623"/>
+    <text x="26" y="387" class="name">Current</text>
+    <text x="26" y="416" class="body">The selected proportions, unchanged.</text>
+    <text x="26" y="454" class="label">SMALL-SIZE CHECK</text>
+    <use href="#current" x="28" y="477" width="24" height="24" color="#191715"/>
+    <use href="#current" x="77" y="473" width="32" height="32" color="#191715"/>
+    <use href="#current" x="134" y="465" width="48" height="48" color="#191715"/>
+    <text x="218" y="496" class="body">24 · 32 · 48 px</text>
+  </g>
+
+  <g transform="translate(495 180)">
+    <rect width="410" height="560" rx="22" fill="#FFF" stroke="#E9E6E2"/>
+    <circle cx="34" cy="34" r="15" fill="#F5A623"/><text x="30.5" y="38.5" class="number">2</text>
+    <text x="60" y="39" class="label">OPTICAL REFINEMENT</text>
+    <use href="#balanced" x="73" y="78" width="264" height="264" color="#F5A623"/>
+    <text x="26" y="387" class="name">Balanced</text>
+    <text x="26" y="416" class="body">Lens raised 6 units; base made rounder.</text>
+    <text x="26" y="454" class="label">SMALL-SIZE CHECK</text>
+    <use href="#balanced" x="28" y="477" width="24" height="24" color="#191715"/>
+    <use href="#balanced" x="77" y="473" width="32" height="32" color="#191715"/>
+    <use href="#balanced" x="134" y="465" width="48" height="48" color="#191715"/>
+    <text x="218" y="496" class="body">24 · 32 · 48 px</text>
+  </g>
+
+  <g transform="translate(940 180)">
+    <rect width="410" height="560" rx="22" fill="#FFF" stroke="#E9E6E2"/>
+    <circle cx="34" cy="34" r="15" fill="#191715"/><text x="30.5" y="38.5" class="number">3</text>
+    <text x="60" y="39" class="label">DISTINCTIVE DETAIL</text>
+    <use href="#aperture" x="73" y="78" width="264" height="264" color="#F5A623"/>
+    <text x="26" y="387" class="name">Aperture C</text>
+    <text x="26" y="416" class="body">A tapered, asymmetric inner camera sweep.</text>
+    <text x="26" y="454" class="label">SMALL-SIZE CHECK</text>
+    <use href="#aperture" x="28" y="477" width="24" height="24" color="#191715"/>
+    <use href="#aperture" x="77" y="473" width="32" height="32" color="#191715"/>
+    <use href="#aperture" x="134" y="465" width="48" height="48" color="#191715"/>
+    <text x="218" y="496" class="body">24 · 32 · 48 px</text>
+  </g>
+
+  <text x="54" y="790" class="body">Amber #F5A623 · Charcoal #191715 · all white areas are transparent in the individual SVG files</text>
+</svg>

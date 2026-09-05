@@ -1,0 +1,76 @@
+#!/bin/bash
+set -euo pipefail
+
+cd "$(dirname "$0")"
+
+fail() {
+  echo "dev: $*" >&2
+  exit 1
+}
+
+for required_command in xcodegen xcodebuild open pgrep pkill; do
+  command -v "$required_command" >/dev/null \
+    || fail "missing command: $required_command"
+done
+
+test "$(xcodegen --version)" = "Version: 2.46.0" \
+  || fail "XcodeGen 2.46.0 is required"
+test "$(xcodebuild -version | sed -n '1p')" = "Xcode 26.6" \
+  || fail "Xcode 26.6 is required"
+
+echo "Generating the Xcode project..."
+xcodegen generate --spec project.yml >/dev/null
+
+echo "Building AI Film Camp..."
+xcodebuild \
+  -quiet \
+  -project "AI Film Camp.xcodeproj" \
+  -scheme "AI Film Camp" \
+  -configuration Debug \
+  -derivedDataPath .build/DerivedData \
+  -destination 'platform=macOS' \
+  CODE_SIGNING_ALLOWED=YES \
+  CODE_SIGN_IDENTITY=- \
+  build
+
+app_path="$(pwd)/.build/DerivedData/Build/Products/Debug/AI Film Camp.app"
+[[ -d "$app_path" ]] || fail "the build did not produce $app_path"
+
+# A Dock or Finder launch may still be running an older copy. The app commits
+# edits immediately, so close any existing process only after the build passes.
+if pgrep -x "AI Film Camp" >/dev/null; then
+  echo "Closing the previous build..."
+
+  # A process launched with Xcode's Run command is controlled by debugserver;
+  # signals sent only to the app remain pending while the debugger has it
+  # stopped. End that exact app's debug session before terminating the app.
+  for app_pid in $(pgrep -x "AI Film Camp"); do
+    parent_pid="$(ps -p "$app_pid" -o ppid= 2>/dev/null | tr -d ' ' || true)"
+    if [[ -n "$parent_pid" ]] \
+      && ps -p "$parent_pid" -o command= | grep -q '/debugserver '; then
+      echo "Stopping the previous Xcode debug session..."
+      kill -TERM "$parent_pid" || true
+    fi
+  done
+
+  pkill -TERM -x "AI Film Camp" || true
+
+  for _ in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25; do
+    pgrep -x "AI Film Camp" >/dev/null || break
+    sleep 0.2
+  done
+
+  if pgrep -x "AI Film Camp" >/dev/null; then
+    echo "The previous build did not close; force-closing it..."
+    pkill -KILL -x "AI Film Camp" || true
+    sleep 0.2
+  fi
+
+  pgrep -x "AI Film Camp" >/dev/null \
+    && fail "the previous build could not be stopped"
+fi
+
+echo "Launching the fresh build..."
+open "$app_path"
+
+echo "AI Film Camp is running."

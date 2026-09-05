@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 760" role="img" aria-labelledby="title desc">
+  <title id="title">AI Film Camp Flare width study</title>
+  <desc id="desc">Five Flare variations progress from wider to super wide while height and circular lens remain constant.</desc>
+  <defs>
+    <style>
+      .kicker { font: 700 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 2.4px; fill: #A7650D; }
+      .heading { font: 650 34px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .name { font: 650 22px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #191715; }
+      .body { font: 400 14px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; fill: #6E6862; }
+      .percent { font: 650 12px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1px; fill: #A7650D; }
+      .label { font: 650 10px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; letter-spacing: 1.2px; fill: #9A938D; }
+    </style>
+    <path id="outer" d="M133 20c25 39 58 72 58 120 0 49-30 84-65 94-39-10-66-44-66-86 0-35 19-67 55-101-4 29 6 48 24 61 8-34 2-65-6-88Z"/>
+    <mask id="lens" maskUnits="userSpaceOnUse"><rect width="256" height="256" fill="#FFFFFF"/><circle cx="126" cy="166" r="38" fill="#000000"/></mask>
+    <symbol id="w1" viewBox="0 0 256 256"><g mask="url(#lens)"><use href="#outer" fill="currentColor" transform="translate(128 0) scale(1.1 1) translate(-128 0)"/></g></symbol>
+    <symbol id="w2" viewBox="0 0 256 256"><g mask="url(#lens)"><use href="#outer" fill="currentColor" transform="translate(128 0) scale(1.2 1) translate(-128 0)"/></g></symbol>
+    <symbol id="w3" viewBox="0 0 256 256"><g mask="url(#lens)"><use href="#outer" fill="currentColor" transform="translate(128 0) scale(1.3 1) translate(-128 0)"/></g></symbol>
+    <symbol id="w4" viewBox="0 0 256 256"><g mask="url(#lens)"><use href="#outer" fill="currentColor" transform="translate(128 0) scale(1.42 1) translate(-128 0)"/></g></symbol>
+    <symbol id="w5" viewBox="0 0 256 256"><g mask="url(#lens)"><use href="#outer" fill="currentColor" transform="translate(128 0) scale(1.55 1) translate(-128 0)"/></g></symbol>
+  </defs>
+  <rect width="1500" height="760" fill="#FFFFFF"/>
+  <text x="52" y="55" class="kicker">AI FILM CAMP · FLARE WIDTH STUDY</text>
+  <text x="52" y="101" class="heading">How wide should the flame go?</text>
+  <text x="52" y="132" class="body">Balanced = 100% reference · height and lens remain fixed · only the outer flame widens</text>
+
+  <g transform="translate(32 178)">
+    <rect width="275" height="500" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="22" y="37" class="percent">110%</text><text x="22" y="70" class="name">Wider</text>
+    <use href="#w1" x="22" y="103" width="231" height="231" color="#F5A623"/>
+    <text x="22" y="377" class="label">SMALL</text><use href="#w1" x="22" y="394" width="36" height="36" color="#191715"/>
+    <text x="92" y="377" class="label">REVERSED</text><rect x="92" y="391" width="68" height="68" rx="17" fill="#191715"/><use href="#w1" x="103" y="402" width="46" height="46" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(322 178)">
+    <rect width="275" height="500" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="22" y="37" class="percent">120%</text><text x="22" y="70" class="name">More Wide</text>
+    <use href="#w2" x="22" y="103" width="231" height="231" color="#F5A623"/>
+    <text x="22" y="377" class="label">SMALL</text><use href="#w2" x="22" y="394" width="36" height="36" color="#191715"/>
+    <text x="92" y="377" class="label">REVERSED</text><rect x="92" y="391" width="68" height="68" rx="17" fill="#191715"/><use href="#w2" x="103" y="402" width="46" height="46" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(612 178)">
+    <rect width="275" height="500" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="22" y="37" class="percent">130%</text><text x="22" y="70" class="name">Wider Still</text>
+    <use href="#w3" x="22" y="103" width="231" height="231" color="#F5A623"/>
+    <text x="22" y="377" class="label">SMALL</text><use href="#w3" x="22" y="394" width="36" height="36" color="#191715"/>
+    <text x="92" y="377" class="label">REVERSED</text><rect x="92" y="391" width="68" height="68" rx="17" fill="#191715"/><use href="#w3" x="103" y="402" width="46" height="46" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(902 178)">
+    <rect width="275" height="500" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="22" y="37" class="percent">142%</text><text x="22" y="70" class="name">Really Wide</text>
+    <use href="#w4" x="22" y="103" width="231" height="231" color="#F5A623"/>
+    <text x="22" y="377" class="label">SMALL</text><use href="#w4" x="22" y="394" width="36" height="36" color="#191715"/>
+    <text x="92" y="377" class="label">REVERSED</text><rect x="92" y="391" width="68" height="68" rx="17" fill="#191715"/><use href="#w4" x="103" y="402" width="46" height="46" color="#FFFFFF"/>
+  </g>
+  <g transform="translate(1192 178)">
+    <rect width="275" height="500" rx="18" fill="#FFFFFF" stroke="#E9E6E2"/>
+    <text x="22" y="37" class="percent">155%</text><text x="22" y="70" class="name">Super Wide</text>
+    <use href="#w5" x="22" y="103" width="231" height="231" color="#F5A623"/>
+    <text x="22" y="377" class="label">SMALL</text><use href="#w5" x="22" y="394" width="36" height="36" color="#191715"/>
+    <text x="92" y="377" class="label">REVERSED</text><rect x="92" y="391" width="68" height="68" rx="17" fill="#191715"/><use href="#w5" x="103" y="402" width="46" height="46" color="#FFFFFF"/>
+  </g>
+</svg>

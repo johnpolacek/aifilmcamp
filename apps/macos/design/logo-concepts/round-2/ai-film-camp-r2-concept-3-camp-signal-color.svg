@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">AI Film Camp Camp Signal logo concept</title>
+  <desc id="desc">A geometric amber flame above two minimal charcoal campfire logs.</desc>
+  <path fill="#F5A623" d="M132 28c22 32 45 59 45 96 0 37-21 64-51 72-32-8-53-36-53-70 0-27 15-51 42-77-3 22 5 36 20 47 6-27 2-50-3-68Z"/>
+  <rect x="59" y="190" width="146" height="18" rx="9" fill="#191715" transform="rotate(23 132 199)"/>
+  <rect x="59" y="190" width="146" height="18" rx="9" fill="#191715" transform="rotate(-23 132 199)"/>
+</svg>

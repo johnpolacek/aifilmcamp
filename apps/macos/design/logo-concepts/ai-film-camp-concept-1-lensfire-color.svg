@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">AI Film Camp Lensfire logo concept</title>
+  <desc id="desc">A minimal amber flame centered inside the outline of a cinematic lens.</desc>
+  <path d="M24 128C50 84 87 58 128 58s78 26 104 70c-26 44-63 70-104 70S50 172 24 128Z" fill="none" stroke="#241C16" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M132 78c19 26 34 43 34 67 0 24-17 41-38 41-23 0-39-17-39-40 0-17 9-33 25-48-2 18 5 27 13 34 4-20 2-38 5-54Z" fill="#F6A21A"/>
+  <path d="M130 132c11 14 16 24 14 34-2 10-9 17-18 17-10 0-18-8-18-18 0-9 6-17 15-25 0 9 3 14 7 17 2-9 1-17 0-25Z" fill="#E85D24"/>
+</svg>

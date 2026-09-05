@@ -1,0 +1,22 @@
+{
+  "name": "@aifilmcamp/image-generation-helper",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:js": "esbuild src/index.ts --bundle --platform=node --target=node24 --format=cjs --outfile=build/helper.cjs",
+    "build": "../../scripts/build-image-helper.sh",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "4.0.56",
+    "@ai-sdk/openai": "4.0.50",
+    "ai": "7.0.83"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "esbuild": "0.25.12",
+    "postject": "1.0.0-alpha.6",
+    "typescript": "5.9.3"
+  }
+}

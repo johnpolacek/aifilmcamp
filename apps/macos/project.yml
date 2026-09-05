@@ -1,0 +1,112 @@
+name: AI Film Camp
+options:
+  bundleIdPrefix: com.aifilmcamp
+  deploymentTarget:
+    macOS: "15.0"
+  xcodeVersion: "26.6"
+  createIntermediateGroups: true
+settings:
+  base:
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+packages:
+  FilmCore:
+    path: Packages/FilmCore
+  FilmBrain:
+    path: Packages/FilmBrain
+targets:
+  AI Film Camp:
+    type: application
+    platform: macOS
+    sources:
+      - path: AI Film Camp/App
+      - path: AI Film Camp/Views
+      - path: AI Film Camp/Support
+      - path: AI Film Camp/Resources/Assets.xcassets
+      - path: AI Film Camp/Resources/Fonts
+        type: folder
+        buildPhase: resources
+      # The vendored prompt skill joins Resources as a **folder resource** (PHASE3_DESIGN
+      # §3.5): app payload the default PromptSkillDescriptor resolves at runtime, never app
+      # code — `type: folder` keeps the tree intact.
+      - path: PromptSkills
+        type: folder
+        buildPhase: resources
+    info:
+      path: AI Film Camp/Resources/Info.plist
+      properties:
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: AI Film Camp Project
+            CFBundleTypeRole: Editor
+            LSHandlerRank: Owner
+            LSItemContentTypes:
+              - com.aifilmcamp.project
+            LSTypeIsPackage: true
+        UTExportedTypeDeclarations:
+          - UTTypeConformsTo:
+              - com.apple.package
+            UTTypeDescription: AI Film Camp Project
+            UTTypeIdentifier: com.aifilmcamp.project
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - aifilm
+        # Imported only: the app reads screenplays, it does not claim to open them, so
+        # neither type appears in CFBundleDocumentTypes or UTExportedTypeDeclarations.
+        UTImportedTypeDeclarations:
+          - UTTypeConformsTo:
+              - public.plain-text
+            UTTypeDescription: Fountain Screenplay
+            UTTypeIdentifier: com.aifilmcamp.fountain
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - fountain
+          - UTTypeConformsTo:
+              - public.xml
+            UTTypeDescription: Final Draft Screenplay
+            UTTypeIdentifier: com.finaldraft.fdx
+            UTTypeTagSpecification:
+              public.filename-extension:
+                - fdx
+    dependencies:
+      - package: FilmCore
+        product: FilmCore
+      - package: FilmBrain
+        product: FilmBrain
+    preBuildScripts:
+      - name: Build bundled image helper
+        script: |
+          set -eu
+          helper_build="$DERIVED_FILE_DIR/ImageGenerationHelper"
+          FILMCAMP_IMAGE_HELPER_OUTPUT_DIR="$helper_build" "$SRCROOT/scripts/build-image-helper.sh"
+          helper_destination="$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH/Helpers"
+          mkdir -p "$helper_destination"
+          cp "$helper_build/filmcamp-image-helper" "$helper_destination/filmcamp-image-helper"
+          if [ -n "${EXPANDED_CODE_SIGN_IDENTITY:-}" ]; then
+            codesign --force --sign "$EXPANDED_CODE_SIGN_IDENTITY" "$helper_destination/filmcamp-image-helper"
+          else
+            codesign --force --sign - "$helper_destination/filmcamp-image-helper"
+          fi
+        inputFiles:
+          - $(SRCROOT)/scripts/build-image-helper.sh
+          - $(SRCROOT)/Tools/ImageGenerationHelper/package-lock.json
+          - $(SRCROOT)/Tools/ImageGenerationHelper/src/generation.ts
+          - $(SRCROOT)/Tools/ImageGenerationHelper/src/index.ts
+          - $(SRCROOT)/Tools/ImageGenerationHelper/src/protocol.ts
+        outputFiles:
+          - $(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/filmcamp-image-helper
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.aifilmcamp.app
+        PRODUCT_NAME: AI Film Camp
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_APP_SANDBOX: NO
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+schemes:
+  AI Film Camp:
+    build:
+      targets:
+        AI Film Camp: all

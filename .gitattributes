@@ -1,0 +1,3 @@
+*.fountain -text
+*.fdx -text
+*.pdf binary

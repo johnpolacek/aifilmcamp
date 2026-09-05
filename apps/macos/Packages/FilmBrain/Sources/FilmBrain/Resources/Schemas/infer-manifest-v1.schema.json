@@ -1,0 +1,59 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "variants", "importantProps", "inclusionSuggestions"],
+  "properties": {
+    "schemaVersion": { "type": "integer", "const": 1 },
+    "variants": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entityId", "name", "reason", "sceneOrdinals", "basisStateIds", "basisEventIds", "basisAppearanceIds", "confidence"],
+        "properties": {
+          "entityId": { "type": "string" },
+          "name": { "type": "string" },
+          "reason": { "type": "string" },
+          "sceneOrdinals": { "type": "array", "minItems": 1, "maxItems": 512, "items": { "type": "integer" } },
+          "basisStateIds": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+          "basisEventIds": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+          "basisAppearanceIds": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "importantProps": {
+      "type": "array",
+      "maxItems": 512,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entityId", "reason", "basisStateIds", "basisEventIds", "basisAppearanceIds", "confidence"],
+        "properties": {
+          "entityId": { "type": "string" },
+          "reason": { "type": "string" },
+          "basisStateIds": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+          "basisEventIds": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+          "basisAppearanceIds": { "type": "array", "maxItems": 256, "items": { "type": "string" } },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "inclusionSuggestions": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["entityId", "suggestion", "reason", "confidence"],
+        "properties": {
+          "entityId": { "type": "string" },
+          "suggestion": { "type": "string", "enum": ["promote", "suppress"] },
+          "reason": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    }
+  }
+}
