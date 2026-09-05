@@ -1,4 +1,4 @@
-import { ClerkLoading, Show, SignUpButton } from "@clerk/nextjs";
+import { ClerkLoading, Show, SignInButton, SignUpButton } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -15,27 +15,26 @@ export function Hero() {
             Create. Share. Collaborate.
           </h1>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div className="flex flex-col items-center justify-center gap-4">
             <ClerkLoading>
               <Button
                 size="lg"
-                className="bg-primary text-primary-foreground text-base px-8 invisible"
+                className="h-16 px-12 text-2xl font-bold invisible"
                 aria-hidden="true"
                 tabIndex={-1}
               >
-                Start Creating
-                <ArrowRight className="ml-2 h-5 w-5" />
+                Join
               </Button>
             </ClerkLoading>
             <Show when="signed-in">
               <Button
                 size="lg"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8"
+                className="h-16 px-12 text-2xl font-bold bg-primary text-white hover:bg-primary/90 hover:text-white"
                 asChild
               >
                 <Link href="/dashboard">
                   Start Creating
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  <ArrowRight className="ml-2 h-6 w-6" />
                 </Link>
               </Button>
             </Show>
@@ -43,21 +42,17 @@ export function Hero() {
               <SignUpButton mode="modal">
                 <Button
                   size="lg"
-                  className="bg-primary text-primary-foreground hover:bg-primary/90 text-base px-8"
+                  className="h-16 px-12 text-2xl font-bold bg-primary text-white hover:bg-primary/90 hover:text-white"
                 >
-                  Start Creating
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                  Join
                 </Button>
               </SignUpButton>
+              <SignInButton mode="modal">
+                <Button variant="ghost" className="text-muted-foreground hover:text-foreground">
+                  Sign In
+                </Button>
+              </SignInButton>
             </Show>
-            <Button
-              size="lg"
-              variant="outline"
-              className="text-base px-8 bg-black/50! border-primary/80! hover:border-primary/90! hover:text-white! hover:bg-black/70!"
-              asChild
-            >
-              <Link href="/projects">Explore Projects</Link>
-            </Button>
           </div>
         </div>
       </div>
