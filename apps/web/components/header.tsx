@@ -17,10 +17,10 @@ export function Header() {
 
           <nav className="hidden md:flex items-center gap-6">
             <Link
-              href="/projects"
+              href="/learn"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Projects
+              Learn
             </Link>
             <Link
               href="/films"
@@ -29,16 +29,10 @@ export function Header() {
               Films
             </Link>
             <Link
-              href="/resources"
+              href="/community"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Resources
-            </Link>
-            <Link
-              href="/about"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              About
+              Community
             </Link>
           </nav>
 
