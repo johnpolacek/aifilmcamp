@@ -27,8 +27,8 @@ export default function AppleIcon() {
         role="img"
         aria-label="AI Film Camp"
       >
-        {/* Lucide Flame, ISC license; see public/brand/lucide-LICENSE.txt. */}
-        <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
+        {/* Custom flame adapted from Lucide Flame, ISC license; see public/brand/lucide-LICENSE.txt. */}
+        <path d="M14 2C13.5 6.5 20 9 20 14C20 18.4 16.4 22 12 22C7.6 22 4 18.7 4 14.5C4 11.4 5.8 9.4 8 7.5C7.5 10 8.3 11.7 9.5 12.5C8.5 7.5 11 4.5 14 2Z" />
       </svg>
     </div>,
     size
