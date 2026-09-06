@@ -1,4 +1,8 @@
+import type React from "react";
+import { Show, SignUpButton } from "@clerk/nextjs";
 import { Clapperboard, Film, Sparkles, Trophy } from "lucide-react";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const courses = [
@@ -51,26 +55,52 @@ export function Courses() {
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {courses.map((course) => {
             const Icon = course.icon;
-            return (
-              <Card
-                key={course.title}
-                className="p-6 space-y-0! bg-[#050a1c] border-[#121d40] hover:border-primary/50 transition-colors"
-              >
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Icon className="h-6 w-6 text-primary" />
+            const renderCard = (cta: React.ReactNode) => (
+              <Card className="p-5 gap-3 bg-[#050a1c] border-[#121d40] hover:border-primary/50 transition-colors cursor-pointer">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center">
+                    <Icon className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold tracking-widest text-primary uppercase">
+                      {course.level}
+                    </p>
+                    <h3 className="text-lg font-semibold leading-tight text-balance">
+                      {course.title}
+                    </h3>
+                  </div>
                 </div>
-                <p className="text-xs font-semibold tracking-widest text-primary uppercase">
-                  {course.level}
-                </p>
-                <h3 className="text-lg font-semibold text-balance -mt-2">{course.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed text-balance -mt-2">
+                <p className="text-sm text-muted-foreground leading-relaxed text-balance">
                   {course.description}
                 </p>
-                <p className="text-lg font-semibold mt-auto pt-4">
-                  <span className="text-muted-foreground line-through mr-2">${course.price}</span>
-                  <span className="text-primary">FREE</span>
-                </p>
+                <div className="mt-auto flex items-center justify-between pt-1">
+                  <p className="text-lg font-semibold">
+                    <span className="text-muted-foreground line-through mr-2">
+                      ${course.price}
+                    </span>
+                    <span className="text-primary">FREE</span>
+                  </p>
+                  {cta}
+                </div>
               </Card>
+            );
+            return (
+              <div key={course.title} className="flex">
+                <Show when="signed-out">
+                  <SignUpButton mode="modal">
+                    {renderCard(
+                      <Button type="button" size="sm">
+                        Sign up
+                      </Button>
+                    )}
+                  </SignUpButton>
+                </Show>
+                <Show when="signed-in">
+                  <Link href="/dashboard" className="flex w-full">
+                    {renderCard(<span className={buttonVariants({ size: "sm" })}>Start</span>)}
+                  </Link>
+                </Show>
+              </div>
             );
           })}
         </div>
