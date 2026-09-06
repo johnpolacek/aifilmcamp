@@ -47,12 +47,12 @@ export function Courses() {
     <section id="courses" data-courses className="pt-6 pb-20 lg:pb-32">
       <div data-outro className="container mx-auto px-4 lg:px-8">
         <div className="text-center mb-10">
-          <h2 data-courses-title className="text-3xl lg:text-5xl font-bold mb-4 text-balance">
+          <h2 data-courses-title className="text-3xl lg:text-5xl font-bold mb-4 text-balance text-shadow-[0_0_12px_rgba(0,0,0,0.5)]">
             From Zero to Hero
           </h2>
           <p
             data-courses-lede
-            className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto"
+            className="text-lg text-white text-balance max-w-2xl mx-auto text-shadow-[0_0_12px_rgba(0,0,0,0.5)]"
           >
             Courses are coming soon. Start with a 30-second short and work your way up to a complete
             film, one step at a time.

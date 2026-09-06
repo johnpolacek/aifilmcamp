@@ -7,8 +7,8 @@ export function CallToAction() {
     <section className="py-20 lg:py-32">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-balance">Grab the Tools</h2>
-          <p className="text-lg text-muted-foreground mb-10 text-balance leading-relaxed">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-balance text-shadow-[0_0_12px_rgba(0,0,0,0.5)]">Grab the Tools</h2>
+          <p className="text-lg text-white mb-10 text-balance leading-relaxed text-shadow-[0_0_12px_rgba(0,0,0,0.5)]">
             Free software for AI filmmakers. Break down your screenplay, get every scene ready to
             generate, and assemble your shots into a finished film.
           </p>
