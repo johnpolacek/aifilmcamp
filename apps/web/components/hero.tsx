@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export function Hero() {
   return (
-    <section className="relative py-24 overflow-hidden">
+    <section className="relative pt-24 pb-12 overflow-hidden">
       {/* Background gradient effect */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-primary/20 via-background to-background" />
 

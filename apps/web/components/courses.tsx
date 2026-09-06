@@ -33,15 +33,14 @@ const courses = [
     description:
       "All three courses in one guided path, from your first 30 seconds to a finished 10-minute film.",
     price: 50,
-    free: true,
   },
 ];
 
 export function Courses() {
   return (
-    <section id="courses" className="py-20 lg:py-32">
+    <section id="courses" className="pt-4 pb-20 lg:pb-32">
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="text-center mb-16">
+        <div className="text-center mb-10">
           <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-balance">From Zero to Hero</h2>
           <p className="text-lg text-muted-foreground text-pretty max-w-2xl mx-auto">
             Courses are coming soon. Start with a 30-second short and work your way up to a
@@ -55,11 +54,7 @@ export function Courses() {
             return (
               <Card
                 key={course.title}
-                className={`p-6 bg-card space-y-0! transition-colors ${
-                  course.free
-                    ? "border-primary/50 bg-primary/5"
-                    : "border-border hover:border-primary/50"
-                }`}
+                className="p-6 space-y-0! bg-[#0b1530] border-[#1c2a55] hover:border-primary/50 transition-colors"
               >
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Icon className="h-6 w-6 text-primary" />
@@ -72,16 +67,8 @@ export function Courses() {
                   {course.description}
                 </p>
                 <p className="text-lg font-semibold mt-auto pt-4">
-                  {course.free ? (
-                    <>
-                      <span className="text-muted-foreground line-through mr-2">
-                        ${course.price}
-                      </span>
-                      <span className="text-primary">FREE</span>
-                    </>
-                  ) : (
-                    <>${course.price}</>
-                  )}
+                  <span className="text-muted-foreground line-through mr-2">${course.price}</span>
+                  <span className="text-primary">FREE</span>
                 </p>
               </Card>
             );
