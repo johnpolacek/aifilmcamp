@@ -9,7 +9,7 @@ export function CallToAction() {
           <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-balance">
             Ready to Share Your Vision?
           </h2>
-          <p className="text-lg text-muted-foreground mb-10 text-pretty leading-relaxed">
+          <p className="text-lg text-muted-foreground mb-10 text-balance leading-relaxed">
             Join hundreds of AI film creators who are pushing the boundaries of storytelling. Start
             sharing your projects today.
           </p>

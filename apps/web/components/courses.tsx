@@ -40,6 +40,8 @@ const courses = [
   },
 ];
 
+const ctaClass = "bg-[#1a2a5e] text-white hover:bg-[#24397d]";
+
 export function Courses() {
   return (
     <section id="courses" className="pt-4 pb-20 lg:pb-32">
@@ -89,7 +91,7 @@ export function Courses() {
                 <Show when="signed-out">
                   <SignUpButton mode="modal">
                     {renderCard(
-                      <Button type="button" size="sm">
+                      <Button type="button" size="sm" className={ctaClass}>
                         Sign up
                       </Button>
                     )}
@@ -97,7 +99,7 @@ export function Courses() {
                 </Show>
                 <Show when="signed-in">
                   <Link href="/dashboard" className="flex w-full">
-                    {renderCard(<span className={buttonVariants({ size: "sm" })}>Start</span>)}
+                    {renderCard(<span className={buttonVariants({ size: "sm", className: ctaClass })}>Start</span>)}
                   </Link>
                 </Show>
               </div>
