@@ -1,8 +1,8 @@
 "use client";
 
 import { ClerkLoading, Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
-import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { TransitionLink } from "@/components/motion/transition";
 import { Button } from "@/components/ui/button";
 
 export function Header() {
@@ -10,34 +10,34 @@ export function Header() {
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-lg">
       <div className="container mx-auto px-4 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <Link
+          <TransitionLink
             href="/"
             aria-label="AI Film Camp home"
             className="flex items-center gap-2 text-xl font-bold"
           >
             <Logo />
             <span className="hidden text-balance sm:inline">AI Film Camp</span>
-          </Link>
+          </TransitionLink>
 
           <nav aria-label="Main navigation" className="flex items-center gap-6">
-            <Link
+            <TransitionLink
               href="/learn"
               className="inline-flex min-h-11 items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Learn
-            </Link>
-            <Link
+            </TransitionLink>
+            <TransitionLink
               href="/tools"
               className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Tools
-            </Link>
-            <Link
+            </TransitionLink>
+            <TransitionLink
               href="/community"
               className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
               Community
-            </Link>
+            </TransitionLink>
           </nav>
 
           <div className="flex items-center gap-3">
@@ -51,12 +51,12 @@ export function Header() {
             </ClerkLoading>
             <Show when="signed-in">
               <div className="flex items-center gap-3" suppressHydrationWarning>
-                <Link
+                <TransitionLink
                   href="/dashboard"
                   className="hidden sm:inline-flex items-center justify-center gap-1 whitespace-nowrap rounded-md text-sm font-medium transition-all h-8 px-3 hover:bg-primary/20 hover:text-white"
                 >
                   Dashboard
-                </Link>
+                </TransitionLink>
                 <span className="flex h-7 w-7 items-center justify-center">
                   <UserButton />
                 </span>

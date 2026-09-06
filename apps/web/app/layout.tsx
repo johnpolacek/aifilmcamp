@@ -6,6 +6,8 @@ import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Footer } from "@/components/footer";
 import { Header } from "@/components/header";
+import { MotionMark } from "@/components/motion/motion-mark";
+import { TransitionProvider } from "@/components/motion/transition";
 import { Toaster } from "@/components/ui/sonner";
 
 const rethink_sans = Rethink_Sans({ subsets: ["latin"] });
@@ -22,12 +24,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <MotionMark />
+      </head>
       <body className={`${rethink_sans.className} font-sans antialiased`}>
         <ClerkProvider>
-          <Header />
-          {children}
-          <Footer />
+          <TransitionProvider>
+            <Header />
+            {children}
+            <Footer />
+          </TransitionProvider>
           <Toaster />
         </ClerkProvider>
         <Analytics />

@@ -147,3 +147,13 @@
     font-size: 10px;
   }
 }
+
+/* Route veil for page motion. Only visible under the pre-paint motion mark
+   (see components/motion/motion-mark.tsx), so a page without JavaScript,
+   under reduced motion, or after the failsafe stays readable. */
+.motion-veil {
+  visibility: hidden;
+}
+html[data-motion="js"] .motion-veil {
+  visibility: visible;
+}

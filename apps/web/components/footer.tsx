@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { TransitionLink } from "@/components/motion/transition";
 
 export function Footer() {
   return (
@@ -7,10 +7,10 @@ export function Footer() {
       <div className="container mx-auto px-4 lg:px-8 py-12">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           <div className="md:col-span-2">
-            <Link href="/" className="flex items-center gap-2 text-xl font-bold mb-4">
+            <TransitionLink href="/" className="flex items-center gap-2 text-xl font-bold mb-4">
               <Logo className="h-7 w-7" />
               <span>AI Film Camp</span>
-            </Link>
+            </TransitionLink>
             <p className="text-sm text-muted-foreground max-w-md leading-relaxed">
               An online community for AI film creators to share, collaborate, and showcase their
               work-in-progress projects.
@@ -21,19 +21,19 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Community</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="#" className="hover:text-foreground transition-colors">
+                <TransitionLink href="#" className="hover:text-foreground transition-colors">
                   Projects
-                </Link>
+                </TransitionLink>
               </li>
               <li>
-                <Link href="#" className="hover:text-foreground transition-colors">
+                <TransitionLink href="#" className="hover:text-foreground transition-colors">
                   Creators
-                </Link>
+                </TransitionLink>
               </li>
               <li>
-                <Link href="#" className="hover:text-foreground transition-colors">
+                <TransitionLink href="#" className="hover:text-foreground transition-colors">
                   Contact
-                </Link>
+                </TransitionLink>
               </li>
             </ul>
           </div>
@@ -42,19 +42,22 @@ export function Footer() {
             <h3 className="font-semibold mb-4">Resources</h3>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <Link href="/community" className="hover:text-foreground transition-colors">
+                <TransitionLink
+                  href="/community"
+                  className="hover:text-foreground transition-colors"
+                >
                   Community
-                </Link>
+                </TransitionLink>
               </li>
               <li>
-                <Link href="#" className="hover:text-foreground transition-colors">
+                <TransitionLink href="#" className="hover:text-foreground transition-colors">
                   Privacy Policy
-                </Link>
+                </TransitionLink>
               </li>
               <li>
-                <Link href="#" className="hover:text-foreground transition-colors">
+                <TransitionLink href="#" className="hover:text-foreground transition-colors">
                   Terms of Use
-                </Link>
+                </TransitionLink>
               </li>
             </ul>
           </div>

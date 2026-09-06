@@ -1,7 +1,7 @@
-import type React from "react";
 import { Show, SignUpButton } from "@clerk/nextjs";
 import { ChevronRight, Clapperboard, Film, Sparkles, Trophy } from "lucide-react";
-import Link from "next/link";
+import type React from "react";
+import { TransitionLink } from "@/components/motion/transition";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -44,17 +44,22 @@ const ctaClass = "bg-[#2c4494] text-white hover:bg-[#3854b3]";
 
 export function Courses() {
   return (
-    <section id="courses" className="pt-4 pb-20 lg:pb-32">
-      <div className="container mx-auto px-4 lg:px-8">
+    <section id="courses" data-courses className="min-h-screen grid items-center py-20">
+      <div data-outro className="container mx-auto px-4 lg:px-8">
         <div className="text-center mb-10">
-          <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-balance">From Zero to Hero</h2>
-          <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
-            Courses are coming soon. Start with a 30-second short and work your way up to a
-            complete film, one step at a time.
+          <h2 data-courses-title className="text-3xl lg:text-5xl font-bold mb-4 text-balance">
+            From Zero to Hero
+          </h2>
+          <p
+            data-courses-lede
+            className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto"
+          >
+            Courses are coming soon. Start with a 30-second short and work your way up to a complete
+            film, one step at a time.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto [perspective:1200px]">
           {courses.map((course) => {
             const Icon = course.icon;
             const renderCard = (cta: React.ReactNode) => (
@@ -77,9 +82,7 @@ export function Courses() {
                 </p>
                 <div className="mt-auto flex items-center justify-between pt-1">
                   <p className="text-lg font-semibold">
-                    <span className="text-muted-foreground line-through mr-2">
-                      ${course.price}
-                    </span>
+                    <span className="text-muted-foreground line-through mr-2">${course.price}</span>
                     <span className="text-primary">FREE</span>
                   </p>
                   {cta}
@@ -87,7 +90,7 @@ export function Courses() {
               </Card>
             );
             return (
-              <div key={course.title} className="flex">
+              <div key={course.title} data-card className="flex [transform-style:preserve-3d]">
                 <Show when="signed-out">
                   <SignUpButton mode="modal">
                     {renderCard(
@@ -99,14 +102,14 @@ export function Courses() {
                   </SignUpButton>
                 </Show>
                 <Show when="signed-in">
-                  <Link href="/dashboard" className="flex w-full">
+                  <TransitionLink href="/dashboard" className="flex w-full">
                     {renderCard(
                       <span className={buttonVariants({ size: "sm", className: ctaClass })}>
                         Start
                         <ChevronRight className="h-4 w-4" />
                       </span>
                     )}
-                  </Link>
+                  </TransitionLink>
                 </Show>
               </div>
             );
