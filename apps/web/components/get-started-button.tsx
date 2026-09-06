@@ -63,7 +63,7 @@ export function GetStartedButton({ className, placeholder = false }: GetStartedB
       aria-hidden={placeholder || undefined}
       tabIndex={placeholder ? -1 : undefined}
     >
-      <Logo ref={markRef} variant="mono" className="mr-3 size-10" />
+      <Logo ref={markRef} variant="mono" className="mr-1 size-10" />
       Get Started
     </Button>
   );
