@@ -31,6 +31,7 @@ export default async function CoursePage({ params }: Props) {
 
   const Icon = course.icon;
   const live = course.status === "live";
+  const showOutlineEyebrow = course.slug !== "first-30-second-film";
   const others = courses.filter((other) => other.slug !== course.slug);
 
   return (
@@ -79,7 +80,10 @@ export default async function CoursePage({ params }: Props) {
                 </SignUpButton>
               </Show>
               <Show when="signed-in">
-                <TransitionLink href="/dashboard" className={buttonVariants({ className: ctaClass })}>
+                <TransitionLink
+                  href="/dashboard"
+                  className={buttonVariants({ className: ctaClass })}
+                >
                   Go to your dashboard
                   <ChevronRight className="h-4 w-4" />
                 </TransitionLink>
@@ -96,10 +100,15 @@ export default async function CoursePage({ params }: Props) {
       )}
 
       <section aria-labelledby="outline-title" className="mt-20">
-        <p className="text-sm font-semibold tracking-widest text-primary uppercase">
-          What you’ll learn
-        </p>
-        <h2 id="outline-title" className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
+        {showOutlineEyebrow && (
+          <p className="text-sm font-semibold tracking-widest text-primary uppercase">
+            What you’ll learn
+          </p>
+        )}
+        <h2
+          id="outline-title"
+          className={`${showOutlineEyebrow ? "mt-4 " : ""}text-3xl font-semibold tracking-tight sm:text-4xl`}
+        >
           The course, step by step.
         </h2>
         <ol className="mt-8 divide-y divide-border border-y border-border">
