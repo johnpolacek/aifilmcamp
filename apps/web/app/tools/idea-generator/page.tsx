@@ -1,32 +1,14 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { TransitionLink } from "@/components/motion/transition";
+import { IdeaPromptBuilder } from "@/components/tools/idea-prompt-builder";
 import { getTool } from "@/lib/tools";
 
 export const metadata: Metadata = {
   title: "AI Film Idea Generator - AI Film Camp",
   description:
-    "A web tool for finding a film worth making. Start from a genre, a mood, or an image and get loglines, characters, and a shot list.",
+    "Build a film idea prompt from your duration, genre, inspirations, and creative constraints. Copy it into your own LLM agent to explore original film ideas.",
 };
-
-const placeholderSteps = [
-  {
-    title: "Start from a spark",
-    body: "Pick a genre, describe a mood, or drop in a single image. That’s enough to get going.",
-  },
-  {
-    title: "Get loglines",
-    body: "A handful of one-sentence pitches, each with a clear protagonist, a want, and a complication.",
-  },
-  {
-    title: "Build it out",
-    body: "Choose a logline and expand it into characters, a setting, and a shot list sized for a 30-second film.",
-  },
-  {
-    title: "Take it into production",
-    body: "Send the result to the Mac app as a starting screenplay, or copy it out and go.",
-  },
-];
 
 export default function IdeaGeneratorPage() {
   const tool = getTool("idea-generator");
@@ -49,38 +31,18 @@ export default function IdeaGeneratorPage() {
             {tool.platform}
           </p>
           <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            Coming soon
+            Free prompt builder
           </span>
         </div>
-        <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
+        <h1 className="mt-4 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
           {tool.name}
         </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
+        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
           {tool.description}
         </p>
       </div>
 
-      <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-        This tool is being built. Here’s how it will work.
-      </p>
-
-      <div className="mt-12 grid gap-4">
-        {placeholderSteps.map((step, index) => (
-          <section
-            key={step.title}
-            aria-label={step.title}
-            className="rounded-xl border border-dashed border-border p-6 sm:p-8"
-          >
-            <div className="flex items-center gap-3">
-              <p className="font-mono text-sm text-primary">{String(index + 1).padStart(2, "0")}</p>
-              <h2 className="text-sm font-semibold tracking-widest text-primary uppercase">
-                {step.title}
-              </h2>
-            </div>
-            <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">{step.body}</p>
-          </section>
-        ))}
-      </div>
+      <IdeaPromptBuilder />
 
       <nav aria-label="Tool navigation" className="mt-16 flex flex-col gap-4 sm:flex-row">
         <TransitionLink

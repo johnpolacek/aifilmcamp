@@ -43,9 +43,9 @@ export const tools: Tool[] = [
     name: "AI Film Idea Generator",
     tagline: "Find a story worth making",
     description:
-      "Start from a genre, a mood, or a single image and get loglines, characters, and a shot list you can take straight into production.",
+      "Build a prompt for your next film. Choose a duration and genre, add your inspirations, then copy it into your own LLM agent to explore ideas.",
     platform: "Web tool",
-    status: "coming-soon",
+    status: "live",
     icon: Lightbulb,
     href: "/tools/idea-generator",
   },

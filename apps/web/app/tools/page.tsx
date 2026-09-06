@@ -1,13 +1,13 @@
-import type { Metadata } from "next";
 import { Show, SignInButton } from "@clerk/nextjs";
 import { ArrowRight, Download } from "lucide-react";
+import type { Metadata } from "next";
 import { TransitionLink } from "@/components/motion/transition";
 import { tools } from "@/lib/tools";
 
 export const metadata: Metadata = {
   title: "Tools - AI Film Camp",
   description:
-    "Free tools for AI filmmakers. Download the Mac app to break down a screenplay and plan your assets, with an idea generator on the way.",
+    "Free tools for AI filmmakers. Download the Mac app to break down a screenplay and plan your assets, or build a custom film idea prompt to use with your own LLM agent.",
 };
 
 export default function ToolsPage() {
