@@ -10,7 +10,6 @@ struct WelcomeView: View {
                 Spacer()
                 CampLogo()
                     .frame(width: 24, height: 24)
-                    .foregroundStyle(CampAppearance.accent)
                     .accessibilityHidden(true)
             }
             Rectangle().fill(CampAppearance.rule).frame(height: 1)

@@ -6,6 +6,7 @@ struct CampLogo: View {
         Image("BrandMark")
             .resizable()
             .scaledToFit()
+            .foregroundStyle(Color("BrandOrange"))
             .accessibilityLabel("AI Film Camp")
     }
 }

@@ -1,4 +1,4 @@
-import { BRAND_MARK_PATH } from "@/lib/brand";
+import { BRAND_MARK_PATH, BRAND_ORANGE } from "@/lib/brand";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -13,7 +13,8 @@ export function Logo({ className, variant = "color" }: LogoProps) {
     <svg
       viewBox="0 0 24 24"
       fill="currentColor"
-      className={cn("h-6 w-6 shrink-0", variant === "color" && "text-primary", className)}
+      className={cn("h-6 w-6 shrink-0", className)}
+      style={variant === "color" ? { color: BRAND_ORANGE } : undefined}
       role="img"
       aria-label="AI Film Camp"
     >

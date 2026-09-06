@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { BRAND_AMBER, BRAND_DARK, BRAND_MARK_PATH } from "@/lib/brand";
+import { BRAND_DARK, BRAND_MARK_PATH, BRAND_ORANGE } from "@/lib/brand";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
@@ -20,7 +20,7 @@ export default function AppleIcon() {
         width="124"
         height="124"
         viewBox="0 0 24 24"
-        fill={BRAND_AMBER}
+        fill={BRAND_ORANGE}
         role="img"
         aria-label="AI Film Camp"
       >

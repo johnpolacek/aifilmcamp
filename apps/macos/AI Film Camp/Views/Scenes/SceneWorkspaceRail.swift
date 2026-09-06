@@ -60,7 +60,6 @@ struct SceneWorkspaceRail: View {
             HStack(spacing: 8) {
                 CampLogo()
                     .frame(width: 18, height: 18)
-                    .foregroundStyle(CampAppearance.accent)
                     .accessibilityHidden(true)
                 Text("AI FILM CAMP")
                     .font(CampAppearance.label())
