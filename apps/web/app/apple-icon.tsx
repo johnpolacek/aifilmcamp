@@ -21,7 +21,7 @@ export default function AppleIcon() {
         viewBox="0 0 24 24"
         fill="none"
         stroke="#FBBF24"
-        strokeWidth="2"
+        strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         role="img"
