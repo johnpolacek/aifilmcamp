@@ -27,10 +27,10 @@ export function Header() {
               Learn
             </Link>
             <Link
-              href="/films"
+              href="/tools"
               className="hidden md:inline text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Films
+              Tools
             </Link>
             <Link
               href="/community"

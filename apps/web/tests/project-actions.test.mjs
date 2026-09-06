@@ -55,7 +55,6 @@ test("create → update → share → unshare preserves data and enforces owners
   assert.deepEqual(published.customData, draft.customData);
   assert.ok(state.invalidated.includes(`/owner/${slug}`));
   assert.ok(state.invalidated.includes("/projects"));
-  assert.ok(state.invalidated.includes("/films"));
 
   state.user = null;
   assert.equal((await getVisibleProject("owner", slug)).project.title, "Renamed film");

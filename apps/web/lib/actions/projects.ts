@@ -81,7 +81,6 @@ export async function saveProjectBasics(input: ProjectBasics, projectId?: string
   revalidatePath(`/dashboard/projects/${id}/development`);
   revalidatePath(`/${username}/${project.slug}`);
   revalidatePath("/projects");
-  revalidatePath("/films");
   return { success: true, projectId: id };
 }
 
@@ -150,7 +149,6 @@ export async function updateProject(projectId: string, data: ProjectFormData) {
 
     revalidatePath(`/${currentUsername}/${existingProject.slug}`);
     revalidatePath("/projects");
-    revalidatePath("/films");
     // Revalidate the dashboard and edit pages
     revalidatePath("/dashboard");
     revalidatePath(`/dashboard/projects/${projectId}/edit`);
@@ -301,7 +299,6 @@ export async function deleteProject(projectId: string) {
     // Delete from S3
     await deleteProjectFromS3(projectId);
     revalidatePath("/projects");
-    revalidatePath("/films");
     revalidatePath(`/${currentUsername}/${existingProject.slug}`);
 
     // Revalidate the dashboard page
@@ -349,7 +346,6 @@ export async function publishProject(projectId: string) {
     // Revalidate pages
     revalidatePath("/dashboard");
     revalidatePath(`/${currentUsername}/${existingProject.slug}`);
-    revalidatePath("/films");
     revalidatePath("/projects");
 
     return { success: true };
@@ -393,7 +389,6 @@ export async function unpublishProject(projectId: string) {
     // Revalidate pages
     revalidatePath("/dashboard");
     revalidatePath(`/${currentUsername}/${existingProject.slug}`);
-    revalidatePath("/films");
     revalidatePath("/projects");
 
     return { success: true };
