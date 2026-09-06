@@ -18,15 +18,9 @@ const articles = courses
 export default function LearnPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
-      <div className="max-w-3xl">
-        <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-6xl">
-          Learn to turn a script into a movie.
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          Follow a course from start to finish, or read the individual guides when you need them.
-          The same filmmaking knowledge, at your own pace.
-        </p>
-      </div>
+      <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-6xl">
+        Learn to turn a script into a movie.
+      </h1>
 
       <section aria-labelledby="courses-title" className="mt-16">
         <h2 id="courses-title" className="text-sm font-semibold tracking-widest text-primary uppercase">
