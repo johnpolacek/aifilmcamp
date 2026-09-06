@@ -1,6 +1,7 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { ComeUpWithAnIdea } from "@/components/learn/come-up-with-an-idea";
 import { TransitionLink } from "@/components/motion/transition";
 import { courses, getCourse, getLesson } from "@/lib/courses";
 
@@ -85,20 +86,24 @@ export default async function LessonPage({ params }: Props) {
         </p>
       )}
 
-      <div className="mt-12 grid gap-4">
-        {placeholderSections.map((section) => (
-          <section
-            key={section.title}
-            aria-label={section.title}
-            className={`rounded-xl border border-border p-6 sm:p-8 ${live ? "bg-card" : "border-dashed"}`}
-          >
-            <h2 className="text-sm font-semibold tracking-widest text-primary uppercase">
-              {section.title}
-            </h2>
-            <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">{section.body}</p>
-          </section>
-        ))}
-      </div>
+      {course.slug === "first-30-second-film" && lesson.slug === "come-up-with-an-idea" ? (
+        <ComeUpWithAnIdea />
+      ) : (
+        <div className="mt-12 grid gap-4">
+          {placeholderSections.map((section) => (
+            <section
+              key={section.title}
+              aria-label={section.title}
+              className={`rounded-xl border border-border p-6 sm:p-8 ${live ? "bg-card" : "border-dashed"}`}
+            >
+              <h2 className="text-sm font-semibold tracking-widest text-primary uppercase">
+                {section.title}
+              </h2>
+              <p className="mt-3 max-w-2xl leading-relaxed text-muted-foreground">{section.body}</p>
+            </section>
+          ))}
+        </div>
+      )}
 
       <nav aria-label="Lesson navigation" className="mt-16 flex flex-col gap-4 sm:flex-row">
         {previous ? (

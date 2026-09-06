@@ -33,7 +33,7 @@ export const courses: Course[] = [
       {
         slug: "come-up-with-an-idea",
         title: "Come up with an idea",
-        description: "Find a story small enough to tell in 30 seconds, and sharpen it into a single clear moment.",
+        description: "Work with an LLM to explore unexpected ideas, make one your own, and shape it into a story you can tell in 30 seconds.",
       },
       {
         slug: "write-your-scenes",
