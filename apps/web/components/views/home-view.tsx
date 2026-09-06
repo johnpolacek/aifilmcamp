@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { CallToAction } from "@/components/call-to-action";
-import { CommunityFeatures } from "@/components/community-features";
+import { Courses } from "@/components/courses";
 // import { useEffect, useRef, useState } from "react"
 import { Hero } from "@/components/hero";
 
@@ -61,7 +61,7 @@ export function HomeView() {
       {/* Content */}
       <div className="relative z-10">
         <Hero />
-        <CommunityFeatures />
+        <Courses />
         <CallToAction />
       </div>
     </main>
