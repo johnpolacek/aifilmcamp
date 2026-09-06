@@ -1,6 +1,6 @@
 import type React from "react";
 import { Show, SignUpButton } from "@clerk/nextjs";
-import { Clapperboard, Film, Sparkles, Trophy } from "lucide-react";
+import { ChevronRight, Clapperboard, Film, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -92,14 +92,20 @@ export function Courses() {
                   <SignUpButton mode="modal">
                     {renderCard(
                       <Button type="button" size="sm" className={ctaClass}>
-                        Sign up
+                        Start
+                        <ChevronRight className="h-4 w-4" />
                       </Button>
                     )}
                   </SignUpButton>
                 </Show>
                 <Show when="signed-in">
                   <Link href="/dashboard" className="flex w-full">
-                    {renderCard(<span className={buttonVariants({ size: "sm", className: ctaClass })}>Start</span>)}
+                    {renderCard(
+                      <span className={buttonVariants({ size: "sm", className: ctaClass })}>
+                        Start
+                        <ChevronRight className="h-4 w-4" />
+                      </span>
+                    )}
                   </Link>
                 </Show>
               </div>
