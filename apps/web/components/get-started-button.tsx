@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 /** Shared look for the two hero CTAs. Fixed height; hover glows rather than moves. */
 export const heroButtonClass =
-  "h-16 px-9 text-3xl font-bold bg-primary text-white hover:bg-primary hover:text-white hover:brightness-110 shadow-[0_0_0_0_rgba(255,150,70,0)] hover:shadow-[0_0_32px_6px_rgba(255,150,70,0.45)]";
+  "h-16 px-9 text-3xl font-bold text-white hover:text-white bg-linear-to-br from-[oklch(0.7_0.19_55)] via-primary to-[oklch(0.5_0.18_35)] hover:brightness-110 [text-shadow:0_0_10px_rgba(0,0,0,0.35)] shadow-[0_0_0_0_rgba(255,150,70,0)] hover:shadow-[0_0_32px_6px_rgba(255,150,70,0.45)]";
 
 interface GetStartedButtonProps {
   className?: string;
