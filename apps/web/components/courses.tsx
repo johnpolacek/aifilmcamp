@@ -42,7 +42,7 @@ export function Courses() {
       <div className="container mx-auto px-4 lg:px-8">
         <div className="text-center mb-10">
           <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-balance">From Zero to Hero</h2>
-          <p className="text-lg text-muted-foreground text-pretty max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground text-balance max-w-2xl mx-auto">
             Courses are coming soon. Start with a 30-second short and work your way up to a
             complete film, one step at a time.
           </p>
@@ -54,7 +54,7 @@ export function Courses() {
             return (
               <Card
                 key={course.title}
-                className="p-6 space-y-0! bg-[#0b1530] border-[#1c2a55] hover:border-primary/50 transition-colors"
+                className="p-6 space-y-0! bg-[#050a1c] border-[#121d40] hover:border-primary/50 transition-colors"
               >
                 <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
                   <Icon className="h-6 w-6 text-primary" />
@@ -63,7 +63,7 @@ export function Courses() {
                   {course.level}
                 </p>
                 <h3 className="text-lg font-semibold text-balance -mt-2">{course.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed -mt-2">
+                <p className="text-sm text-muted-foreground leading-relaxed text-balance -mt-2">
                   {course.description}
                 </p>
                 <p className="text-lg font-semibold mt-auto pt-4">
