@@ -40,7 +40,7 @@ const courses = [
   },
 ];
 
-const ctaClass = "bg-[#1a2a5e] text-white hover:bg-[#24397d]";
+const ctaClass = "bg-[#2c4494] text-white hover:bg-[#3854b3]";
 
 export function Courses() {
   return (
