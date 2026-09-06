@@ -73,6 +73,7 @@
 		9FF8001F8482BDB61B9996BE /* ReferenceImageCreationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1435FF702534A000DE6E9FA /* ReferenceImageCreationSheet.swift */; };
 		A02397DDE994CA514CFDE8F3 /* EditJournalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0678C5B5682A10D7C1B7F7B0 /* EditJournalView.swift */; };
 		A1C6472E7FE1EA0B9315610B /* ProjectGenerationSettingsSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7132589645119831FCFE5D80 /* ProjectGenerationSettingsSheet.swift */; };
+		A3BBE81ED64ED1BAAF407810 /* CampLogo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A62A9C31BEFC1AC1B7F22 /* CampLogo.swift */; };
 		A93950AC0F916562892039B8 /* UserFacingError.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD978805BB389047C12C640E /* UserFacingError.swift */; };
 		AF608DA468227F7C320228F1 /* ImageGeneratorSettingsModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8D44B2D934F826A0ED6E903 /* ImageGeneratorSettingsModel.swift */; };
 		B098617E74BEA6AC81685086 /* AppearancePreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ADF715545D9177632EF52AB /* AppearancePreference.swift */; };
@@ -179,6 +180,7 @@
 		A542EA4824CF1364FDF84B61 /* ApplyReportSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyReportSheet.swift; sourceTree = "<group>"; };
 		A7395119F9E5FEE9B092214B /* ProjectWindowModel+ScenePromptRun.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ProjectWindowModel+ScenePromptRun.swift"; sourceTree = "<group>"; };
 		A81F2D791535DBAF8E7368FE /* PromptSkills */ = {isa = PBXFileReference; lastKnownFileType = folder; path = PromptSkills; sourceTree = SOURCE_ROOT; };
+		A93A62A9C31BEFC1AC1B7F22 /* CampLogo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CampLogo.swift; sourceTree = "<group>"; };
 		AC3AA1211C1B739369504105 /* ReviewFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewFilters.swift; sourceTree = "<group>"; };
 		AC4DCA880D745C9750202AC4 /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		B04C15644B7E09F2D7309E45 /* AssetWorkshopView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssetWorkshopView.swift; sourceTree = "<group>"; };
@@ -442,6 +444,7 @@
 		CBC63D554491DC35612407CE /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				A93A62A9C31BEFC1AC1B7F22 /* CampLogo.swift */,
 				D065FFAEA4C5B854397A88FE /* CodexStatusView.swift */,
 				696155D1EF4B83057DC6556A /* ImportSummarySheet.swift */,
 				F929D6F83963C21D29130449 /* MigrationUpgradeSheet.swift */,
@@ -601,6 +604,7 @@
 				C5EA0042E730CA972DE89EA5 /* AssetSlotView.swift in Sources */,
 				FF87B0DE04B1664BC9A49A91 /* AssetWorkshopView.swift in Sources */,
 				1F8E950657887550E5B2F079 /* CampAppearance.swift in Sources */,
+				A3BBE81ED64ED1BAAF407810 /* CampLogo.swift in Sources */,
 				F5D6C9642A774287F7CA35A1 /* CharacterBundlePicker.swift in Sources */,
 				E65F5738E51BA8235E0FD323 /* CodexStatusView.swift in Sources */,
 				36475EC1A5614EDE07C7A971 /* CombineRequirementsSheet.swift in Sources */,

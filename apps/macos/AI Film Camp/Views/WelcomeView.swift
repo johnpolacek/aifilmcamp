@@ -8,8 +8,8 @@ struct WelcomeView: View {
             HStack {
                 CampSectionLabel("AI Film Camp / Desktop")
                 Spacer()
-                Image(systemName: "flame")
-                    .font(.system(size: 24, weight: .light))
+                CampLogo()
+                    .frame(width: 24, height: 24)
                     .foregroundStyle(CampAppearance.accent)
                     .accessibilityHidden(true)
             }

@@ -58,7 +58,8 @@ struct SceneWorkspaceRail: View {
         }
         .safeAreaInset(edge: .top, spacing: 0) {
             HStack(spacing: 8) {
-                Image(systemName: "flame")
+                CampLogo()
+                    .frame(width: 18, height: 18)
                     .foregroundStyle(CampAppearance.accent)
                     .accessibilityHidden(true)
                 Text("AI FILM CAMP")

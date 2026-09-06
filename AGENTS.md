@@ -6,3 +6,4 @@
 - Run web commands from the repository root: `pnpm dev`, `pnpm build`, `pnpm lint`, and `pnpm typecheck`.
 - Build the native app with `pnpm build:macos`; build and launch it with `pnpm dev:macos`.
 - Prefer to commit and pull whenever confident that the code is good and there are no questions about implementation.
+- The approved logo is Ember Lens (20% wider). Follow `brand/README.md`; regenerate both platforms from `brand/ember-lens.svg` with `pnpm brand:generate`. Do not substitute historical concepts or stock flame icons.
