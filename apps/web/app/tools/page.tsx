@@ -6,7 +6,7 @@ import { tools } from "@/lib/tools";
 export const metadata: Metadata = {
   title: "Tools - AI Film Camp",
   description:
-    "Free tools for AI filmmakers. Download the Mac app to break down a screenplay and plan your assets, with more tools on the way.",
+    "Free tools for AI filmmakers. Download the Mac app to break down a screenplay and plan your assets, with an idea generator on the way.",
 };
 
 export default function ToolsPage() {
@@ -20,13 +20,13 @@ export default function ToolsPage() {
           Tools built for making AI films.
         </h1>
         <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          Software for the work between a finished script and a finished edit. Plan the production,
-          get every scene ready to generate, and put the results together.
+          Software for the work between an idea and a finished edit. Find a story, plan the
+          production, and get every scene ready to generate.
         </p>
       </div>
 
       <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-        The Mac app is available now. The rest are in progress.
+        The Mac app is available now. The idea generator is in progress.
       </p>
 
       <section aria-labelledby="tools-title" className="mt-16">

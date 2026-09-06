@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Clapperboard, Lightbulb, Scissors } from "lucide-react";
+import { Clapperboard, Lightbulb } from "lucide-react";
 
 export type ToolDownload = {
   href: string;
@@ -46,15 +46,5 @@ export const tools: Tool[] = [
     platform: "Web tool",
     status: "coming-soon",
     icon: Lightbulb,
-  },
-  {
-    id: "film-stitcher",
-    name: "AI Film Stitcher",
-    tagline: "Assemble generated clips into a cut",
-    description:
-      "Drop in the shots you generated, put them in order, and export a single film ready to share or bring into a full editor.",
-    platform: "Web tool",
-    status: "coming-soon",
-    icon: Scissors,
   },
 ];
