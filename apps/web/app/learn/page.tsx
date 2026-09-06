@@ -19,9 +19,6 @@ export default function LearnPage() {
   return (
     <main className="mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
       <div className="max-w-3xl">
-        <p className="mb-4 text-sm font-semibold tracking-widest text-primary uppercase">
-          Learn at AI Film Camp
-        </p>
         <h1 className="text-4xl font-bold tracking-tight text-balance sm:text-6xl">
           Learn to turn a script into a movie.
         </h1>

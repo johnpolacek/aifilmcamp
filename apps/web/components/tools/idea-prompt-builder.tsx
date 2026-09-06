@@ -7,17 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { buildIdeaPrompt, defaultIdeaOptions, type IdeaPromptOptions } from "@/lib/idea-prompts";
 
-const suggestedGenres = [
-  "science fiction",
-  "horror",
-  "comedy",
-  "drama",
-  "thriller",
-  "fantasy",
-  "romance",
-  "experimental",
-];
-
 export function IdeaPromptBuilder() {
   const [options, setOptions] = useState(defaultIdeaOptions);
   const [customGenre, setCustomGenre] = useState("");
@@ -32,12 +21,10 @@ export function IdeaPromptBuilder() {
     setCopyResult(null);
   }
 
-  function toggleGenre(genre: string) {
+  function removeGenre(genre: string) {
     setOptions((current) => ({
       ...current,
-      genres: current.genres.includes(genre)
-        ? current.genres.filter((item) => item !== genre)
-        : [...current.genres, genre],
+      genres: current.genres.filter((item) => item !== genre),
     }));
     setCopyResult(null);
   }
@@ -109,32 +96,14 @@ export function IdeaPromptBuilder() {
             </div>
             <fieldset className="space-y-3 sm:col-span-2">
               <legend className="text-sm font-medium">Genres</legend>
-              <p id="genre-help" className="text-xs text-muted-foreground">
-                Select any combination, or add your own.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {suggestedGenres.map((genre) => (
-                  <Button
-                    key={genre}
-                    type="button"
-                    variant={options.genres.includes(genre) ? "default" : "outline"}
-                    size="sm"
-                    aria-pressed={options.genres.includes(genre)}
-                    onClick={() => toggleGenre(genre)}
-                    className="rounded-full capitalize"
-                  >
-                    {options.genres.includes(genre) ? <Check aria-hidden="true" /> : null}
-                    {genre}
-                  </Button>
-                ))}
-                {options.genres
-                  .filter((genre) => !suggestedGenres.includes(genre))
-                  .map((genre) => (
+              {options.genres.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {options.genres.map((genre) => (
                     <Button
                       key={genre}
                       type="button"
                       size="sm"
-                      onClick={() => toggleGenre(genre)}
+                      onClick={() => removeGenre(genre)}
                       aria-label={`Remove ${genre} genre`}
                       className="max-w-full rounded-full"
                     >
@@ -142,12 +111,12 @@ export function IdeaPromptBuilder() {
                       <X aria-hidden="true" />
                     </Button>
                   ))}
-              </div>
+                </div>
+              ) : null}
               <div className="flex gap-2">
                 <Input
                   id="idea-custom-genre"
                   aria-label="Custom genre"
-                  aria-describedby="genre-help"
                   value={customGenre}
                   onChange={(event) => setCustomGenre(event.target.value)}
                   onKeyDown={(event) => {
@@ -174,15 +143,11 @@ export function IdeaPromptBuilder() {
               </label>
               <Textarea
                 id="idea-inspirations"
-                aria-describedby="inspiration-help"
                 value={options.inspirations}
                 onChange={(event) => update("inspirations", event.target.value)}
                 className="min-h-28"
                 placeholder={"A favorite film or filmmaker\nAn image, a song, a place, a feeling…"}
               />
-              <p id="inspiration-help" className="text-xs text-muted-foreground">
-                Add one inspiration per line.
-              </p>
             </div>
             <div className="space-y-2 sm:col-span-2">
               <label htmlFor="idea-instructions" className="text-sm font-medium">
