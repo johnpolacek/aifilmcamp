@@ -76,7 +76,7 @@ export function IdeaPromptBuilder() {
           </div>
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="idea-duration" className="text-sm font-medium">
+              <label htmlFor="idea-duration" className="block text-sm font-medium">
                 Film duration
               </label>
               <Input
@@ -93,6 +93,23 @@ export function IdeaPromptBuilder() {
                   )
                 )}
               </datalist>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="idea-count" className="block text-sm font-medium">
+                Number of ideas
+              </label>
+              <select
+                id="idea-count"
+                value={options.count}
+                onChange={(event) => update("count", event.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                {[3, 5, 10].map((count) => (
+                  <option key={count} value={count}>
+                    {count} ideas
+                  </option>
+                ))}
+              </select>
             </div>
             <fieldset className="space-y-3 sm:col-span-2">
               <legend className="text-sm font-medium">Genres</legend>
@@ -161,23 +178,6 @@ export function IdeaPromptBuilder() {
                 className="min-h-28"
                 placeholder="e.g. One location, no dialogue, a hopeful ending. Avoid space travel."
               />
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="idea-count" className="block text-sm font-medium">
-                Number of ideas
-              </label>
-              <select
-                id="idea-count"
-                value={options.count}
-                onChange={(event) => update("count", event.target.value)}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-              >
-                {[3, 5, 10].map((count) => (
-                  <option key={count} value={count}>
-                    {count} ideas
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
         </section>
