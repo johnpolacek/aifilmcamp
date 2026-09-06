@@ -52,11 +52,15 @@ export default function ToolsPage() {
                     {isLive ? "Available now" : "Coming soon"}
                   </span>
                 </div>
-                <div className="mt-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Icon className="h-6 w-6" aria-hidden="true" />
+                <div className="mt-6 flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-6 w-6" aria-hidden="true" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-semibold">{tool.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">{tool.tagline}</p>
+                  </div>
                 </div>
-                <h3 className="mt-5 text-2xl font-semibold">{tool.name}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{tool.tagline}</p>
                 <p className="mt-4 leading-relaxed text-muted-foreground">{tool.description}</p>
                 {tool.download ? (
                   <div className="mt-8 flex flex-col gap-3">
