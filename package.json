@@ -17,6 +17,7 @@
     "typecheck": "pnpm --filter @aifilm-camp/web typecheck",
     "dev:macos": "./apps/macos/dev",
     "build:macos": "./apps/macos/scripts/build.sh",
+    "package:macos": "./apps/macos/scripts/package.sh",
     "go": "git add . && aic && git pom",
     "brand:generate": "node scripts/generate-brand-assets.mjs"
   }
