@@ -10,7 +10,7 @@ Use amber `#FBBF24`, white on dark backgrounds, or dark `#1F1A15` on light backg
 UI instances may inherit the platform's theme color.
 
 Run `pnpm brand:generate` from the repository root after an approved master edit.
-It generates the shared web path, favicon, public SVGs, native template vector,
+It generates the shared web path, favicon (amber mark on the dark tile), public SVGs, native template vector,
 and every macOS app icon size. The web Logo and Apple icon use the generated path;
 the macOS welcome screen and scene rail use the BrandMark asset through CampLogo.
 The app tile uses the amber mark on a dark rounded square.
