@@ -199,12 +199,13 @@ export function HomeView() {
           0.6
         )
         .to(actions, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" }, 1.2)
-        .to(coursesTitle, { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out" }, 1.45)
-        .to(coursesLede, { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out" }, 1.55)
+        // A beat after the hero lands, the courses arrive almost as one.
+        .to(coursesTitle, { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out" }, 2.15)
+        .to(coursesLede, { autoAlpha: 1, y: 0, duration: 0.7, ease: "power3.out" }, 2.2)
         .to(
           cards,
-          { autoAlpha: 1, scale: 1, y: 0, duration: 1, ease: "power3.out", stagger: 0.1 },
-          1.65
+          { autoAlpha: 1, scale: 1, y: 0, duration: 0.7, ease: "power3.out", stagger: 0.05 },
+          2.25
         );
       // Returning by history, or arriving already scrolled: no travel.
       if (arrival === "history" || window.scrollY > 80) intro.timeScale(3);
