@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { tools } from "@/lib/tools";
+import { Download } from "lucide-react";
+import { MACOS_APP_RELEASES_URL, tools } from "@/lib/tools";
 
 export const metadata: Metadata = {
   title: "Tools - AI Film Camp",
   description:
-    "Free tools for AI filmmakers. Break down a screenplay, plan your assets, and assemble your generated shots into a finished film.",
+    "Free tools for AI filmmakers. Download the Mac app to break down a screenplay and plan your assets, with more tools on the way.",
 };
 
 export default function ToolsPage() {
@@ -24,7 +25,7 @@ export default function ToolsPage() {
       </div>
 
       <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-        We’re building these now. Here’s what’s planned; downloads aren’t available yet.
+        The Mac app is available now. The rest are in progress.
       </p>
 
       <section aria-labelledby="tools-title" className="mt-16">
@@ -34,6 +35,7 @@ export default function ToolsPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {tools.map((tool) => {
             const Icon = tool.icon;
+            const isLive = tool.status === "live";
             return (
               <article
                 key={tool.id}
@@ -41,8 +43,14 @@ export default function ToolsPage() {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="font-medium text-primary">{tool.platform}</span>
-                  <span className="rounded-full border border-border px-3 py-1 text-muted-foreground">
-                    Coming soon
+                  <span
+                    className={
+                      isLive
+                        ? "rounded-full border border-primary/40 bg-primary/10 px-3 py-1 font-medium text-primary"
+                        : "rounded-full border border-border px-3 py-1 text-muted-foreground"
+                    }
+                  >
+                    {isLive ? "Available now" : "Coming soon"}
                   </span>
                 </div>
                 <div className="mt-6 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -51,6 +59,26 @@ export default function ToolsPage() {
                 <h3 className="mt-5 text-2xl font-semibold">{tool.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{tool.tagline}</p>
                 <p className="mt-4 leading-relaxed text-muted-foreground">{tool.description}</p>
+                {tool.download ? (
+                  <div className="mt-8 flex flex-col gap-3">
+                    <a
+                      href={tool.download.href}
+                      className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      <Download className="h-4 w-4" aria-hidden="true" />
+                      {tool.download.label}
+                    </a>
+                    <p className="text-xs text-muted-foreground">
+                      {tool.download.requirements}{" "}
+                      <a
+                        href={MACOS_APP_RELEASES_URL}
+                        className="underline underline-offset-2 hover:text-foreground"
+                      >
+                        All releases
+                      </a>
+                    </p>
+                  </div>
+                ) : null}
               </article>
             );
           })}

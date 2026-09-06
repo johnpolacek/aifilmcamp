@@ -1,5 +1,11 @@
 import type { LucideIcon } from "lucide-react";
-import { Clapperboard, Scissors } from "lucide-react";
+import { Clapperboard, Lightbulb, Scissors } from "lucide-react";
+
+export type ToolDownload = {
+  href: string;
+  label: string;
+  requirements: string;
+};
 
 export type Tool = {
   id: string;
@@ -7,9 +13,12 @@ export type Tool = {
   tagline: string;
   description: string;
   platform: string;
-  status: "coming-soon";
+  status: "live" | "coming-soon";
   icon: LucideIcon;
+  download?: ToolDownload;
 };
+
+export const MACOS_APP_RELEASES_URL = "https://github.com/johnpolacek/aifilmclub/releases";
 
 export const tools: Tool[] = [
   {
@@ -19,8 +28,23 @@ export const tools: Tool[] = [
     description:
       "Import a screenplay and break it down into scenes, characters, and locations. Build an asset manifest, prepare generation-ready prompts, and hand everything off to your editor.",
     platform: "macOS app",
-    status: "coming-soon",
+    status: "live",
     icon: Clapperboard,
+    download: {
+      href: `${MACOS_APP_RELEASES_URL}/latest/download/AI-Film-Camp.dmg`,
+      label: "Download for Mac",
+      requirements: "Free. Requires macOS 15 or later on Apple silicon.",
+    },
+  },
+  {
+    id: "idea-generator",
+    name: "AI Film Idea Generator",
+    tagline: "Find a story worth making",
+    description:
+      "Start from a genre, a mood, or a single image and get loglines, characters, and a shot list you can take straight into production.",
+    platform: "Web tool",
+    status: "coming-soon",
+    icon: Lightbulb,
   },
   {
     id: "film-stitcher",

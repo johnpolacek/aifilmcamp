@@ -35,7 +35,7 @@ export default async function CoursePage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
-      <div className="max-w-3xl">
+      <div>
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm font-semibold tracking-widest text-primary uppercase">
             {course.level} course
@@ -54,9 +54,7 @@ export default async function CoursePage({ params }: Props) {
             {course.title}
           </h1>
         </div>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          {course.description}
-        </p>
+        <p className="mt-6 text-lg leading-relaxed text-muted-foreground">{course.description}</p>
         <div className="mt-8 flex flex-wrap items-center gap-5">
           <p className="text-2xl font-semibold">
             <span className="mr-2 text-muted-foreground line-through">${course.price}</span>
