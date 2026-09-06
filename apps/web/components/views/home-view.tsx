@@ -210,41 +210,8 @@ export function HomeView() {
       // Returning by history, or arriving already scrolled: no travel.
       if (arrival === "history" || window.scrollY > 80) intro.timeScale(3);
 
-      // ---- interaction. The hero button is magnetic; cards tilt toward the
-      // pointer. Focus gets its own, non-pointer, cue.
-      const magnets = new Map<Element, { x: (v: number) => void; y: (v: number) => void }>();
-      const magnetFor = contextSafe((label: Element) => {
-        let m = magnets.get(label);
-        if (!m) {
-          m = {
-            x: gsap.quickTo(label, "x", { duration: 0.4, ease: "power3" }),
-            y: gsap.quickTo(label, "y", { duration: 0.4, ease: "power3" }),
-          };
-          magnets.set(label, m);
-        }
-        return m;
-      });
-      const releaseMagnets = (except?: Element | null) => {
-        for (const [label, m] of magnets) {
-          if (label === except) continue;
-          m.x(0);
-          m.y(0);
-        }
-      };
-      const onActionsMove = (e: PointerEvent) => {
-        const button = (e.target as Element).closest("[data-magnetic]");
-        const label = button ? (button.querySelector("[data-mag]") ?? button) : null;
-        releaseMagnets(label);
-        if (!button || !label) return;
-        const r = button.getBoundingClientRect();
-        const m = magnetFor(label);
-        m.x((e.clientX - r.left - r.width / 2) * 0.28);
-        m.y((e.clientY - r.top - r.height / 2) * 0.35);
-      };
-      const onActionsLeave = () => releaseMagnets();
-      actions.addEventListener("pointermove", onActionsMove);
-      actions.addEventListener("pointerleave", onActionsLeave);
-
+      // ---- interaction. Cards tilt toward the pointer. Focus gets its own,
+      // non-pointer, cue.
       const tilts = q<HTMLElement>("[data-card]").map((card) => {
         const rx = gsap.quickTo(card, "rotationX", { duration: 0.5, ease: "power3" });
         const ry = gsap.quickTo(card, "rotationY", { duration: 0.5, ease: "power3" });
@@ -289,8 +256,6 @@ export function HomeView() {
 
       return () => {
         unregister();
-        actions.removeEventListener("pointermove", onActionsMove);
-        actions.removeEventListener("pointerleave", onActionsLeave);
         for (const off of tilts) off();
       };
     },

@@ -1,6 +1,6 @@
 import { ClerkLoading, Show, SignInButton } from "@clerk/nextjs";
 import { ArrowRight } from "lucide-react";
-import { GetStartedButton } from "@/components/get-started-button";
+import { GetStartedButton, heroButtonClass } from "@/components/get-started-button";
 import { TransitionLink } from "@/components/motion/transition";
 import { Button } from "@/components/ui/button";
 
@@ -21,16 +21,10 @@ export function Hero() {
               <GetStartedButton placeholder />
             </ClerkLoading>
             <Show when="signed-in">
-              <Button
-                size="lg"
-                className="h-16 px-12 text-2xl font-bold bg-primary text-white hover:bg-primary/90 hover:text-white"
-                asChild
-              >
-                <TransitionLink href="/dashboard" data-magnetic>
-                  <span data-mag className="inline-flex items-center">
-                    Start Creating
-                    <ArrowRight className="ml-2 h-6 w-6" />
-                  </span>
+              <Button size="lg" className={heroButtonClass} asChild>
+                <TransitionLink href="/dashboard">
+                  Start Creating
+                  <ArrowRight className="ml-2 size-7" />
                 </TransitionLink>
               </Button>
             </Show>

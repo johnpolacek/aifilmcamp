@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { gsap, prefersReducedMotion, useGSAP } from "@/lib/gsap";
 import { cn } from "@/lib/utils";
 
+/** Shared look for the two hero CTAs. Fixed height; hover glows rather than moves. */
+export const heroButtonClass =
+  "h-16 px-9 text-3xl font-bold bg-primary text-white hover:bg-primary hover:text-white hover:brightness-110 shadow-[0_0_0_0_rgba(255,150,70,0)] hover:shadow-[0_0_32px_6px_rgba(255,150,70,0.45)]";
+
 interface GetStartedButtonProps {
   className?: string;
   /** Renders the same footprint without visuals, so layout holds while auth loads. */
@@ -52,13 +56,12 @@ export function GetStartedButton({ className, placeholder = false }: GetStartedB
       type="button"
       size="lg"
       className={cn(
-        "h-16 px-12 text-2xl font-bold bg-primary text-white hover:bg-primary/90 hover:text-white",
+        heroButtonClass,
         placeholder && "invisible",
         className
       )}
       aria-hidden={placeholder || undefined}
       tabIndex={placeholder ? -1 : undefined}
-      data-magnetic
     >
       <Logo ref={markRef} variant="mono" className="mr-3 size-10" />
       Get Started
