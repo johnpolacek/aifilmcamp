@@ -15,6 +15,7 @@ export type Tool = {
   platform: string;
   status: "live" | "coming-soon";
   icon: LucideIcon;
+  href?: string;
   download?: ToolDownload;
 };
 
@@ -46,5 +47,12 @@ export const tools: Tool[] = [
     platform: "Web tool",
     status: "coming-soon",
     icon: Lightbulb,
+    href: "/tools/idea-generator",
   },
 ];
+
+export function getTool(id: string): Tool {
+  const tool = tools.find((candidate) => candidate.id === id);
+  if (!tool) throw new Error(`Unknown tool: ${id}`);
+  return tool;
+}

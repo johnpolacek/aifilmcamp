@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Show, SignInButton } from "@clerk/nextjs";
-import { Download } from "lucide-react";
+import { ArrowRight, Download } from "lucide-react";
+import { TransitionLink } from "@/components/motion/transition";
 import { tools } from "@/lib/tools";
 
 export const metadata: Metadata = {
@@ -25,10 +26,6 @@ export default function ToolsPage() {
         </p>
       </div>
 
-      <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-        The Mac app is available now. The idea generator is in progress.
-      </p>
-
       <section aria-labelledby="tools-title" className="mt-16">
         <h2 id="tools-title" className="sr-only">
           Available tools
@@ -40,6 +37,7 @@ export default function ToolsPage() {
             return (
               <article
                 key={tool.id}
+                id={tool.id}
                 className="flex flex-col rounded-2xl border border-border bg-card p-6 sm:p-8"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
@@ -84,6 +82,15 @@ export default function ToolsPage() {
                     </Show>
                     <p className="text-xs text-muted-foreground">{tool.download.requirements}</p>
                   </div>
+                ) : null}
+                {tool.href ? (
+                  <TransitionLink
+                    href={tool.href}
+                    className="mt-8 inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+                  >
+                    See what’s planned
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </TransitionLink>
                 ) : null}
               </article>
             );
