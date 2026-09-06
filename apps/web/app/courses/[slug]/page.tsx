@@ -60,23 +60,32 @@ export default async function CoursePage({ params }: Props) {
             <span className="mr-2 text-muted-foreground line-through">${course.price}</span>
             <span className="text-primary">FREE</span>
           </p>
-          <Show when="signed-out">
-            <SignUpButton mode="modal">
-              <Button type="button" className={ctaClass}>
-                {live ? "Start the course" : "Sign up to get notified"}
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </SignUpButton>
-          </Show>
-          <Show when="signed-in">
+          {live ? (
             <TransitionLink
-              href={live ? `/courses/${course.slug}/${course.outline[0].slug}` : "/dashboard"}
+              href={`/courses/${course.slug}/${course.outline[0].slug}`}
               className={buttonVariants({ className: ctaClass })}
             >
-              {live ? "Start the course" : "Go to your dashboard"}
+              Start the course
               <ChevronRight className="h-4 w-4" />
             </TransitionLink>
-          </Show>
+          ) : (
+            <>
+              <Show when="signed-out">
+                <SignUpButton mode="modal">
+                  <Button type="button" className={ctaClass}>
+                    Sign up to get notified
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <TransitionLink href="/dashboard" className={buttonVariants({ className: ctaClass })}>
+                  Go to your dashboard
+                  <ChevronRight className="h-4 w-4" />
+                </TransitionLink>
+              </Show>
+            </>
+          )}
         </div>
       </div>
 
