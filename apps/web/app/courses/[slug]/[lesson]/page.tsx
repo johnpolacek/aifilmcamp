@@ -66,14 +66,11 @@ export default async function LessonPage({ params }: Props) {
       </nav>
 
       <div className="mt-8 max-w-3xl">
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="font-mono text-sm text-primary">{String(index + 1).padStart(2, "0")}</p>
-          {!live && (
-            <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-              Coming soon
-            </span>
-          )}
-        </div>
+        {!live && (
+          <span className="inline-block rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+            Coming soon
+          </span>
+        )}
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
           {lesson.title}
         </h1>
