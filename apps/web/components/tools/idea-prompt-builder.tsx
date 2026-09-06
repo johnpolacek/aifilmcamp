@@ -66,15 +66,15 @@ export function IdeaPromptBuilder() {
 
   return (
     <div className="mt-8">
-      <div className="grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <section
           aria-labelledby="builder-heading"
           className="rounded-2xl border border-border p-5 sm:p-6"
         >
           <div className="flex items-center justify-between gap-3">
-            <h2 id="builder-heading" className="text-xl font-semibold">
-              Shape your brief
-            </h2>
+            <h1 id="builder-heading" className="text-xl font-semibold">
+              AI Film Idea Generator
+            </h1>
             <Button
               variant="outline"
               size="sm"

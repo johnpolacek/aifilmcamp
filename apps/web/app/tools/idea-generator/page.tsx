@@ -14,7 +14,7 @@ export default function IdeaGeneratorPage() {
   const tool = getTool("idea-generator");
 
   return (
-    <main className="mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
+    <main className="container mx-auto px-4 pt-28 pb-20 lg:px-8">
       <div className="max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm font-semibold tracking-widest text-primary uppercase">
@@ -24,12 +24,6 @@ export default function IdeaGeneratorPage() {
             Free prompt builder
           </span>
         </div>
-        <h1 className="mt-4 text-3xl font-bold tracking-tight text-balance sm:text-4xl">
-          {tool.name}
-        </h1>
-        <p className="mt-4 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          {tool.description}
-        </p>
       </div>
 
       <IdeaPromptBuilder />
