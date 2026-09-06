@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import type { Metadata } from "next";
 import { TransitionLink } from "@/components/motion/transition";
+import { buttonVariants } from "@/components/ui/button";
 import { courses } from "@/lib/courses";
 
 export const metadata: Metadata = {
@@ -55,7 +56,12 @@ export default function LearnPage() {
                     <span className="text-primary">FREE</span>
                   </p>
                   {course.status === "live" ? (
-                    <span className="flex items-center gap-1 text-sm font-semibold transition-colors group-hover:text-primary">
+                    <span
+                      className={buttonVariants({
+                        size: "sm",
+                        className: "bg-[#2c4494] text-white group-hover:bg-[#3854b3]",
+                      })}
+                    >
                       Start
                       <ChevronRight className="h-4 w-4" aria-hidden="true" />
                     </span>
