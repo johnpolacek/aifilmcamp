@@ -60,7 +60,7 @@ export function GetStartedButton({ className, placeholder = false }: GetStartedB
       tabIndex={placeholder ? -1 : undefined}
       data-magnetic
     >
-      <Logo ref={markRef} variant="mono" className="mr-3 h-8 w-8" />
+      <Logo ref={markRef} variant="mono" className="mr-3 size-10" />
       Get Started
     </Button>
   );
