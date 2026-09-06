@@ -1,27 +1,55 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  buildIdeaPrompt,
-  defaultIdeaOptions,
-  type IdeaPromptOptions,
-  ideaPresets,
-} from "@/lib/idea-prompts";
+import { buildIdeaPrompt, defaultIdeaOptions, type IdeaPromptOptions } from "@/lib/idea-prompts";
+
+const suggestedGenres = [
+  "science fiction",
+  "horror",
+  "comedy",
+  "drama",
+  "thriller",
+  "fantasy",
+  "romance",
+  "experimental",
+];
 
 export function IdeaPromptBuilder() {
   const [options, setOptions] = useState(defaultIdeaOptions);
+  const [customGenre, setCustomGenre] = useState("");
   const [copyResult, setCopyResult] = useState<{ prompt: string; success: boolean } | null>(null);
   const outputRef = useRef<HTMLTextAreaElement>(null);
   const prompt = buildIdeaPrompt(options);
   const copied = copyResult?.prompt === prompt && copyResult.success;
   const copyFailed = copyResult?.prompt === prompt && !copyResult.success;
 
-  function update(field: keyof IdeaPromptOptions, value: string) {
+  function update<K extends keyof IdeaPromptOptions>(field: K, value: IdeaPromptOptions[K]) {
     setOptions((current) => ({ ...current, [field]: value }));
+    setCopyResult(null);
+  }
+
+  function toggleGenre(genre: string) {
+    setOptions((current) => ({
+      ...current,
+      genres: current.genres.includes(genre)
+        ? current.genres.filter((item) => item !== genre)
+        : [...current.genres, genre],
+    }));
+    setCopyResult(null);
+  }
+
+  function addCustomGenre() {
+    const genre = customGenre.trim().toLowerCase();
+    if (!genre) return;
+    setOptions((current) => ({
+      ...current,
+      genres: current.genres.includes(genre) ? current.genres : [...current.genres, genre],
+    }));
+    setCustomGenre("");
     setCopyResult(null);
   }
 
@@ -38,32 +66,7 @@ export function IdeaPromptBuilder() {
 
   return (
     <div className="mt-8">
-      <section aria-labelledby="presets-heading">
-        <h2 id="presets-heading" className="text-sm font-semibold">
-          Try a starting point
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Each preset fills in the builder. Make it your own before copying.
-        </p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
-          {ideaPresets.map((preset) => (
-            <button
-              key={preset.name}
-              type="button"
-              onClick={() => {
-                setOptions({ ...preset.options });
-                setCopyResult(null);
-              }}
-              className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/60 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-            >
-              <span className="block text-sm font-semibold">{preset.name}</span>
-              <span className="mt-1 block text-sm text-muted-foreground">{preset.description}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <div className="mt-6 grid items-start gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         <section
           aria-labelledby="builder-heading"
           className="rounded-2xl border border-border p-5 sm:p-6"
@@ -77,6 +80,7 @@ export function IdeaPromptBuilder() {
               size="sm"
               onClick={() => {
                 setOptions({ ...defaultIdeaOptions });
+                setCustomGenre("");
                 setCopyResult(null);
               }}
             >
@@ -103,35 +107,67 @@ export function IdeaPromptBuilder() {
                 )}
               </datalist>
             </div>
-            <div className="space-y-2">
-              <label htmlFor="idea-genre" className="text-sm font-medium">
-                Genre
-              </label>
-              <Input
-                id="idea-genre"
-                list="idea-genres"
-                value={options.genre}
-                onChange={(event) => update("genre", event.target.value)}
-                placeholder="Any genre, or mix a few"
-              />
-              <datalist id="idea-genres">
-                {[
-                  "science fiction",
-                  "horror",
-                  "comedy",
-                  "drama",
-                  "thriller",
-                  "fantasy",
-                  "romance",
-                  "experimental",
-                ].map((genre) => (
-                  <option key={genre} value={genre} />
+            <fieldset className="space-y-3 sm:col-span-2">
+              <legend className="text-sm font-medium">Genres</legend>
+              <p id="genre-help" className="text-xs text-muted-foreground">
+                Select any combination, or add your own.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {suggestedGenres.map((genre) => (
+                  <Button
+                    key={genre}
+                    type="button"
+                    variant={options.genres.includes(genre) ? "default" : "outline"}
+                    size="sm"
+                    aria-pressed={options.genres.includes(genre)}
+                    onClick={() => toggleGenre(genre)}
+                    className="rounded-full capitalize"
+                  >
+                    {options.genres.includes(genre) ? <Check aria-hidden="true" /> : null}
+                    {genre}
+                  </Button>
                 ))}
-              </datalist>
-            </div>
-            <p className="-mt-2 text-xs text-muted-foreground sm:col-span-2">
-              Choose a suggestion or type your own duration and genre.
-            </p>
+                {options.genres
+                  .filter((genre) => !suggestedGenres.includes(genre))
+                  .map((genre) => (
+                    <Button
+                      key={genre}
+                      type="button"
+                      size="sm"
+                      onClick={() => toggleGenre(genre)}
+                      aria-label={`Remove ${genre} genre`}
+                      className="max-w-full rounded-full"
+                    >
+                      <span className="truncate">{genre}</span>
+                      <X aria-hidden="true" />
+                    </Button>
+                  ))}
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  id="idea-custom-genre"
+                  aria-label="Custom genre"
+                  aria-describedby="genre-help"
+                  value={customGenre}
+                  onChange={(event) => setCustomGenre(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.nativeEvent.isComposing) {
+                      event.preventDefault();
+                      addCustomGenre();
+                    }
+                  }}
+                  placeholder="e.g. magical realism"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addCustomGenre}
+                  disabled={!customGenre.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+            </fieldset>
             <div className="space-y-2 sm:col-span-2">
               <label htmlFor="idea-inspirations" className="text-sm font-medium">
                 Inspirations <span className="font-normal text-muted-foreground">(optional)</span>

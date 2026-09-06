@@ -15,17 +15,7 @@ export default function IdeaGeneratorPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 pt-28 pb-20 sm:px-6 lg:px-8">
-      <nav aria-label="Breadcrumb" className="text-sm text-muted-foreground">
-        <TransitionLink href="/tools" className="transition-colors hover:text-foreground">
-          Tools
-        </TransitionLink>
-        <span aria-hidden="true" className="mx-2">
-          /
-        </span>
-        <span>{tool.name}</span>
-      </nav>
-
-      <div className="mt-8 max-w-3xl">
+      <div className="max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm font-semibold tracking-widest text-primary uppercase">
             {tool.platform}
