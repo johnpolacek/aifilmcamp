@@ -90,9 +90,9 @@ export default function ToolsPage() {
                 {tool.href ? (
                   <TransitionLink
                     href={tool.href}
-                    className="mt-8 inline-flex w-fit items-center gap-2 text-sm font-semibold text-primary transition-colors hover:text-primary/80"
+                    className="mt-8 inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                   >
-                    See what’s planned
+                    Open {tool.name.replace(/^AI Film /, "")}
                     <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </TransitionLink>
                 ) : null}
