@@ -30,6 +30,7 @@ export default async function CoursePage({ params }: Props) {
   if (!course) notFound();
 
   const Icon = course.icon;
+  const live = course.status === "live";
   const others = courses.filter((other) => other.slug !== course.slug);
 
   return (
@@ -39,9 +40,11 @@ export default async function CoursePage({ params }: Props) {
           <p className="text-sm font-semibold tracking-widest text-primary uppercase">
             {course.level} course
           </p>
-          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            Coming soon
-          </span>
+          {!live && (
+            <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+              Coming soon
+            </span>
+          )}
         </div>
         <div className="mt-4 flex items-start gap-4">
           <div className="mt-1 flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10">
@@ -62,23 +65,28 @@ export default async function CoursePage({ params }: Props) {
           <Show when="signed-out">
             <SignUpButton mode="modal">
               <Button type="button" className={ctaClass}>
-                Sign up to get notified
+                {live ? "Start the course" : "Sign up to get notified"}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </SignUpButton>
           </Show>
           <Show when="signed-in">
-            <TransitionLink href="/dashboard" className={buttonVariants({ className: ctaClass })}>
-              Go to your dashboard
+            <TransitionLink
+              href={live ? `/courses/${course.slug}/${course.outline[0].slug}` : "/dashboard"}
+              className={buttonVariants({ className: ctaClass })}
+            >
+              {live ? "Start the course" : "Go to your dashboard"}
               <ChevronRight className="h-4 w-4" />
             </TransitionLink>
           </Show>
         </div>
       </div>
 
-      <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-        We’re building this course now. Here’s what’s planned; lessons aren’t available yet.
-      </p>
+      {!live && (
+        <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+          We’re building this course now. Here’s what’s planned; lessons aren’t available yet.
+        </p>
+      )}
 
       <section aria-labelledby="outline-title" className="mt-20">
         <p className="text-sm font-semibold tracking-widest text-primary uppercase">

@@ -48,6 +48,7 @@ export default async function LessonPage({ params }: Props) {
   if (!course || !found) notFound();
 
   const { lesson, index, previous, next } = found;
+  const live = course.status === "live";
   const courseHref = `/courses/${course.slug}`;
 
   return (
@@ -67,9 +68,11 @@ export default async function LessonPage({ params }: Props) {
       <div className="mt-8 max-w-3xl">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-mono text-sm text-primary">{String(index + 1).padStart(2, "0")}</p>
-          <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
-            Coming soon
-          </span>
+          {!live && (
+            <span className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground">
+              Coming soon
+            </span>
+          )}
         </div>
         <h1 className="mt-4 text-4xl font-bold tracking-tight text-balance sm:text-5xl">
           {lesson.title}
@@ -79,16 +82,18 @@ export default async function LessonPage({ params }: Props) {
         </p>
       </div>
 
-      <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
-        This lesson is being written. Here’s what it will include.
-      </p>
+      {!live && (
+        <p className="mt-5 text-sm leading-relaxed text-muted-foreground">
+          This lesson is being written. Here’s what it will include.
+        </p>
+      )}
 
       <div className="mt-12 grid gap-4">
         {placeholderSections.map((section) => (
           <section
             key={section.title}
             aria-label={section.title}
-            className="rounded-xl border border-dashed border-border p-6 sm:p-8"
+            className={`rounded-xl border border-border p-6 sm:p-8 ${live ? "bg-card" : "border-dashed"}`}
           >
             <h2 className="text-sm font-semibold tracking-widest text-primary uppercase">
               {section.title}

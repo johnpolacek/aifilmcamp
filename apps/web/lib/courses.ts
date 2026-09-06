@@ -8,7 +8,7 @@ export type Course = {
   title: string;
   description: string;
   price: number;
-  status: "coming-soon";
+  status: "live" | "coming-soon";
   /** What the finished course will cover, in order. */
   outline: Lesson[];
 };
@@ -28,7 +28,7 @@ export const courses: Course[] = [
     description:
       "Go from idea to a finished short in one sitting. Learn the core workflow of writing, generating, and editing.",
     price: 20,
-    status: "coming-soon",
+    status: "live",
     outline: [
       {
         slug: "come-up-with-an-idea",
