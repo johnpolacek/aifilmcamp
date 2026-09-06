@@ -44,7 +44,7 @@ const ctaClass = "bg-[#2c4494] text-white hover:bg-[#3854b3]";
 
 export function Courses() {
   return (
-    <section id="courses" data-courses className="min-h-screen grid items-center py-20">
+    <section id="courses" data-courses className="pt-6 pb-20 lg:pb-32">
       <div data-outro className="container mx-auto px-4 lg:px-8">
         <div className="text-center mb-10">
           <h2 data-courses-title className="text-3xl lg:text-5xl font-bold mb-4 text-balance">

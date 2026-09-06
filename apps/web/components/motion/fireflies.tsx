@@ -29,15 +29,15 @@ export function Fireflies({ className }: { className?: string }) {
     size();
     window.addEventListener("resize", size);
 
-    const count = window.innerWidth < 768 ? 34 : 70;
+    const count = window.innerWidth < 768 ? 12 : 26;
     const flies: Fly[] = Array.from({ length: count }, () => ({
       x: Math.random(),
       y: 0.25 + Math.random() * 0.75,
-      vx: gsap.utils.random(-0.02, 0.02),
-      vy: gsap.utils.random(-0.012, 0.012),
-      r: gsap.utils.random(1, 2.6),
+      vx: gsap.utils.random(-0.008, 0.008),
+      vy: gsap.utils.random(-0.005, 0.005),
+      r: gsap.utils.random(1, 2.4),
       p: Math.random() * Math.PI * 2,
-      s: gsap.utils.random(0.6, 1.6),
+      s: gsap.utils.random(0.3, 0.7),
     }));
 
     let wind = 0;
@@ -56,8 +56,8 @@ export function Fireflies({ className }: { className?: string }) {
       targetWind *= 0.9;
       ctx.clearRect(0, 0, W, H);
       for (const f of flies) {
-        f.x += (f.vx + Math.sin(time * 0.3 + f.p) * 0.01) * d;
-        f.y += (f.vy - wind * 0.12) * d;
+        f.x += (f.vx + Math.sin(time * 0.15 + f.p) * 0.004) * d;
+        f.y += (f.vy - wind * 0.06) * d;
         if (f.x < -0.05) f.x = 1.05;
         if (f.x > 1.05) f.x = -0.05;
         if (f.y < 0.15) f.y = 1.05;

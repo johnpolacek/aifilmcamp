@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export function Hero() {
   return (
-    <section data-hero className="relative min-h-screen grid items-center pt-16 overflow-hidden">
+    <section data-hero className="relative pt-28 pb-6 lg:pt-32 lg:pb-8 overflow-hidden">
       {/* Background glow, transparent so the image shows through the dolly */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-primary/15 to-transparent to-55%" />
 

@@ -28,8 +28,9 @@ let mounted = false;
  *
  * Phases: initial → intro → settled → outro → end. The veil covers the route
  * before first paint (see MotionMark), lifts during the intro, and returns for
- * the outro. Scroll is the camera: the hero and courses pin while their scene
- * plays, the closing title rises out of the fog.
+ * the outro. The hero and the courses arrive together on load. Scroll is the
+ * camera: the image dollies toward the screen while the headline leaves the
+ * frame, and the closing title rises out of the fog.
  */
 export function HomeView() {
   const rootRef = useRef<HTMLElement>(null);
@@ -65,7 +66,6 @@ export function HomeView() {
       const hero = one("[data-hero]");
       const headline = one("[data-headline]");
       const actions = one("[data-hero-actions]");
-      const courses = one("[data-courses]");
       const cta = one("[data-cta]");
       const dot = one("[data-rail-dot]");
 
@@ -75,44 +75,21 @@ export function HomeView() {
       // then their scenes are created. The hero scene waits until settle.
       const split = SplitText.create(headline, { type: "words", wordsClass: "inline-block" });
       const words = split.words;
-      const sceneTargets = q(
-        "[data-courses-title], [data-courses-lede], [data-card], [data-cta-title], [data-cta-lede], [data-cta-button]"
-      );
-      gsap.set(sceneTargets, { autoAlpha: 0 });
+      const coursesTitle = one("[data-courses-title]");
+      const coursesLede = one("[data-courses-lede]");
+      const cards = q("[data-card]");
+      gsap.set(q("[data-cta-title], [data-cta-lede], [data-cta-button]"), { autoAlpha: 0 });
 
       const later = { immediateRender: false, ease: "none" } as const;
 
-      // Scene 2: the courses hold while the cards arrive from depth.
+      // The camera dollies toward the screen over the whole page. The image
+      // is not an intro target, so this can exist from the start.
       gsap
         .timeline({
-          scrollTrigger: {
-            trigger: courses,
-            start: "top top",
-            end: "+=120%",
-            pin: true,
-            scrub: 0.8,
-            anticipatePin: 1,
-          },
+          scrollTrigger: { trigger: root, start: "top top", end: "bottom bottom", scrub: 0.8 },
         })
-        .fromTo(
-          q("[data-courses-title]"),
-          { autoAlpha: 0, y: 50 },
-          { autoAlpha: 1, y: 0, duration: 0.22, ease: "none" },
-          0
-        )
-        .fromTo(
-          q("[data-courses-lede]"),
-          { autoAlpha: 0, y: 34 },
-          { autoAlpha: 1, y: 0, duration: 0.22, ease: "none" },
-          0.08
-        )
-        .fromTo(
-          q("[data-card]"),
-          { autoAlpha: 0, scale: 0.5, y: 180 },
-          { autoAlpha: 1, scale: 1, y: 0, duration: 0.5, stagger: 0.12, ease: "power1.out" },
-          0.18
-        )
-        .to({}, { duration: 0.12 });
+        .fromTo(image, { scale: 1, yPercent: 0 }, { scale: 1.25, yPercent: -6, ease: "none" }, 0)
+        .fromTo(darken, { autoAlpha: 0 }, { autoAlpha: 0.45, ease: "none" }, 0);
 
       // Scene 3: the closing title rises out of the fog. No pin.
       gsap
@@ -155,10 +132,13 @@ export function HomeView() {
       gsap.set(darken, { autoAlpha: 0 });
       gsap.set(words, { yPercent: 60, autoAlpha: 0 });
       gsap.set(actions, { autoAlpha: 0, y: 24 });
+      gsap.set(coursesTitle, { autoAlpha: 0, y: 40 });
+      gsap.set(coursesLede, { autoAlpha: 0, y: 30 });
+      gsap.set(cards, { autoAlpha: 0, scale: 0.7, y: 120 });
       setPhase("intro");
 
       // ---- intro
-      // Scene 1: the camera dollies toward the screen, the words leave the frame.
+      // Scene 1: the headline leaves the frame as the hero scrolls away.
       // Created at settle: a scroll tween records the values it finds when it
       // first initializes and restores them on every ScrollTrigger.refresh(),
       // so the hero must hold its settled state when this is built.
@@ -168,53 +148,44 @@ export function HomeView() {
             scrollTrigger: {
               trigger: hero,
               start: "top top",
-              end: "+=110%",
-              pin: true,
+              end: "+=70%",
               scrub: 0.8,
-              anticipatePin: 1,
               // Built after the scenes below it; refresh in page order regardless.
               refreshPriority: 1,
             },
           })
           .fromTo(
-            image,
-            { scale: 1, yPercent: 0 },
-            { scale: 1.32, yPercent: -4, duration: 1, ...later },
-            0.01
-          )
-          .fromTo(fogA, { autoAlpha: 0.55 }, { autoAlpha: 0.95, duration: 0.4, ...later }, 0.01)
-          .to(fogA, { autoAlpha: 0.1, duration: 0.6, ease: "none" }, 0.4)
-          .fromTo(
             words[0],
             { x: 0, autoAlpha: 1 },
-            { x: -220, autoAlpha: 0, duration: 0.5, ...later, ease: "power1.in" },
-            0.1
+            { x: -180, autoAlpha: 0, duration: 0.6, ...later, ease: "power1.in" },
+            0.05
           )
           .fromTo(
             words[2],
             { x: 0, autoAlpha: 1 },
-            { x: 220, autoAlpha: 0, duration: 0.5, ...later, ease: "power1.in" },
-            0.1
+            { x: 180, autoAlpha: 0, duration: 0.6, ...later, ease: "power1.in" },
+            0.05
           )
           .fromTo(
             words[1],
             { y: 0, scale: 1, autoAlpha: 1 },
-            { y: -140, scale: 1.35, autoAlpha: 0, duration: 0.5, ...later, ease: "power1.in" },
-            0.3
+            { y: -100, scale: 1.25, autoAlpha: 0, duration: 0.6, ...later, ease: "power1.in" },
+            0.2
           )
           .fromTo(
             actions,
             { y: 0, autoAlpha: 1 },
-            { y: 90, autoAlpha: 0, duration: 0.4, ...later, ease: "power1.in" },
-            0.15
-          )
-          .fromTo(darken, { autoAlpha: 0 }, { autoAlpha: 0.5, duration: 0.5, ...later }, 0.5);
+            { y: 60, autoAlpha: 0, duration: 0.5, ...later, ease: "power1.in" },
+            0.1
+          );
       });
 
       const intro = gsap.timeline({
         onComplete: () => {
           setPhase("settled");
-          gsap.set([actions, ...words], { clearProps: "transform,opacity,visibility" });
+          gsap.set([actions, ...words, coursesTitle, coursesLede, ...cards], {
+            clearProps: "transform,opacity,visibility",
+          });
           createHeroScene();
           ScrollTrigger.refresh();
         },
@@ -227,7 +198,14 @@ export function HomeView() {
           { yPercent: 0, autoAlpha: 1, duration: 1, ease: "power3.out", stagger: 0.1 },
           0.6
         )
-        .to(actions, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" }, 1.2);
+        .to(actions, { autoAlpha: 1, y: 0, duration: 0.8, ease: "power3.out" }, 1.2)
+        .to(coursesTitle, { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out" }, 1.45)
+        .to(coursesLede, { autoAlpha: 1, y: 0, duration: 0.9, ease: "power3.out" }, 1.55)
+        .to(
+          cards,
+          { autoAlpha: 1, scale: 1, y: 0, duration: 1, ease: "power3.out", stagger: 0.1 },
+          1.65
+        );
       // Returning by history, or arriving already scrolled: no travel.
       if (arrival === "history" || window.scrollY > 80) intro.timeScale(3);
 
