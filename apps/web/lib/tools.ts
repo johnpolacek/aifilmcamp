@@ -19,6 +19,7 @@ export type Tool = {
 };
 
 export const MACOS_APP_RELEASES_URL = "https://github.com/johnpolacek/aifilmclub/releases";
+export const MACOS_APP_DOWNLOAD_URL = `${MACOS_APP_RELEASES_URL}/latest/download/AI-Film-Camp.dmg`;
 
 export const tools: Tool[] = [
   {
@@ -31,9 +32,9 @@ export const tools: Tool[] = [
     status: "live",
     icon: Clapperboard,
     download: {
-      href: `${MACOS_APP_RELEASES_URL}/latest/download/AI-Film-Camp.dmg`,
+      href: "/download/mac",
       label: "Download for Mac",
-      requirements: "Free. Requires macOS 15 or later on Apple silicon.",
+      requirements: "Free with an account. Requires macOS 15 or later on Apple silicon.",
     },
   },
   {

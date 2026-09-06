@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
+import { Show, SignInButton } from "@clerk/nextjs";
 import { Download } from "lucide-react";
-import { MACOS_APP_RELEASES_URL, tools } from "@/lib/tools";
+import { tools } from "@/lib/tools";
 
 export const metadata: Metadata = {
   title: "Tools - AI Film Camp",
@@ -61,22 +62,27 @@ export default function ToolsPage() {
                 <p className="mt-4 leading-relaxed text-muted-foreground">{tool.description}</p>
                 {tool.download ? (
                   <div className="mt-8 flex flex-col gap-3">
-                    <a
-                      href={tool.download.href}
-                      className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
-                    >
-                      <Download className="h-4 w-4" aria-hidden="true" />
-                      {tool.download.label}
-                    </a>
-                    <p className="text-xs text-muted-foreground">
-                      {tool.download.requirements}{" "}
+                    <Show when="signed-in">
                       <a
-                        href={MACOS_APP_RELEASES_URL}
-                        className="underline underline-offset-2 hover:text-foreground"
+                        href={tool.download.href}
+                        className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
                       >
-                        All releases
+                        <Download className="h-4 w-4" aria-hidden="true" />
+                        {tool.download.label}
                       </a>
-                    </p>
+                    </Show>
+                    <Show when="signed-out">
+                      <SignInButton mode="modal" forceRedirectUrl={tool.download.href}>
+                        <button
+                          type="button"
+                          className="inline-flex w-fit items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+                        >
+                          <Download className="h-4 w-4" aria-hidden="true" />
+                          Sign in to download
+                        </button>
+                      </SignInButton>
+                    </Show>
+                    <p className="text-xs text-muted-foreground">{tool.download.requirements}</p>
                   </div>
                 ) : null}
               </article>
