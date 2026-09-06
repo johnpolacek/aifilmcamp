@@ -89,16 +89,27 @@ export default async function CoursePage({ params }: Props) {
         </h2>
         <ol className="mt-8 divide-y divide-border border-y border-border">
           {course.outline.map((step, index) => (
-            <li key={step.title} className="flex gap-5 py-6 sm:gap-8">
-              <span aria-hidden="true" className="pt-1 font-mono text-lg text-primary">
-                {String(index + 1).padStart(2, "0")}
-              </span>
-              <div>
-                <h3 className="text-lg font-semibold">{step.title}</h3>
-                <p className="mt-2 max-w-2xl leading-relaxed text-muted-foreground">
-                  {step.description}
-                </p>
-              </div>
+            <li key={step.slug}>
+              <TransitionLink
+                href={`/courses/${course.slug}/${step.slug}`}
+                className="group flex gap-5 py-6 sm:gap-8"
+              >
+                <span aria-hidden="true" className="pt-1 font-mono text-lg text-primary">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold transition-colors group-hover:text-primary">
+                    {step.title}
+                  </h3>
+                  <p className="mt-2 max-w-2xl leading-relaxed text-muted-foreground">
+                    {step.description}
+                  </p>
+                </div>
+                <ChevronRight
+                  aria-hidden="true"
+                  className="mt-1.5 h-5 w-5 shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+                />
+              </TransitionLink>
             </li>
           ))}
         </ol>
